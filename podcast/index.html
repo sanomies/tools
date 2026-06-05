@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ONU SANO · Podcasti kadreerija</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: #1d1d20;
+    color: #e8e8ed;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    user-select: none;
+    color-scheme: dark;
+  }
+
+  /* ───── Left sidebar (podcast templates) ───── */
+  .sidebar {
+    flex: 0 0 auto;
+    width: 248px;
+    background: #18181b;
+    border-right: 1px solid #2a2a2e;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    font-size: 11px;
+    color: #86868b;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    text-align: center;
+    /* Match the template list's right inset (6px gutter + 11px scrollbar) so the header centers over the cards, not the full sidebar. */
+    padding-right: 17px;
+  }
+  .thumb-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .thumb-label {
+    font-size: 11px;
+    color: #b8b8c0;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    text-align: center;
+  }
+  .thumb-group:has(.thumb.active) .thumb-label { color: #ffffff; }
+
+  /* Template preview (overlay-on-black, 16:9) */
+  .thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+    color: inherit;
+    padding: 0;
+    text-align: inherit;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #000;
+    border: 2px solid #2f2f33;
+    border-radius: 6px;
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .thumb:hover { border-color: #5a5a62; transform: translateY(-1px); }
+  .thumb.active { border-color: #5767ff; }
+  .thumb .ov-layer { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+
+  /* Scrollable template list — keeps the edit panel pinned below it */
+  .template-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3e transparent;
+  }
+  .template-list::-webkit-scrollbar { width: 6px; height: 6px; }
+  .template-list::-webkit-scrollbar-track { background: transparent; }
+  .template-list::-webkit-scrollbar-thumb { background: #3a3a3e; border-radius: 3px; }
+  .template-list::-webkit-scrollbar-thumb:hover { background: #50505a; }
+
+  /* ───── Edit panel (photo adjustments) ───── */
+  .edit-panel {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    padding-top: 14px;
+    border-top: 1px solid #2a2a2e;
+  }
+  .edit-panel.disabled { opacity: 0.45; }
+  .edit-header {
+    font-size: 11px;
+    color: #86868b;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-weight: 600;
+    text-align: center;
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: default;
+  }
+  .edit-chevron { width: 13px; height: 13px; flex: 0 0 auto; display: none; transition: transform 0.2s ease; }
+  .edit-body { display: flex; flex-direction: column; gap: 13px; }
+  .adjust-row { display: flex; flex-direction: column; gap: 6px; }
+  .adjust-head { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #c8c8d0; font-weight: 500; }
+  .adjust-head .ico { width: 14px; height: 14px; flex: 0 0 auto; color: #86868b; }
+  .adjust-name { flex: 1 1 auto; }
+  .adjust-val { color: #86868b; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .adjust-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: #34343a;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    margin: 0;
+  }
+  .adjust-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #5767ff;
+    border: 2px solid #18181b;
+    cursor: pointer;
+  }
+  .adjust-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #5767ff;
+    border: 2px solid #18181b;
+    cursor: pointer;
+  }
+  .adjust-slider:disabled { cursor: default; }
+  .adjust-actions { display: flex; gap: 8px; }
+  .adjust-actions .btn { flex: 1 1 0; justify-content: center; padding: 7px 8px; font-size: 12px; }
+
+  /* Main column wraps canvas + bottom bar */
+  .main-column {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    /* One continuous backdrop behind the canvas AND the bottom buttons — no seam between them. */
+    background: radial-gradient(circle at 50% 30%, #2a2a2e 0%, #1d1d20 70%);
+  }
+
+  /* ───── Main canvas area ───── */
+  .canvas-area {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .stage { position: relative; }
+  .artboard {
+    position: absolute;
+    left: 0; top: 0;
+    width: 1920px;
+    height: 1080px;
+    transform-origin: top left;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    touch-action: none;
+  }
+  .user-image {
+    position: absolute;
+    left: 0; top: 0;
+    transform-origin: top left;
+    -webkit-user-drag: none;
+    user-select: none;
+    display: block;
+    pointer-events: auto;
+    cursor: move;
+    touch-action: none;
+  }
+  .user-image.empty { display: none; }
+  .artboard > .ov-layer {
+    position: absolute;
+    left: 0; top: 0;
+    width: 1920px;
+    height: 1080px;
+    object-fit: fill;
+    pointer-events: none;
+  }
+
+  /* ───── Image selection chrome (Geenius-style move/resize) ───── */
+  .image-chrome {
+    position: absolute;
+    border: 2px solid #5767ff;
+    pointer-events: none;
+    z-index: 10;
+    box-sizing: border-box;
+  }
+  .image-chrome.hidden { display: none; }
+  .image-chrome .handle {
+    position: absolute;
+    width: 14px; height: 14px;
+    background: #fff;
+    border: 2px solid #5767ff;
+    border-radius: 2px;
+    pointer-events: auto;
+    touch-action: none;
+  }
+  .image-chrome .handle[data-corner="nw"] { left: -8px; top: -8px;    cursor: nwse-resize; }
+  .image-chrome .handle[data-corner="ne"] { right: -8px; top: -8px;   cursor: nesw-resize; }
+  .image-chrome .handle[data-corner="sw"] { left: -8px; bottom: -8px; cursor: nesw-resize; }
+  .image-chrome .handle[data-corner="se"] { right: -8px; bottom: -8px; cursor: nwse-resize; }
+  .image-chrome .handle[data-corner="n"]  { top: -8px;    left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .image-chrome .handle[data-corner="s"]  { bottom: -8px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .image-chrome .handle[data-corner="w"]  { left: -8px;   top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+  .image-chrome .handle[data-corner="e"]  { right: -8px;  top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+
+  /* Smart guides */
+  .guide { position: absolute; background: #ff2bbd; pointer-events: none; z-index: 11; }
+  .guide-v { width: 1px; top: -24px; bottom: -24px; }
+  .guide-h { height: 1px; left: -24px; right: -24px; }
+  .guide.hidden { display: none; }
+
+  /* drag-and-drop visual feedback */
+  .canvas-area.drop-target::after {
+    content: "Lohista pilt siia";
+    position: absolute;
+    inset: 24px;
+    border: 3px dashed #5767ff;
+    border-radius: 14px;
+    background: rgba(87, 103, 255, 0.07);
+    color: #5767ff;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* ───── Bottom bar ───── */
+  .bottom-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 24px;
+    min-height: 76px;
+  }
+  .bottom-left   { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: flex-start; }
+  .bottom-center { flex: 0 1 auto; display: flex; align-items: center; gap: 14px; justify-content: center; }
+  .bottom-right  { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: flex-end; }
+
+  .onusano-logo { height: 30px; display: block; }
+
+  /* Tools */
+  .tools { display: flex; align-items: center; gap: 12px; }
+  .tools .group {
+    display: flex; align-items: center; gap: 8px;
+    padding-right: 14px;
+    border-right: 1px solid #3a3a3e;
+  }
+  .tools .group:last-child { border-right: none; padding-right: 0; }
+  .tools .label { font-size: 11px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .btn {
+    appearance: none;
+    border: 1px solid #4a4a4e;
+    background: #34343a;
+    color: #e8e8ed;
+    border-radius: 999px;
+    padding: 8px 13px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #404048; }
+  .btn:active { background: #2c2c30; }
+  .btn.primary { background: #5767ff; border-color: #5767ff; color: white; }
+  .btn.primary:hover { background: #4555e0; }
+  .btn.icon.active { background: #5767ff; border-color: #5767ff; color: white; }
+  .btn .ico { width: 15px; height: 15px; display: block; flex: 0 0 auto; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* Keyboard focus — visible on every dark surface, including the accent fills */
+  .btn:focus-visible,
+  .thumb:focus-visible,
+  .edit-header:focus-visible,
+  .adjust-slider:focus-visible {
+    outline: 2px solid #97a3ff;
+    outline-offset: 2px;
+  }
+
+  .hint { font-size: 12px; color: #86868b; line-height: 1.4; text-align: right; }
+  #file-input { display: none; }
+
+  /* Top-right export */
+  .top-actions {
+    position: fixed;
+    top: 16px;
+    right: 18px;
+    display: flex;
+    gap: 8px;
+    z-index: 200;
+  }
+  .top-actions .btn { box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+  .top-actions .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .top-actions .btn.exporting { cursor: progress; }
+
+  /* Logo: centered at the canvas top, level with the export button */
+  .canvas-logo {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150;
+    pointer-events: none;
+  }
+
+  /* ───── Mobile (≤ 768px) ───── */
+  @media (max-width: 768px) {
+    body { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid #2a2a2e;
+      flex-direction: column;
+      overflow: visible;
+      padding: 12px 14px;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+    .sidebar-header { display: none; }
+    .template-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; gap: 12px; align-items: center; }
+    .template-list .thumb-group { flex: 0 0 auto; width: 132px; }
+    .edit-panel { padding-top: 12px; }
+    .edit-header { cursor: pointer; }
+    .edit-chevron { display: block; }
+    .edit-body { display: none; }                        /* collapsed by default on mobile */
+    .edit-panel.expanded .edit-body { display: flex; }
+    .edit-panel.expanded .edit-chevron { transform: rotate(180deg); }
+    .main-column { flex: 1 1 auto; min-height: 0; }
+    .top-actions { position: absolute; top: 10px; right: 10px; }
+    .top-actions .btn { padding: 8px 11px; font-size: 12px; }
+    .canvas-logo { display: none; }
+    .bottom-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 14px;
+      min-height: 64px;
+    }
+    .bottom-left, .bottom-right { display: none; }
+    .bottom-center { flex: 1 1 auto; min-width: 0; justify-content: center; }
+    .tools { flex-wrap: wrap; justify-content: center; gap: 10px 14px; }
+    .tools .group { border-right: none; padding-right: 0; }
+    /* Comfortable touch targets */
+    .btn { min-height: 44px; }
+    .adjust-slider { height: 6px; }
+    .adjust-slider::-webkit-slider-thumb { width: 22px; height: 22px; }
+    .adjust-slider::-moz-range-thumb { width: 22px; height: 22px; }
+    .image-chrome .handle { width: 22px; height: 22px; }
+    .image-chrome .handle[data-corner="nw"] { left: -12px; top: -12px; }
+    .image-chrome .handle[data-corner="ne"] { right: -12px; top: -12px; }
+    .image-chrome .handle[data-corner="sw"] { left: -12px; bottom: -12px; }
+    .image-chrome .handle[data-corner="se"] { right: -12px; bottom: -12px; }
+    .image-chrome .handle[data-corner="n"]  { top: -12px; }
+    .image-chrome .handle[data-corner="s"]  { bottom: -12px; }
+    .image-chrome .handle[data-corner="w"]  { left: -12px; }
+    .image-chrome .handle[data-corner="e"]  { right: -12px; }
+  }
+
+  /* ───── Reduced motion ───── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .thumb:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <!-- ════════════════════════ SIDEBAR (templates) ════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">Podcastid</div>
+    <div class="template-list" id="template-list"></div>
+    <div class="edit-panel" id="edit-panel">
+      <button class="edit-header" id="edit-toggle" type="button"><span>Edit</span><svg class="ico edit-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="edit-body" id="edit-body">
+      <div class="adjust-row">
+        <div class="adjust-head">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <span class="adjust-name">Brightness</span>
+          <span class="adjust-val" id="val-brightness">100</span>
+        </div>
+        <input class="adjust-slider" id="adj-brightness" type="range" min="0" max="200" step="1" value="100" disabled>
+      </div>
+      <div class="adjust-row">
+        <div class="adjust-head">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z"/></svg>
+          <span class="adjust-name">Contrast</span>
+          <span class="adjust-val" id="val-contrast">100</span>
+        </div>
+        <input class="adjust-slider" id="adj-contrast" type="range" min="0" max="200" step="1" value="100" disabled>
+      </div>
+      <div class="adjust-row">
+        <div class="adjust-head">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+          <span class="adjust-name">Saturation</span>
+          <span class="adjust-val" id="val-saturation">100</span>
+        </div>
+        <input class="adjust-slider" id="adj-saturation" type="range" min="0" max="200" step="1" value="100" disabled>
+      </div>
+      <div class="adjust-actions">
+        <button class="btn icon" id="bw-toggle" type="button" title="Black and white">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 1 0 10 10"/></svg>B/W
+        </button>
+        <button class="btn icon" id="adj-reset" type="button" title="Lähtesta muudatused">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Reset
+        </button>
+      </div>
+      </div><!-- /.edit-body -->
+    </div>
+  </aside>
+
+  <!-- ════════════════════════ MAIN COLUMN ════════════════════════ -->
+  <main class="main-column">
+    <div class="canvas-area" id="canvas-area">
+      <!-- ════════ Export (fixed top-right on desktop · over canvas top on mobile) ════════ -->
+      <div class="top-actions">
+        <button class="btn primary" id="download-btn" type="button" disabled><svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span class="btn-label">Laadi alla PNG</span></button>
+      </div>
+      <div class="canvas-logo"><img class="onusano-logo" src="assets/logo-onu-sano.svg" alt="Onu Sano"></div>
+      <div class="stage" id="stage">
+        <div class="artboard" id="artboard">
+          <img class="user-image empty" id="user-image" alt="">
+        </div>
+        <div class="image-chrome hidden" id="image-chrome">
+          <div class="handle" data-corner="nw"></div>
+          <div class="handle" data-corner="n"></div>
+          <div class="handle" data-corner="ne"></div>
+          <div class="handle" data-corner="e"></div>
+          <div class="handle" data-corner="se"></div>
+          <div class="handle" data-corner="s"></div>
+          <div class="handle" data-corner="sw"></div>
+          <div class="handle" data-corner="w"></div>
+        </div>
+        <div class="guide guide-v hidden" id="guide-v"></div>
+        <div class="guide guide-h hidden" id="guide-h"></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════ BOTTOM BAR ════════════════════════ -->
+    <div class="bottom-bar">
+      <div class="bottom-left"></div>
+
+      <div class="bottom-center">
+        <div class="tools" id="tools">
+          <div class="group">
+            <button class="btn primary" id="upload-btn" type="button">
+              <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Laadi pilt üles
+            </button>
+            <input type="file" id="file-input" accept="image/*">
+          </div>
+          <div class="group" id="toggle-group">
+            <button class="btn icon" id="fit-btn" type="button" title="Täida kaader">
+              <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>Täida kaader
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-right">
+        <div class="hint" id="copyright">Onu Sano © 2026</div>
+      </div>
+    </div>
+  </main><!-- /.main-column -->
+
+  <script>
+  'use strict';
+
+  // ════════════════════════ Config ════════════════════════
+  const OUT = { w: 1920, h: 1080 };
+  const IMG = '$IMG';                       // user-photo slot inside a layer stack
+  const TEMPLATES = [
+    { id:'ekspress',          name:'Eesti Ekspress',  layers:[IMG, 'overlays/ekspress.png'] },
+    { id:'muusikanounikud',   name:'Muusikanõunikud',  layers:[IMG, 'overlays/muusikanounikud.png'] },
+    { id:'mistunne',          name:'"Mis tunne on?"',  layers:[IMG, 'overlays/mistunne.png'] },
+    { id:'erisaade',          name:'Delfi Erisaade',   layers:[IMG, 'overlays/erisaade.png'] },
+    { id:'mehed-ei-nuta',     name:'Mehed ei nuta',    layers:[IMG, 'overlays/mehed-ei-nuta.png'] },
+    { id:'onkoloogika',       name:'Onkoloogika',      layers:[IMG, 'overlays/onkoloogika.png'] },
+    { id:'pea-voit',          name:'Pea võit',         layers:[IMG, 'overlays/pea-voit.png'] },
+    { id:'lase-tiiger-tuppa', name:'Lase tiiger tuppa', layers:[IMG, 'overlays/lase-tiiger-tuppa.png'] },
+    { id:'tervispluss',       name:'Tervis Pluss',     layers:['overlays/tervispluss-lower.png', IMG, 'overlays/tervispluss-top.png'] },
+    { id:'hea-tydruk',        name:'Hea tüdruk',       layers:[IMG, 'overlays/hea-tydruk.png'] },
+    { id:'iga-naine-on-lugu', name:'Iga naine on lugu', layers:[IMG, 'overlays/iga-naine-on-lugu.png'] },
+    { id:'toidujutud',        name:'Toidujutud',       layers:[IMG, 'overlays/toidujutud.png'] },
+    { id:'momentum',          name:'momentum',         layers:[IMG, 'overlays/momentum.png'] },
+    { id:'vorkpallivonked',   name:'Võrkpallivõnked',  layers:[IMG, 'overlays/v6rkpalliv6nked-overlay.png'] },
+  ];
+  const ASSET = 'assets/';
+  const MAX_VIEW_SCALE = 0.8;
+  const MARGIN = 44;
+
+  // ════════════════════════ State ════════════════════════
+  const state = {
+    activeId: TEMPLATES[0].id,
+    image: { url: null, naturalW: 0, naturalH: 0, imgEl: null },
+    transform: null,        // { x, y, w, h } bounding box in 1920×1080 output coords
+    imageSelected: false,
+    adjust: { brightness: 100, contrast: 100, saturation: 100, bw: false },  // percent (100 = neutral)
+  };
+  let viewScale = 1;
+  let dragState = null;
+  const SNAP = 14;          // smart-guide snap distance (output px)
+  const MIN_SIZE = 80;      // minimum image box dimension (output px)
+  const undoStack = [];
+  const redoStack = [];
+  const MAX_UNDO = 50;
+
+  // ════════════════════════ DOM refs ════════════════════════
+  const sidebar     = document.getElementById('sidebar');
+  const templateList = document.getElementById('template-list');
+  const canvasArea  = document.getElementById('canvas-area');
+  const stage       = document.getElementById('stage');
+  const artboard    = document.getElementById('artboard');
+  const userImg     = document.getElementById('user-image');
+  const fileInput   = document.getElementById('file-input');
+  const uploadBtn   = document.getElementById('upload-btn');
+  const fitBtn      = document.getElementById('fit-btn');
+  const bwBtn       = document.getElementById('bw-toggle');
+  const resetBtn    = document.getElementById('adj-reset');
+  const editPanel   = document.getElementById('edit-panel');
+  const adjSliders  = {
+    brightness: document.getElementById('adj-brightness'),
+    contrast:   document.getElementById('adj-contrast'),
+    saturation: document.getElementById('adj-saturation'),
+  };
+  const adjVals     = {
+    brightness: document.getElementById('val-brightness'),
+    contrast:   document.getElementById('val-contrast'),
+    saturation: document.getElementById('val-saturation'),
+  };
+  const downloadBtn = document.getElementById('download-btn');
+  const tools       = document.getElementById('tools');
+  const imageChrome = document.getElementById('image-chrome');
+  const handles     = Array.from(imageChrome.querySelectorAll('.handle'));
+  const guideV      = document.getElementById('guide-v');
+  const guideH      = document.getElementById('guide-h');
+
+  const tmplById = Object.fromEntries(TEMPLATES.map(t => [t.id, t]));
+  function activeTemplate() { return tmplById[state.activeId]; }
+
+  // ════════════════════════ Image preload cache ════════════════════════
+  const imgCache = new Map();
+  function loadImg(path) {
+    if (imgCache.has(path)) return imgCache.get(path);
+    const p = new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = ASSET + path;
+    });
+    imgCache.set(path, p);
+    return p;
+  }
+  // Warm the cache for every overlay so switching + export are instant.
+  TEMPLATES.forEach(t => t.layers.forEach(l => { if (l !== IMG) loadImg(l); }));
+
+  // ════════════════════════ Sidebar thumbnails ════════════════════════
+  function buildSidebar() {
+    for (const t of TEMPLATES) {
+      const group = document.createElement('div');
+      group.className = 'thumb-group';
+
+      const thumb = document.createElement('button');
+      thumb.type = 'button';
+      thumb.className = 'thumb' + (t.id === state.activeId ? ' active' : '');
+      thumb.dataset.id = t.id;
+      thumb.setAttribute('aria-label', t.name);
+      thumb.setAttribute('aria-pressed', t.id === state.activeId ? 'true' : 'false');
+      // Preview = the template's overlay layers stacked on black (no photo slot).
+      for (const layer of t.layers) {
+        if (layer === IMG) continue;
+        const im = document.createElement('img');
+        im.className = 'ov-layer';
+        im.src = ASSET + layer;
+        im.draggable = false;
+        im.alt = '';
+        thumb.appendChild(im);
+      }
+      thumb.addEventListener('click', () => setActiveTemplate(t.id));
+
+      const label = document.createElement('div');
+      label.className = 'thumb-label';
+      label.textContent = t.name;
+
+      group.appendChild(thumb);
+      group.appendChild(label);
+      templateList.appendChild(group);
+    }
+  }
+
+  // ════════════════════════ Artboard rendering ════════════════════════
+  function renderArtboard() {
+    const t = activeTemplate();
+    // Remove existing overlay layers (keep the persistent user-image element).
+    artboard.querySelectorAll('.ov-layer').forEach(n => n.remove());
+    // Re-insert layers in order; DOM order defines stacking (later = on top).
+    for (const layer of t.layers) {
+      if (layer === IMG) {
+        artboard.appendChild(userImg);          // move photo into its slot
+      } else {
+        const im = document.createElement('img');
+        im.className = 'ov-layer';
+        im.src = ASSET + layer;
+        im.draggable = false;
+        im.alt = '';
+        artboard.appendChild(im);
+      }
+    }
+    applyImageTransform();
+  }
+
+  // ════════════════════════ Scale to fit ════════════════════════
+  function computeScale() {
+    const availW = canvasArea.clientWidth - MARGIN * 2;
+    const availH = canvasArea.clientHeight - MARGIN * 2;
+    return Math.max(0.05, Math.min(availW / OUT.w, availH / OUT.h, MAX_VIEW_SCALE));
+  }
+  function applyScale() {
+    viewScale = computeScale();
+    stage.style.width  = (OUT.w * viewScale) + 'px';
+    stage.style.height = (OUT.h * viewScale) + 'px';
+    artboard.style.transform = `scale(${viewScale})`;
+    updateImageChrome();
+  }
+  window.addEventListener('resize', applyScale);
+
+  // ════════════════════════ Image transform ({x,y,w,h} box — Geenius model) ════════════════════════
+  function applyImageTransform() {
+    const t = state.transform;
+    if (!state.image.url || !t) { userImg.classList.add('empty'); return; }
+    userImg.classList.remove('empty');
+    userImg.style.width  = state.image.naturalW + 'px';
+    userImg.style.height = state.image.naturalH + 'px';
+    userImg.style.transform =
+      `translate(${t.x}px, ${t.y}px) scale(${t.w / state.image.naturalW}, ${t.h / state.image.naturalH})`;
+    userImg.style.filter = filterString();
+  }
+
+  function fitCover() {
+    if (!state.image.naturalW || !state.image.naturalH) { state.transform = null; return; }
+    const s = Math.max(OUT.w / state.image.naturalW, OUT.h / state.image.naturalH);
+    const w = state.image.naturalW * s;
+    const h = state.image.naturalH * s;
+    state.transform = { x: (OUT.w - w) / 2, y: (OUT.h - h) / 2, w, h };
+  }
+
+  // Scale the photo so its height matches the 1080px frame; center horizontally.
+  function fitHeight() {
+    if (!state.image.naturalW || !state.image.naturalH) { state.transform = null; return; }
+    const s = OUT.h / state.image.naturalH;
+    const w = state.image.naturalW * s;
+    state.transform = { x: (OUT.w - w) / 2, y: 0, w, h: OUT.h };
+  }
+
+  // ════════════════════════ Selection chrome ════════════════════════
+  function selectImage() {
+    if (!state.image.url) return;
+    state.imageSelected = true;
+    updateImageChrome();
+  }
+  function deselectImage() {
+    state.imageSelected = false;
+    updateImageChrome();
+  }
+  function updateImageChrome() {
+    const t = state.transform;
+    if (!state.imageSelected || !state.image.url || !t) {
+      imageChrome.classList.add('hidden');
+      hideGuides();
+      return;
+    }
+    imageChrome.classList.remove('hidden');
+    imageChrome.style.left   = (t.x * viewScale) + 'px';
+    imageChrome.style.top    = (t.y * viewScale) + 'px';
+    imageChrome.style.width  = (t.w * viewScale) + 'px';
+    imageChrome.style.height = (t.h * viewScale) + 'px';
+  }
+
+  // ════════════════════════ Photo adjustments (CSS filter ≡ canvas ctx.filter) ════════════════════════
+  function filterString() {
+    const a = state.adjust;
+    const parts = [`brightness(${a.brightness}%)`, `contrast(${a.contrast}%)`, `saturate(${a.saturation}%)`];
+    if (a.bw) parts.push('grayscale(1)');
+    return parts.join(' ');
+  }
+  function setAdjust(key, value) {
+    state.adjust[key] = value;
+    if (key === 'bw') bwBtn.classList.toggle('active', value);
+    else adjVals[key].textContent = value;
+    applyImageTransform();
+  }
+  function resetAdjust() {
+    state.adjust = { brightness: 100, contrast: 100, saturation: 100, bw: false };
+    syncAdjustUI();
+    applyImageTransform();
+  }
+  function syncAdjustUI() {
+    const a = state.adjust;
+    for (const key of ['brightness', 'contrast', 'saturation']) {
+      adjSliders[key].value = a[key];
+      adjVals[key].textContent = a[key];
+    }
+    bwBtn.classList.toggle('active', a.bw);
+  }
+
+  // ════════════════════════ Upload ════════════════════════
+  let currentObjectUrl = null;
+  function loadImageFromFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    pushUndo();
+    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    currentObjectUrl = URL.createObjectURL(file);
+    const probe = new Image();
+    probe.onload = () => {
+      state.image.url = currentObjectUrl;
+      state.image.naturalW = probe.naturalWidth;
+      state.image.naturalH = probe.naturalHeight;
+      state.image.imgEl = probe;
+      state.adjust = { brightness: 100, contrast: 100, saturation: 100, bw: false };
+      syncAdjustUI();
+      userImg.src = currentObjectUrl;
+      fitHeight();
+      applyImageTransform();
+      setEnabled(true);
+      selectImage();
+    };
+    probe.src = currentObjectUrl;
+  }
+
+  function setEnabled(hasImage) {
+    fitBtn.disabled = !hasImage;
+    bwBtn.disabled = !hasImage;
+    resetBtn.disabled = !hasImage;
+    adjSliders.brightness.disabled = !hasImage;
+    adjSliders.contrast.disabled = !hasImage;
+    adjSliders.saturation.disabled = !hasImage;
+    editPanel.classList.toggle('disabled', !hasImage);
+    downloadBtn.disabled = !hasImage;
+    document.getElementById('toggle-group').style.opacity = hasImage ? '1' : '0.5';
+  }
+
+  // ════════════════════════ Image drag / resize ════════════════════════
+  userImg.addEventListener('pointerdown', (e) => {
+    if (!state.image.url) return;
+    e.preventDefault();
+    selectImage();
+    startDrag(e, { type: 'move' });
+  });
+  handles.forEach(h => {
+    h.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startDrag(e, { type: 'resize', corner: h.dataset.corner });
+    });
+  });
+
+  function startDrag(e, info) {
+    const t = state.transform;
+    if (!t) return;
+    dragState = {
+      ...info,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      snapshot: { x: t.x, y: t.y, w: t.w, h: t.h },
+      pointerId: e.pointerId,
+      target: e.currentTarget,
+      undoPushed: false,
+    };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+  }
+
+  window.addEventListener('pointermove', (e) => {
+    if (!dragState) return;
+    if (!dragState.undoPushed) { pushUndo(); dragState.undoPushed = true; }
+    const t = state.transform;
+    const dx = (e.clientX - dragState.startClientX) / viewScale;
+    const dy = (e.clientY - dragState.startClientY) / viewScale;
+    const s = dragState.snapshot;
+
+    if (dragState.type === 'move') {
+      let mdx = dx, mdy = dy;
+      if (e.shiftKey) { if (Math.abs(mdx) > Math.abs(mdy)) mdy = 0; else mdx = 0; }
+      t.x = s.x + mdx;
+      t.y = s.y + mdy;
+      applySnapMove();
+    } else if (dragState.type === 'resize') {
+      const ratio = s.w / s.h;
+      const corner = dragState.corner;
+      const alt = e.altKey;
+      const k = alt ? 2 : 1;
+      const MIN = MIN_SIZE;
+      let newW, newH, newX, newY;
+
+      if (corner.length === 2) {
+        const dwUser = (corner.includes('w') ? -dx : dx) * k;
+        const dhUser = (corner.includes('n') ? -dy : dy) * k;
+        let dw;
+        if (Math.abs(dwUser) > Math.abs(dhUser) * ratio) dw = dwUser;
+        else dw = dhUser * ratio;
+        newW = Math.max(MIN, s.w + dw);
+        newH = newW / ratio;
+        if (alt) {
+          const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+          newX = cx - newW / 2; newY = cy - newH / 2;
+        } else {
+          const fixedX = corner.includes('w') ? s.x + s.w : s.x;
+          const fixedY = corner.includes('n') ? s.y + s.h : s.y;
+          newX = corner.includes('w') ? fixedX - newW : fixedX;
+          newY = corner.includes('n') ? fixedY - newH : fixedY;
+        }
+      } else if (corner === 'n' || corner === 's') {
+        const dh = (corner === 'n' ? -dy : dy) * k;
+        newH = Math.max(MIN / ratio, s.h + dh);
+        newW = newH * ratio;
+        const cx = s.x + s.w / 2;
+        newX = cx - newW / 2;
+        if (alt) { const cy = s.y + s.h / 2; newY = cy - newH / 2; }
+        else newY = corner === 'n' ? (s.y + s.h) - newH : s.y;
+      } else {
+        const dw = (corner === 'w' ? -dx : dx) * k;
+        newW = Math.max(MIN, s.w + dw);
+        newH = newW / ratio;
+        const cy = s.y + s.h / 2;
+        newY = cy - newH / 2;
+        if (alt) { const cx = s.x + s.w / 2; newX = cx - newW / 2; }
+        else newX = corner === 'w' ? (s.x + s.w) - newW : s.x;
+      }
+      t.x = newX; t.y = newY; t.w = newW; t.h = newH;
+      applySnapResize(corner, alt);
+    }
+    applyImageTransform();
+    updateImageChrome();
+  });
+
+  window.addEventListener('pointerup', () => {
+    if (!dragState) return;
+    try { dragState.target.releasePointerCapture(dragState.pointerId); } catch {}
+    dragState = null;
+    hideGuides();
+  });
+
+  // ════════════════════════ Smart guides (snap to canvas edges/centre) ════════════════════════
+  function applySnapMove() {
+    const t = state.transform;
+    const cx = t.x + t.w / 2, cy = t.y + t.h / 2;
+    const xTargets = [
+      { v: OUT.w / 2, cur: cx },
+      { v: 0,         cur: t.x },
+      { v: OUT.w,     cur: t.x + t.w },
+    ];
+    const yTargets = [
+      { v: OUT.h / 2, cur: cy },
+      { v: 0,         cur: t.y },
+      { v: OUT.h,     cur: t.y + t.h },
+    ];
+    let bestX = null, bestXd = SNAP;
+    for (const tt of xTargets) { const d = Math.abs(tt.cur - tt.v); if (d < bestXd) { bestXd = d; bestX = tt; } }
+    let bestY = null, bestYd = SNAP;
+    for (const tt of yTargets) { const d = Math.abs(tt.cur - tt.v); if (d < bestYd) { bestYd = d; bestY = tt; } }
+    if (bestX) { t.x += (bestX.v - bestX.cur); showGuideV(bestX.v); } else hideGuideV();
+    if (bestY) { t.y += (bestY.v - bestY.cur); showGuideH(bestY.v); } else hideGuideH();
+  }
+  function applySnapResize(corner, alt) {
+    hideGuides();
+    const t = state.transform;
+    const ratio = t.w / t.h;
+    const MIN = MIN_SIZE;
+    const curLeft = t.x, curRight = t.x + t.w, curTop = t.y, curBottom = t.y + t.h;
+    const curCx = (curLeft + curRight) / 2, curCy = (curTop + curBottom) / 2;
+
+    let movX = null, movY = null;
+    if (corner.includes('w')) movX = 'left'; else if (corner.includes('e')) movX = 'right';
+    if (corner.includes('n')) movY = 'top';  else if (corner.includes('s')) movY = 'bottom';
+
+    const xTargets = [0, OUT.w / 2, OUT.w];
+    const yTargets = [0, OUT.h / 2, OUT.h];
+
+    let bestX = null, bestXd = SNAP;
+    if (movX) { const v = movX === 'left' ? curLeft : curRight; for (const tg of xTargets) { const d = Math.abs(v - tg); if (d < bestXd) { bestXd = d; bestX = tg; } } }
+    let bestY = null, bestYd = SNAP;
+    if (movY) { const v = movY === 'top' ? curTop : curBottom; for (const tg of yTargets) { const d = Math.abs(v - tg); if (d < bestYd) { bestYd = d; bestY = tg; } } }
+    let snapX = bestX, snapY = bestY;
+    if (corner.length === 2 && snapX !== null && snapY !== null) {
+      if (bestXd <= bestYd) snapY = null; else snapX = null;
+    }
+    if (snapX !== null) {
+      const newW = alt ? Math.max(MIN, Math.abs(curCx - snapX) * 2) : (movX === 'left' ? curRight - snapX : snapX - curLeft);
+      if (newW >= MIN) {
+        const newH = newW / ratio;
+        if (alt) t.x = curCx - newW / 2; else if (movX === 'left') t.x = snapX; else t.x = curLeft;
+        if (alt) t.y = curCy - newH / 2; else if (corner.length === 1) t.y = curCy - newH / 2; else t.y = movY === 'top' ? curBottom - newH : curTop;
+        t.w = newW; t.h = newH;
+        showGuideV(snapX);
+      }
+    }
+    if (snapY !== null) {
+      const newH = alt ? Math.max(MIN / ratio, Math.abs(curCy - snapY) * 2) : (movY === 'top' ? curBottom - snapY : snapY - curTop);
+      if (newH >= MIN / ratio) {
+        const newW = newH * ratio;
+        if (alt) t.y = curCy - newH / 2; else if (movY === 'top') t.y = snapY; else t.y = curTop;
+        if (alt) t.x = curCx - newW / 2; else if (corner.length === 1) t.x = curCx - newW / 2; else t.x = movX === 'left' ? curRight - newW : curLeft;
+        t.w = newW; t.h = newH;
+        showGuideH(snapY);
+      }
+    }
+  }
+  function showGuideV(canvasX) { guideV.style.left = (canvasX * viewScale) + 'px'; guideV.classList.remove('hidden'); }
+  function showGuideH(canvasY) { guideH.style.top  = (canvasY * viewScale) + 'px'; guideH.classList.remove('hidden'); }
+  function hideGuideV() { guideV.classList.add('hidden'); }
+  function hideGuideH() { guideH.classList.add('hidden'); }
+  function hideGuides() { hideGuideV(); hideGuideH(); }
+
+  // ════════════════════════ Template switching ════════════════════════
+  function setActiveTemplate(id) {
+    if (!tmplById[id] || id === state.activeId) return;
+    pushUndo();
+    state.activeId = id;
+    try { localStorage.setItem('onusano:template', id); } catch (e) {}
+    sidebar.querySelectorAll('.thumb').forEach(el => {
+      const on = el.dataset.id === id;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    renderArtboard();
+  }
+
+  // ════════════════════════ Download (2D canvas composite) ════════════════════════
+  async function download() {
+    const t = activeTemplate();
+    const canvas = document.createElement('canvas');
+    canvas.width = OUT.w; canvas.height = OUT.h;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, OUT.w, OUT.h);
+
+    for (const layer of t.layers) {
+      if (layer === IMG) {
+        if (state.image.imgEl && state.transform) {
+          const t = state.transform;
+          ctx.save();
+          ctx.filter = filterString();
+          ctx.drawImage(state.image.imgEl, t.x, t.y, t.w, t.h);
+          ctx.restore();
+        }
+      } else {
+        const ov = await loadImg(layer);
+        ctx.drawImage(ov, 0, 0, OUT.w, OUT.h);
+      }
+    }
+
+    await new Promise(resolve => {
+      canvas.toBlob(blob => {
+        if (!blob) return resolve();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `onusano-${t.id}-1920x1080.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        resolve();
+      }, 'image/png');
+    });
+  }
+
+  // ════════════════════════ Undo / redo (Cmd/Ctrl+Z · Cmd/Ctrl+Shift+Z · Ctrl+Y) ════════════════════════
+  function snapshot() {
+    return {
+      activeId: state.activeId,
+      image: { ...state.image },
+      transform: state.transform ? { ...state.transform } : null,
+      imageSelected: state.imageSelected,
+      adjust: { ...state.adjust },
+      objectUrl: currentObjectUrl,
+    };
+  }
+  function pushUndo() {
+    undoStack.push(snapshot());
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    redoStack.length = 0;   // a fresh action invalidates the redo history
+  }
+  function applyState(s) {
+    state.activeId = s.activeId;
+    state.image = { ...s.image };
+    state.transform = s.transform ? { ...s.transform } : null;
+    state.imageSelected = s.imageSelected;
+    state.adjust = { ...s.adjust };
+    currentObjectUrl = s.objectUrl;
+    const hasImage = !!state.image.url;
+    if (hasImage) userImg.src = state.image.url;
+    sidebar.querySelectorAll('.thumb').forEach(el => {
+      const on = el.dataset.id === state.activeId;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    syncAdjustUI();
+    setEnabled(hasImage);
+    renderArtboard();
+    updateImageChrome();
+  }
+  function undo() {
+    if (!undoStack.length) return;
+    redoStack.push(snapshot());
+    applyState(undoStack.pop());
+  }
+  function redo() {
+    if (!redoStack.length) return;
+    undoStack.push(snapshot());
+    applyState(redoStack.pop());
+  }
+
+  // ════════════════════════ Wiring ════════════════════════
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) loadImageFromFile(f);
+    fileInput.value = '';
+  });
+  fitBtn.addEventListener('click', () => { if (!state.image.url) return; pushUndo(); fitCover(); applyImageTransform(); selectImage(); });
+  bwBtn.addEventListener('click', () => { if (!state.image.url) return; pushUndo(); setAdjust('bw', !state.adjust.bw); });
+  resetBtn.addEventListener('click', () => { if (!state.image.url) return; pushUndo(); resetAdjust(); });
+
+  // Sliders: one undo step per drag gesture; pointer-drag snaps to the neutral center (100).
+  let sliderUndoArmed = true;
+  let sliderPointerDown = false;
+  const SNAP_CENTER = 100, SNAP_ZONE = 4;
+  for (const key of ['brightness', 'contrast', 'saturation']) {
+    const el = adjSliders[key];
+    el.addEventListener('pointerdown', () => { sliderPointerDown = true; });
+    el.addEventListener('input', () => {
+      if (!state.image.url) return;
+      if (sliderUndoArmed) { pushUndo(); sliderUndoArmed = false; }
+      let v = Number(el.value);
+      if (sliderPointerDown && Math.abs(v - SNAP_CENTER) <= SNAP_ZONE) { v = SNAP_CENTER; el.value = String(v); }
+      setAdjust(key, v);
+    });
+    el.addEventListener('change', () => { sliderUndoArmed = true; });
+  }
+  window.addEventListener('pointerup', () => { sliderPointerDown = false; });
+
+  // Edit panel toggle — collapsed by default on mobile via CSS (.edit-body hidden unless .expanded); always open on desktop.
+  const editToggle = document.getElementById('edit-toggle');
+  editToggle.addEventListener('click', () => editPanel.classList.toggle('expanded'));
+  downloadBtn.addEventListener('click', async () => {
+    downloadBtn.disabled = true;
+    downloadBtn.classList.add('exporting');
+    const labelEl = downloadBtn.querySelector('.btn-label');
+    const label = labelEl.textContent;
+    labelEl.textContent = 'Salvestan…';
+    try { await download(); }
+    catch (err) { console.error(err); alert('Allalaadimine ebaõnnestus: ' + err.message); }
+    finally { labelEl.textContent = label; downloadBtn.disabled = false; downloadBtn.classList.remove('exporting'); }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); }
+  });
+
+  // Click-outside deselects the image (mirrors Geenius)
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.bottom-bar, .image-chrome, #user-image, .sidebar, .top-actions')) return;
+    deselectImage();
+  });
+
+  // Drag-and-drop upload
+  let dragDepth = 0;
+  const hasFileItem = (e) => !!(e.dataTransfer && Array.from(e.dataTransfer.items || []).some(i => i.kind === 'file'));
+  canvasArea.addEventListener('dragenter', (e) => {
+    if (!hasFileItem(e)) return;
+    e.preventDefault(); dragDepth++; canvasArea.classList.add('drop-target');
+  });
+  canvasArea.addEventListener('dragover', (e) => { if (hasFileItem(e)) e.preventDefault(); });
+  canvasArea.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; canvasArea.classList.remove('drop-target'); } });
+  canvasArea.addEventListener('drop', (e) => {
+    dragDepth = 0; canvasArea.classList.remove('drop-target');
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) { e.preventDefault(); loadImageFromFile(f); }
+  });
+
+  // ════════════════════════ Boot ════════════════════════
+  try {
+    const savedId = localStorage.getItem('onusano:template');
+    if (savedId && tmplById[savedId]) state.activeId = savedId;
+  } catch (e) {}
+  buildSidebar();
+  renderArtboard();
+  applyScale();
+  setEnabled(false);
+  document.getElementById('copyright').textContent = 'Onu Sano © ' + new Date().getFullYear();
+  const activeThumb = sidebar.querySelector('.thumb.active');
+  if (activeThumb) activeThumb.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  </script>
+</body>
+</html>
