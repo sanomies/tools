@@ -174,7 +174,9 @@
     cursor: pointer;
   }
   .adjust-slider:disabled { cursor: default; }
-  .adjust-actions { display: flex; gap: 8px; }
+  /* Pad above the action buttons by one adjust-head + intra-row gap, so the
+     visual gap above the buttons matches the gap between "Edit" and the first slider. */
+  .adjust-actions { display: flex; gap: 8px; margin-top: 20px; }
   .adjust-actions .btn { flex: 1 1 0; justify-content: center; padding: 7px 8px; font-size: 12px; }
 
   /* Main column wraps canvas + bottom bar */
@@ -433,6 +435,15 @@
 </style>
 </head>
 <body>
+  <!-- Inline SVG filter for the Temperature slider — scales R/B channels for a subtle Figma-style cast (matrix updated live by updateTempMatrix). Referenced via url(#temp-filter) from both CSS preview and canvas export. -->
+  <svg width="0" height="0" style="position:absolute;" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="temp-filter" color-interpolation-filters="sRGB">
+        <feColorMatrix id="temp-matrix" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+      </filter>
+    </defs>
+  </svg>
+
   <!-- ════════════════════════ SIDEBAR (templates) ════════════════════════ -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">Podcastid</div>
@@ -463,6 +474,14 @@
           <span class="adjust-val" id="val-saturation">100</span>
         </div>
         <input class="adjust-slider" id="adj-saturation" type="range" min="0" max="200" step="1" value="100" disabled>
+      </div>
+      <div class="adjust-row">
+        <div class="adjust-head">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>
+          <span class="adjust-name">Temperature</span>
+          <span class="adjust-val" id="val-temperature">0</span>
+        </div>
+        <input class="adjust-slider" id="adj-temperature" type="range" min="-100" max="100" step="1" value="0" disabled>
       </div>
       <div class="adjust-actions">
         <button class="btn icon" id="bw-toggle" type="button" title="Black and white">
@@ -550,6 +569,7 @@
     { id:'toidujutud',        name:'Toidujutud',       layers:[IMG, 'overlays/toidujutud.png'] },
     { id:'momentum',          name:'momentum',         layers:[IMG, 'overlays/momentum.png'] },
     { id:'vorkpallivonked',   name:'Võrkpallivõnked',  layers:[IMG, 'overlays/v6rkpalliv6nked-overlay.png'] },
+    { id:'meid-yhendab-motokross', name:'Meid ühendab motokross', layers:[IMG, 'overlays/meid-yhendab-motokross.png'] },
   ];
   const ASSET = 'assets/';
   const MAX_VIEW_SCALE = 0.8;
@@ -561,7 +581,7 @@
     image: { url: null, naturalW: 0, naturalH: 0, imgEl: null },
     transform: null,        // { x, y, w, h } bounding box in 1920×1080 output coords
     imageSelected: false,
-    adjust: { brightness: 100, contrast: 100, saturation: 100, bw: false },  // percent (100 = neutral)
+    adjust: { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false },
   };
   let viewScale = 1;
   let dragState = null;
@@ -585,14 +605,16 @@
   const resetBtn    = document.getElementById('adj-reset');
   const editPanel   = document.getElementById('edit-panel');
   const adjSliders  = {
-    brightness: document.getElementById('adj-brightness'),
-    contrast:   document.getElementById('adj-contrast'),
-    saturation: document.getElementById('adj-saturation'),
+    brightness:  document.getElementById('adj-brightness'),
+    contrast:    document.getElementById('adj-contrast'),
+    saturation:  document.getElementById('adj-saturation'),
+    temperature: document.getElementById('adj-temperature'),
   };
   const adjVals     = {
-    brightness: document.getElementById('val-brightness'),
-    contrast:   document.getElementById('val-contrast'),
-    saturation: document.getElementById('val-saturation'),
+    brightness:  document.getElementById('val-brightness'),
+    contrast:    document.getElementById('val-contrast'),
+    saturation:  document.getElementById('val-saturation'),
+    temperature: document.getElementById('val-temperature'),
   };
   const downloadBtn = document.getElementById('download-btn');
   const tools       = document.getElementById('tools');
@@ -743,9 +765,21 @@
   }
 
   // ════════════════════════ Photo adjustments (CSS filter ≡ canvas ctx.filter) ════════════════════════
+  // Temperature is applied via an SVG feColorMatrix that scales the R and B channels
+  // (warm = more R, less B; cool = less R, more B). This is the same technique Figma
+  // uses, and unlike sepia/hue-rotate it produces a subtle cast without crushing colors.
+  const tempMatrixEl = document.getElementById('temp-matrix');
+  function updateTempMatrix(temp) {
+    const t = temp / 500;            // ±100 slider → ±0.2 channel shift max
+    tempMatrixEl.setAttribute('values',
+      `${1 + t} 0 0 0 0  0 1 0 0 0  0 0 ${1 - t} 0 0  0 0 0 1 0`);
+  }
+
   function filterString() {
     const a = state.adjust;
-    const parts = [`brightness(${a.brightness}%)`, `contrast(${a.contrast}%)`, `saturate(${a.saturation}%)`];
+    const parts = [];
+    if (a.temperature !== 0) parts.push('url(#temp-filter)');
+    parts.push(`brightness(${a.brightness}%)`, `contrast(${a.contrast}%)`, `saturate(${a.saturation}%)`);
     if (a.bw) parts.push('grayscale(1)');
     return parts.join(' ');
   }
@@ -753,19 +787,21 @@
     state.adjust[key] = value;
     if (key === 'bw') bwBtn.classList.toggle('active', value);
     else adjVals[key].textContent = value;
+    if (key === 'temperature') updateTempMatrix(value);
     applyImageTransform();
   }
   function resetAdjust() {
-    state.adjust = { brightness: 100, contrast: 100, saturation: 100, bw: false };
+    state.adjust = { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false };
     syncAdjustUI();
     applyImageTransform();
   }
   function syncAdjustUI() {
     const a = state.adjust;
-    for (const key of ['brightness', 'contrast', 'saturation']) {
+    for (const key of ['brightness', 'contrast', 'saturation', 'temperature']) {
       adjSliders[key].value = a[key];
       adjVals[key].textContent = a[key];
     }
+    updateTempMatrix(a.temperature);
     bwBtn.classList.toggle('active', a.bw);
   }
 
@@ -782,7 +818,7 @@
       state.image.naturalW = probe.naturalWidth;
       state.image.naturalH = probe.naturalHeight;
       state.image.imgEl = probe;
-      state.adjust = { brightness: 100, contrast: 100, saturation: 100, bw: false };
+      state.adjust = { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false };
       syncAdjustUI();
       userImg.src = currentObjectUrl;
       fitHeight();
@@ -800,6 +836,7 @@
     adjSliders.brightness.disabled = !hasImage;
     adjSliders.contrast.disabled = !hasImage;
     adjSliders.saturation.disabled = !hasImage;
+    adjSliders.temperature.disabled = !hasImage;
     editPanel.classList.toggle('disabled', !hasImage);
     downloadBtn.disabled = !hasImage;
     document.getElementById('toggle-group').style.opacity = hasImage ? '1' : '0.5';
@@ -1089,18 +1126,20 @@
   bwBtn.addEventListener('click', () => { if (!state.image.url) return; pushUndo(); setAdjust('bw', !state.adjust.bw); });
   resetBtn.addEventListener('click', () => { if (!state.image.url) return; pushUndo(); resetAdjust(); });
 
-  // Sliders: one undo step per drag gesture; pointer-drag snaps to the neutral center (100).
+  // Sliders: one undo step per drag gesture; pointer-drag snaps to each slider's neutral value.
   let sliderUndoArmed = true;
   let sliderPointerDown = false;
-  const SNAP_CENTER = 100, SNAP_ZONE = 4;
-  for (const key of ['brightness', 'contrast', 'saturation']) {
+  const SLIDER_NEUTRAL = { brightness: 100, contrast: 100, saturation: 100, temperature: 0 };
+  const SNAP_ZONE = 4;
+  for (const key of ['brightness', 'contrast', 'saturation', 'temperature']) {
     const el = adjSliders[key];
+    const neutral = SLIDER_NEUTRAL[key];
     el.addEventListener('pointerdown', () => { sliderPointerDown = true; });
     el.addEventListener('input', () => {
       if (!state.image.url) return;
       if (sliderUndoArmed) { pushUndo(); sliderUndoArmed = false; }
       let v = Number(el.value);
-      if (sliderPointerDown && Math.abs(v - SNAP_CENTER) <= SNAP_ZONE) { v = SNAP_CENTER; el.value = String(v); }
+      if (sliderPointerDown && Math.abs(v - neutral) <= SNAP_ZONE) { v = neutral; el.value = String(v); }
       setAdjust(key, v);
     });
     el.addEventListener('change', () => { sliderUndoArmed = true; });
