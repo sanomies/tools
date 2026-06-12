@@ -1,0 +1,4646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insta Video · Text overlay tool</title>
+<meta name="description" content="Upload a video, add text overlays, export with text burned in. Instagram-ready sizes.">
+<style>
+  /* ───── Local fonts (loaded from /assets/fonts) ───── */
+  @font-face { font-family: 'MB Empire'; font-weight: 100; font-style: normal; src: url('assets/fonts/MB-empire/MBEmpire-Thin.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 100; font-style: italic; src: url('assets/fonts/MB-empire/MBEmpire-ThinItalic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 300; font-style: normal; src: url('assets/fonts/MB-empire/MBEmpire-Light.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 300; font-style: italic; src: url('assets/fonts/MB-empire/MBEmpire-LightItalic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 400; font-style: normal; src: url('assets/fonts/MB-empire/MBEmpire-Regular.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 400; font-style: italic; src: url('assets/fonts/MB-empire/MBEmpire-Italic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 500; font-style: normal; src: url('assets/fonts/MB-empire/MBEmpire-Medium.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 500; font-style: italic; src: url('assets/fonts/MB-empire/MBEmpire-MediumItalic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 700; font-style: normal; src: url('assets/fonts/MB-empire/MBEmpire-Bold.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 700; font-style: italic; src: url('assets/fonts/MB-empire/MBEmpire-BoldItalic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 900; font-style: normal; src: url('assets/fonts/MB-empire/MBEmpire-Black.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'MB Empire'; font-weight: 900; font-style: italic; src: url('assets/fonts/MB-empire/MBEmpire-BlackItalic.otf') format('opentype'); font-display: swap; }
+
+  @font-face { font-family: 'Grifo S'; font-weight: 300; font-style: normal; src: url('assets/fonts/Grifo-S/GrifoS-Light.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifo S'; font-weight: 300; font-style: italic; src: url('assets/fonts/Grifo-S/GrifoS-LightItalic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifo S'; font-weight: 400; font-style: normal; src: url('assets/fonts/Grifo-S/GrifoS.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifo S'; font-weight: 400; font-style: italic; src: url('assets/fonts/Grifo-S/GrifoS-Italic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifo S'; font-weight: 500; font-style: normal; src: url('assets/fonts/Grifo-S/GrifoS-Medium.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifo S'; font-weight: 500; font-style: italic; src: url('assets/fonts/Grifo-S/GrifoS-MediumItalic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifo S'; font-weight: 700; font-style: normal; src: url('assets/fonts/Grifo-S/GrifoS-Bold.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifo S'; font-weight: 700; font-style: italic; src: url('assets/fonts/Grifo-S/GrifoS-BoldItalic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifo S'; font-weight: 900; font-style: normal; src: url('assets/fonts/Grifo-S/GrifoS-Black.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifo S'; font-weight: 900; font-style: italic; src: url('assets/fonts/Grifo-S/GrifoS-BlackItalic.otf') format('opentype'); font-display: swap; }
+
+  @font-face { font-family: 'Grifinito L'; font-weight: 300; font-style: normal; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20L%20Light.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito L'; font-weight: 300; font-style: italic; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20L%20Light%20Italic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito L'; font-weight: 400; font-style: normal; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20L%20Regular.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito L'; font-weight: 400; font-style: italic; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20L%20Italic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito L'; font-weight: 500; font-style: normal; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20L%20Medium.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito L'; font-weight: 500; font-style: italic; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20L%20Medium%20Italic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito L'; font-weight: 700; font-style: normal; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20L%20Bold.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito L'; font-weight: 700; font-style: italic; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20L%20Bold%20Italic.otf') format('opentype'); font-display: swap; }
+
+  @font-face { font-family: 'Grifinito M'; font-weight: 300; font-style: normal; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20M%20Light.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito M'; font-weight: 300; font-style: italic; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20M%20Light%20Italic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito M'; font-weight: 400; font-style: normal; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20M%20Regular.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito M'; font-weight: 400; font-style: italic; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20M%20Italic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito M'; font-weight: 500; font-style: normal; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20M%20Medium.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito M'; font-weight: 500; font-style: italic; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20M%20Medium%20Italic.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito M'; font-weight: 700; font-style: normal; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20M%20Bold.otf') format('opentype'); font-display: swap; }
+  @font-face { font-family: 'Grifinito M'; font-weight: 700; font-style: italic; src: url('assets/fonts/Grifinito/RUIA%20-%20Grifinito%20M%20Bold%20Italic.otf') format('opentype'); font-display: swap; }
+</style>
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  Insta Video — text overlay tool
+  ───────────────────────────────────────────────────────────────────────────
+  Architecture
+    Single-file vanilla JS. Canvas is the SOURCE OF TRUTH for both preview
+    and export — every frame is rendered through one draw() function
+    (drawImage(video) + fillText for layers), so "what you see is what you
+    get" by construction.
+
+  Export
+    canvas.captureStream() → MediaRecorder, mixing the source video's
+    audio track via videoEl.captureStream(). Real-time recording: a 30s
+    clip takes ~30s to export. We pick the best mimeType the current
+    browser supports (mp4 in Safari, webm in Chrome/Firefox).
+
+  Why not ffmpeg.wasm
+    ffmpeg.wasm produces deterministic MP4 and is faster than real-time,
+    but it needs SharedArrayBuffer (cross-origin isolation headers) and a
+    ~25MB WASM download — too brittle for a single-file tool meant to be
+    double-clicked. MediaRecorder is the reliable browser-native path.
+
+  Known browser limitations (documented for the user)
+    • Audio capture from <video> via captureStream() works in Chrome/Firefox
+      and recent Safari. If your browser lacks it, export will be silent.
+    • Output container is webm (vp9/opus) on Chromium/Firefox, mp4 (h264/aac)
+      on Safari. The download extension reflects whatever the browser produced.
+    • Exporting runs the video at 1× speed; closing the tab cancels it.
+  ═══════════════════════════════════════════════════════════════════════════
+-->
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Helvetica Neue', Arial, sans-serif;
+    background: #1d1d20;
+    color: #e8e8ed;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    user-select: none;
+    color-scheme: dark;
+  }
+
+  /* ───── Left sidebar — bento-style cards on the body background ───── */
+  .sidebar {
+    flex: 0 0 auto;
+    width: 280px;
+    background: transparent;          /* let the body bg show between cards */
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .bento {
+    background: #18181b;
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;                    /* allows internal scroll children */
+  }
+  /* The layers card flex-fills the remaining vertical space and scrolls its
+     own layer-list when there are many entries. The Style card is pinned
+     below at its natural height (up to its own max-height). */
+  .bento-format  { flex: 0 0 auto; }
+  .bento-layers  { flex: 1 1 auto; }
+  .bento-layers .layer-list-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-right: -4px;
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3e transparent;
+  }
+  .bento-layers .layer-list-scroll::-webkit-scrollbar { width: 6px; }
+  .bento-layers .layer-list-scroll::-webkit-scrollbar-thumb { background: #3a3a3e; border-radius: 3px; }
+  .bento-layers .layer-list-scroll::-webkit-scrollbar-thumb:hover { background: #50505a; }
+  .section-header {
+    font-size: 11px;
+    color: #86868b;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-weight: 600;
+    margin: 0;
+    padding: 0 2px;
+  }
+
+  /* Size templates (5 IG presets) */
+  .size-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .size-card {
+    appearance: none;
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .size-card .swatch {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #232327;
+    border: 2px solid #2f2f33;
+    border-radius: 6px;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .size-card:hover .swatch { border-color: #5a5a62; transform: translateY(-1px); }
+  .size-card.active .swatch { border-color: #A88F4C; }
+  .size-card .swatch-inner {
+    background: #34343a;
+    border-radius: 2px;
+  }
+  .size-card .swatch-label {
+    font-size: 10px;
+    color: #b8b8c0;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+  }
+  .size-card.active .swatch-label { color: #ffffff; }
+
+  /* Layer list */
+  .layer-list { display: flex; flex-direction: column; gap: 3px; }
+  .layer-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;        /* 7 → 4 = -6px row height; intra-row icon dictates min */
+    background: #232327;
+    border: 1px solid #2f2f33;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .layer-row:hover { border-color: #5a5a62; }
+  .layer-row.active { border-color: #A88F4C; background: #262630; }
+  .layer-row .layer-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 12px;
+    color: #e8e8ed;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .layer-row .layer-actions { display: flex; gap: 2px; }
+  .layer-row .layer-kind {
+    width: 14px; height: 14px;
+    color: #86868b;
+    flex: 0 0 auto;
+  }
+  .layer-row.active .layer-kind { color: #A88F4C; }
+  .layer-row.dragging { opacity: 0.4; }
+  .layer-row.primary { box-shadow: inset 0 0 0 1px #A88F4C; }
+  .layer-row.drop-before { box-shadow: inset 0 2px 0 0 #A88F4C; }
+  .layer-row.drop-after  { box-shadow: inset 0 -2px 0 0 #A88F4C; }
+  .layer-icon-btn {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: #86868b;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .layer-icon-btn:hover { color: #fff; background: rgba(255,255,255,0.06); }
+  .layer-icon-btn .ico { width: 13px; height: 13px; }
+  .empty-hint {
+    font-size: 11px;
+    color: #86868b;
+    text-align: center;
+    padding: 10px 4px;
+    line-height: 1.5;
+  }
+
+  /* Edit panel (Style bento card) — inherits .bento card chrome, just caps
+     its own height so a long shadow expansion doesn't push everything else. */
+  .edit-panel {
+    flex: 0 0 auto;
+    max-height: 50vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3e transparent;
+  }
+  .edit-panel::-webkit-scrollbar { width: 6px; }
+  .edit-panel::-webkit-scrollbar-thumb { background: #3a3a3e; border-radius: 3px; }
+  .edit-panel.disabled { opacity: 0.45; pointer-events: none; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label {
+    font-size: 11px;
+    color: #c8c8d0;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .field-label .val { margin-left: auto; color: #86868b; font-size: 10px; font-variant-numeric: tabular-nums; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .input, .select {
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+    background: #232327;
+    border: 1px solid #2f2f33;
+    color: #e8e8ed;
+    padding: 6px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    width: 100%;
+    outline: none;
+    font-family: inherit;
+  }
+  .input:focus, .select:focus { border-color: #A88F4C; }
+  .select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2386868b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 24px;
+  }
+  textarea.input { resize: vertical; min-height: 54px; font-family: inherit; }
+
+  /* Color row = native swatch + HEX text input.
+     The user sees + edits #RRGGBB while the underlying <input type="color"> drives the picker. */
+  .color-row {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+  }
+  .color-row .color-swatch {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    background: #232327;
+    border: 1px solid #2f2f33;
+    border-radius: 5px;
+    padding: 2px;
+    cursor: pointer;
+  }
+  .color-row .color-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-row .color-swatch::-webkit-color-swatch { border: none; border-radius: 3px; }
+  .color-row .color-swatch::-moz-color-swatch { border: none; border-radius: 3px; }
+  .color-row .hex-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+  }
+
+  /* Slider */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: #34343a;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    margin: 0;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #A88F4C;
+    border: 2px solid #18181b;
+    cursor: pointer;
+  }
+  .slider::-moz-range-thumb {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #A88F4C;
+    border: 2px solid #18181b;
+    cursor: pointer;
+  }
+
+  /* Align/weight segmented buttons */
+  .segmented { display: flex; gap: 0; border: 1px solid #2f2f33; border-radius: 6px; overflow: hidden; background: #232327; }
+  .seg-btn {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: #b8b8c0;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    flex: 1 1 0;
+    padding: 6px 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    line-height: 1;
+  }
+  .seg-btn .ico { width: 13px; height: 13px; }
+  .seg-btn + .seg-btn { border-left: 1px solid #2f2f33; }
+  .seg-btn:hover { color: #fff; }
+  .seg-btn.active { background: #A88F4C; color: #fff; }
+
+  /* Checkbox-style toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #c8c8d0;
+    font-weight: 500;
+  }
+  .toggle-row input { accent-color: #A88F4C; }
+
+  /* ───── Main column ───── */
+  .main-column {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: radial-gradient(circle at 50% 30%, #2a2a2e 0%, #1d1d20 70%);
+    position: relative;
+  }
+
+  .canvas-area {
+    flex: 1 1 auto;
+    min-height: 0;          /* allow flex to shrink past intrinsic content size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* No overflow:hidden — the stage shadow needs to bleed into the
+       bottom-bar area so there's no visible seam. */
+    position: relative;
+    /* Top padding reserves space for the canvas-tools bar (top: 16 + 32px
+       circle + small breathing) so the stage never overlaps it. Kept
+       conservative so short viewports still show the bottom transport. */
+    padding: 56px 24px 16px;
+  }
+  .stage {
+    position: relative;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    background: #000;
+    line-height: 0;
+    touch-action: none;
+  }
+  .stage canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+  /* Body has user-select:none for a chrome-like feel; restore selection inside form controls
+     so users can actually type and select text in the layer-content / inputs. */
+  .input, textarea.input, .select {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  /* Shared selection chrome — video, rect, and text all share the same 8-handle
+     layout (Geenius / kadreerija-style). Text layers hide edge handles via
+     `.layer-chrome.kind-text`; only corners scale a text layer (font-size). */
+  .chrome {
+    position: absolute;
+    border: 2px solid #A88F4C;
+    pointer-events: none;
+    z-index: 10;
+    box-sizing: border-box;
+  }
+  .chrome.hidden { display: none; }
+  .chrome .handle {
+    position: absolute;
+    width: 14px; height: 14px;
+    background: #fff;
+    border: 2px solid #A88F4C;
+    border-radius: 2px;
+    pointer-events: auto;
+    touch-action: none;
+  }
+  .chrome .handle[data-corner="nw"] { left: -8px; top: -8px;    cursor: nwse-resize; }
+  .chrome .handle[data-corner="ne"] { right: -8px; top: -8px;   cursor: nesw-resize; }
+  .chrome .handle[data-corner="sw"] { left: -8px; bottom: -8px; cursor: nesw-resize; }
+  .chrome .handle[data-corner="se"] { right: -8px; bottom: -8px; cursor: nwse-resize; }
+  .chrome .handle[data-corner="n"]  { top: -8px;    left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .chrome .handle[data-corner="s"]  { bottom: -8px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .chrome .handle[data-corner="w"]  { left: -8px;   top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+  .chrome .handle[data-corner="e"]  { right: -8px;  top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+  /* Text layers WITHOUT a constrained box only expose corner handles —
+     those resize the font uniformly. Text WITH a box (drawn via the text
+     tool drag) gets all 8 handles, which resize the box and re-wrap content
+     without touching font size. */
+  .layer-chrome.kind-text:not(.has-box) .handle[data-corner="n"],
+  .layer-chrome.kind-text:not(.has-box) .handle[data-corner="s"],
+  .layer-chrome.kind-text:not(.has-box) .handle[data-corner="w"],
+  .layer-chrome.kind-text:not(.has-box) .handle[data-corner="e"] { display: none; }
+  /* Multi-selection: the chrome wraps the union bbox of all selected layers.
+     The four CORNER handles are live and drive a uniform scale of every
+     selected layer about the opposite corner. The four edge handles stay
+     hidden — a single-axis stretch on a heterogeneous group is rarely what
+     the user wants and is more readable as "drag a corner". */
+  .layer-chrome.multi .handle[data-corner="n"],
+  .layer-chrome.multi .handle[data-corner="s"],
+  .layer-chrome.multi .handle[data-corner="w"],
+  .layer-chrome.multi .handle[data-corner="e"] { display: none; }
+  /* Multi-select rotation: the grips drive a group rotation about the
+     union bbox centre — each layer orbits + spins by the same angle. */
+
+  /* Rotate grip — invisible 22×22 hit zone just outside each corner. The
+     curved-arrow icon only reveals on hover, on a translucent black disc.
+     Grab cursor signals the rotate affordance. */
+  .layer-chrome .rotate-grip {
+    position: absolute;
+    width: 22px; height: 22px;
+    pointer-events: auto;
+    cursor: grab;
+    touch-action: none;
+    background: transparent;
+    color: transparent;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s ease, color 0.1s ease;
+  }
+  .layer-chrome .rotate-grip:hover {
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+  }
+  .layer-chrome .rotate-grip:active { cursor: grabbing; background: rgba(0,0,0,0.6); color: #fff; }
+  .layer-chrome .rotate-grip .rotate-ico { width: 12px; height: 12px; display: block; }
+  /* Mirror the icon so each corner reads as rotating outward from the bbox. */
+  .layer-chrome .rotate-grip[data-corner="ne"] .rotate-ico { transform: scaleX(-1); }
+  .layer-chrome .rotate-grip[data-corner="sw"] .rotate-ico { transform: scaleY(-1); }
+  .layer-chrome .rotate-grip[data-corner="se"] .rotate-ico { transform: scale(-1, -1); }
+  .layer-chrome .rotate-grip[data-corner="nw"] { left: -22px; top: -22px; }
+  .layer-chrome .rotate-grip[data-corner="ne"] { right: -22px; top: -22px; }
+  .layer-chrome .rotate-grip[data-corner="se"] { right: -22px; bottom: -22px; }
+  .layer-chrome .rotate-grip[data-corner="sw"] { left: -22px; bottom: -22px; }
+
+  /* Smart guides */
+  .guide { position: absolute; background: #ff2bbd; pointer-events: none; z-index: 11; }
+  .guide-v { width: 1px; top: -24px; bottom: -24px; }
+  .guide-h { height: 1px; left: -24px; right: -24px; }
+  .guide.hidden { display: none; }
+
+  /* Floating contextual text toolbar (near the selected layer). */
+  .text-toolbar {
+    position: absolute;
+    z-index: 220;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: #18181b;
+    border: 1px solid #2a2a2e;
+    border-radius: 8px;
+    padding: 4px 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    pointer-events: auto;
+    font-size: 12px;
+  }
+  .text-toolbar.hidden { display: none; }
+  .text-toolbar .tt-divider { width: 1px; height: 18px; background: #2f2f33; margin: 0 2px; }
+  .text-toolbar .tt-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    color: #e8e8ed;
+    font: inherit;
+    font-family: inherit;
+    padding: 4px 18px 4px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    min-width: 92px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2386868b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+  }
+  .text-toolbar .tt-select:hover { background-color: #232327; }
+  .text-toolbar .tt-num {
+    appearance: textfield;
+    -moz-appearance: textfield;
+    background: transparent;
+    border: none;
+    color: #e8e8ed;
+    font: inherit;
+    font-family: inherit;
+    width: 40px;
+    padding: 4px 0 4px 4px;
+    text-align: center;
+    border-radius: 4px 0 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .text-toolbar .tt-num::-webkit-outer-spin-button,
+  .text-toolbar .tt-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .text-toolbar .tt-num:hover { background: #232327; }
+  .text-toolbar .tt-num:focus { outline: none; background: #232327; }
+
+  /* Click-to-step / drag-to-scrub arrows next to a number input. */
+  .text-toolbar .tt-spinner { display: inline-flex; align-items: center; }
+  .text-toolbar .tt-arrows {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0;
+    margin-left: -1px;
+    cursor: ns-resize;
+    user-select: none;
+    touch-action: none;
+    border-radius: 0 4px 4px 0;
+    padding: 1px 2px;
+  }
+  .text-toolbar .tt-arrows:hover { background: #232327; }
+  .text-toolbar .tt-arrow {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: #86868b;
+    width: 12px;
+    height: 10px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    pointer-events: none; /* parent (.tt-arrows) owns pointer events for click+drag dispatch */
+  }
+  .text-toolbar .tt-arrows:hover .tt-arrow { color: #e8e8ed; }
+  .text-toolbar .tt-color-wrap {
+    width: 28px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .text-toolbar .tt-color-wrap:hover { background: #232327; }
+  .text-toolbar .tt-color {
+    width: 20px; height: 20px;
+    border-radius: 3px;
+    border: 1px solid #3a3a3e;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .text-toolbar .tt-color::-webkit-color-swatch-wrapper { padding: 0; }
+  .text-toolbar .tt-color::-webkit-color-swatch { border: none; border-radius: 2px; }
+  .text-toolbar .tt-hex {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: #e8e8ed;
+    font: inherit;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    width: 64px;
+    padding: 4px 4px;
+    text-align: left;
+    border-radius: 4px;
+  }
+  .text-toolbar .tt-hex:hover { background: #232327; }
+  .text-toolbar .tt-hex:focus { outline: none; background: #232327; }
+  .text-toolbar .tt-btn {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: #c8c8d0;
+    border-radius: 4px;
+    padding: 0;
+    width: 26px; height: 24px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font: inherit;
+    font-family: inherit;
+    font-weight: 600;
+  }
+  .text-toolbar .tt-btn:hover { background: #232327; color: #fff; }
+  .text-toolbar .tt-btn.active { background: #A88F4C; color: #fff; }
+  .text-toolbar .tt-btn.tt-delete:hover { background: #5a1d1d; color: #ffd0d0; }
+  .text-toolbar .tt-btn .ico { width: 14px; height: 14px; }
+  .text-toolbar .tt-align { display: inline-flex; gap: 1px; }
+
+  /* Font picker: a button that mirrors the rest of the chrome, opening a
+     menu of font families with a nested weight flyout. Used in sidebar
+     AND floating toolbar. */
+  .font-picker-btn {
+    appearance: none;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #e8e8ed;
+    font: inherit;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .font-picker-btn:hover { background: #232327; }
+  .font-picker-btn:focus { background: #232327; border-color: #2f2f33; }
+  .font-picker-btn.fp-block { width: 100%; justify-content: flex-start; }
+  .font-picker-btn .fp-fam { font-weight: 600; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
+  .font-picker-btn .fp-wt {
+    color: #86868b;
+    font-size: 11px;
+    margin-left: 2px;
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .font-picker-btn .fp-chev {
+    width: 10px; height: 10px;
+    color: #86868b;
+    margin-left: auto;
+    flex: 0 0 auto;
+  }
+  /* Menus — fixed-positioned, rendered to <body>. */
+  .font-menu, .font-weights-menu {
+    position: fixed;
+    z-index: 1000;
+    background: #18181b;
+    border: 1px solid #2a2a2e;
+    border-radius: 10px;
+    padding: 4px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+    min-width: 180px;
+    user-select: none;
+  }
+  .font-menu.hidden, .font-weights-menu.hidden { display: none; }
+  .font-row, .weight-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #e8e8ed;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+  .font-row:hover, .weight-row:hover { background: #2a2a2e; }
+  .font-row.active, .weight-row.active { background: #A88F4C; color: #fff; }
+  .font-row.active .check, .weight-row.active .check { color: #fff; }
+  .font-row .check, .weight-row .check {
+    width: 12px;
+    text-align: center;
+    color: #A88F4C;
+    flex: 0 0 12px;
+    font-size: 12px;
+  }
+  .font-row .name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+  .font-row .arrow {
+    color: #86868b;
+    font-size: 11px;
+    flex: 0 0 auto;
+  }
+  .font-row.active .arrow { color: #fff; }
+  .weight-row .label { flex: 1 1 auto; }
+
+  /* Inline text editor — visually overlays the canvas-drawn text while editing. */
+  .inline-editor {
+    position: absolute;
+    z-index: 12;
+    margin: 0;
+    padding: 0;
+    border: 1px dashed #A88F4C;
+    background: rgba(20, 20, 24, 0.25);
+    color: inherit;
+    outline: none;
+    resize: none;
+    line-height: 1.2;
+    letter-spacing: normal;
+    overflow: hidden;
+    white-space: pre;
+    caret-color: #A88F4C;
+    box-sizing: content-box;
+    font-family: inherit;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .inline-editor.hidden { display: none; }
+
+  .canvas-area.drop-target::after {
+    content: "Drop video here";
+    position: absolute;
+    inset: 24px;
+    border: 3px dashed #A88F4C;
+    border-radius: 14px;
+    background: rgba(168, 143, 76, 0.07);
+    color: #A88F4C;
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* Top-right export */
+  .top-actions {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    display: flex;
+    gap: 8px;
+    z-index: 200;
+  }
+  .top-actions .btn { box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+
+  /* Canvas tools — three circular icon buttons centered above the canvas.
+     Same vertical baseline as the Export button, same overall height. */
+  .canvas-tools {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 200;
+  }
+  .canvas-tool {
+    appearance: none;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #34343a;
+    border: 1px solid #4a4a4e;
+    color: #c8c8d0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    font: inherit;
+    font-family: inherit;
+  }
+  .canvas-tool:hover { background: #404048; color: #fff; }
+  .canvas-tool:active { background: #2c2c30; }
+  .canvas-tool.active { background: #A88F4C; border-color: #A88F4C; color: #fff; }
+  .canvas-tool:disabled { opacity: 0.5; cursor: not-allowed; }
+  .canvas-tool svg { width: 14px; height: 14px; display: block; }
+  .canvas-tool .ct-letter { font-size: 14px; font-weight: 700; line-height: 1; }
+
+  /* ───── Bottom: timeline + transport ───── */
+  /* Sits on top of the main-column gradient — no separate background or border,
+     so the canvas area and the transport read as one continuous surface. */
+  .bottom-bar {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 22px 16px;
+    min-height: 88px;
+  }
+  .transport-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .transport-row .time {
+    font-size: 12px;
+    color: #c8c8d0;
+    font-variant-numeric: tabular-nums;
+    min-width: 96px;
+  }
+  .transport-row .time .total { color: #86868b; }
+  .transport-row .spacer { flex: 1 1 auto; }
+  /* Upload button gets extra left-margin so the gap between the timeline
+     and the upload button matches the gap on the left side (bottom-bar
+     padding-left of 22px ⇒ extra 12px on top of the 10px row gap). */
+  .transport-row .upload-btn { margin-left: 12px; }
+
+  .timeline {
+    position: relative;
+    height: 22px;
+    flex: 1 1 auto;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .timeline-track {
+    position: absolute;
+    left: 0; right: 0;
+    top: 10px;
+    height: 4px;
+    background: #2f2f33;
+    border-radius: 2px;
+  }
+  .timeline-progress {
+    position: absolute;
+    left: 0;
+    top: 10px;
+    height: 4px;
+    background: #A88F4C;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  /* Trimmed regions — darkened overlays whose inner edge is the trim handle.
+     Drag the overlay to drag the handle. */
+  .timeline-trim {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    background: rgba(13, 13, 15, 0.6);
+    border-radius: 3px;
+    cursor: ew-resize;
+    z-index: 3;
+    touch-action: none;
+  }
+  .timeline-trim::after {
+    content: '';
+    position: absolute;
+    top: -3px; bottom: -3px;
+    width: 3px;
+    background: #A88F4C;
+    border-radius: 2px;
+  }
+  .timeline-trim.left  { left: 0; }
+  .timeline-trim.left::after  { right: -1px; }
+  .timeline-trim.right { right: 0; }
+  .timeline-trim.right::after { left: -1px; }
+  /* If a trim handle has zero width (no trim on that side) we still need its
+     drag target visible enough to grab — show the gold bar only. */
+  .timeline-trim:not(.dragging):hover { background: rgba(13, 13, 15, 0.75); }
+  .timeline-playhead {
+    position: absolute;
+    top: -2px;
+    width: 2px;
+    height: 26px;
+    background: #fff;
+    border-radius: 1px;
+    pointer-events: none;
+    transform: translateX(-1px);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+  }
+
+  /* Transport buttons */
+  .btn {
+    appearance: none;
+    border: 1px solid #4a4a4e;
+    background: #34343a;
+    color: #e8e8ed;
+    border-radius: 999px;
+    padding: 8px 13px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #404048; }
+  .btn:active { background: #2c2c30; }
+  .btn.primary { background: #A88F4C; border-color: #A88F4C; color: white; }
+  .btn.primary:hover { background: #8D7740; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn .ico { width: 15px; height: 15px; display: block; flex: 0 0 auto; }
+  .btn.icon-only { padding: 8px; }
+  .btn.icon-only .ico { width: 16px; height: 16px; }
+  .btn.icon-only.active { background: #A88F4C; border-color: #A88F4C; color: white; }
+
+  .btn:focus-visible,
+  .seg-btn:focus-visible,
+  .size-card:focus-visible,
+  .layer-row:focus-visible,
+  .slider:focus-visible,
+  .input:focus-visible,
+  .select:focus-visible {
+    outline: 2px solid #C8B27A;
+    outline-offset: 2px;
+  }
+
+  /* Add layer + transport "+" row */
+  .add-layer-btn {
+    appearance: none;
+    border: 1px dashed #3a3a3e;
+    background: transparent;
+    color: #b8b8c0;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: inherit;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .add-layer-btn:hover { border-color: #A88F4C; color: #fff; }
+  .add-layer-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .add-layer-btn .ico { width: 13px; height: 13px; }
+  /* Tool button — active state shows the user the current tool. */
+  .tool-btn.active { border-color: #A88F4C; background: #A88F4C; color: #fff; border-style: solid; }
+  .tool-btn.active .ico { color: #fff; }
+  /* Destructive delete in the sidebar Style panel — red on hover. */
+  .ep-delete-btn:hover { border-color: #b04848; color: #ffd0d0; background: rgba(176, 72, 72, 0.15); }
+
+  /* Canvas cursors per tool. */
+  .stage canvas.tool-text { cursor: text; }
+  .stage canvas.tool-rect { cursor: crosshair; }
+
+  #file-input { display: none; }
+
+  /* ───── Edit panel controls (compact, mirrors floating toolbar aesthetic) ───── */
+  .ep-select,
+  .ep-num,
+  .ep-hex {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #e8e8ed;
+    font: inherit;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    outline: none;
+  }
+  .ep-select:hover,
+  .ep-num:hover,
+  .ep-hex:hover { background: #232327; }
+  .ep-select:focus,
+  .ep-num:focus,
+  .ep-hex:focus { background: #232327; border-color: #2f2f33; }
+  .ep-select {
+    width: 100%;
+    padding-right: 24px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2386868b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    cursor: pointer;
+  }
+  .ep-num {
+    width: 56px;
+    text-align: center;
+    padding: 6px 0 6px 6px;
+    border-radius: 5px 0 0 5px;
+    border-right: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .ep-num::-webkit-outer-spin-button,
+  .ep-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .ep-num:focus { border-right: none; }
+  .ep-hex {
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    width: 92px;
+    flex: 1 1 auto;
+  }
+
+  /* Spinner (number + click/drag-arrows) — sidebar variant */
+  .ep-spinner { display: inline-flex; align-items: center; }
+  .ep-arrows {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0;
+    cursor: ns-resize;
+    user-select: none;
+    touch-action: none;
+    padding: 2px 3px;
+    border-radius: 0 5px 5px 0;
+    background: transparent;
+  }
+  .ep-spinner:hover .ep-arrows { background: #232327; }
+  .ep-arrows:hover { background: #2a2a2e; }
+  .ep-arrow {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: #86868b;
+    width: 12px;
+    height: 10px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .ep-arrows:hover .ep-arrow { color: #e8e8ed; }
+
+  /* Color swatch — small, sits next to a hex input */
+  .ep-color-swatch {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    background: #232327;
+    border: 1px solid #2f2f33;
+    border-radius: 5px;
+    padding: 2px;
+    cursor: pointer;
+  }
+  .ep-color-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+  .ep-color-swatch::-webkit-color-swatch { border: none; border-radius: 3px; }
+  .ep-color-swatch::-moz-color-swatch { border: none; border-radius: 3px; }
+
+  /* Horizontal row layout inside the edit panel. */
+  .ep-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ep-row .segmented { flex: 1 1 auto; }
+  .ep-row .slider    { flex: 1 1 auto; min-width: 0; }
+  .ep-label {
+    font-size: 11px;
+    color: #86868b;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    flex: 0 0 auto;
+  }
+  .ep-val {
+    font-size: 11px;
+    color: #86868b;
+    font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+    width: 26px;
+    text-align: right;
+  }
+  /* Editable variant — looks like the readout but accepts numeric input. */
+  input.ep-val-input {
+    appearance: textfield;
+    -moz-appearance: textfield;
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 1px 3px;
+    border-radius: 3px;
+    outline: none;
+    width: 36px;
+    font-family: inherit;
+  }
+  input.ep-val-input::-webkit-outer-spin-button,
+  input.ep-val-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input.ep-val-input:hover { background: #232327; color: #e8e8ed; }
+  input.ep-val-input:focus { background: #232327; border-color: #2f2f33; color: #e8e8ed; }
+
+  /* Export progress overlay */
+  .export-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(13,13,15,0.78);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+  }
+  .export-overlay.visible { display: flex; }
+  .export-card {
+    background: #18181b;
+    border: 1px solid #2a2a2e;
+    border-radius: 12px;
+    padding: 24px 28px;
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+  .export-card h3 { margin: 0; font-size: 14px; font-weight: 600; color: #e8e8ed; }
+  .export-card p { margin: 0; font-size: 12px; color: #86868b; line-height: 1.5; }
+  .export-progress {
+    height: 6px;
+    background: #2a2a2e;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .export-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #A88F4C;
+    border-radius: 3px;
+    transition: width 0.15s ease;
+  }
+  .export-actions { display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+  <!-- ════════════════════════ SIDEBAR ════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="bento bento-format">
+      <div class="section-header">Format</div>
+      <div class="size-grid" id="size-grid"></div>
+    </div>
+
+    <div class="bento bento-layers">
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Layers</span>
+        <span style="font-size:10px;color:#86868b;text-transform:none;letter-spacing:0;font-weight:500" id="layer-count"></span>
+      </div>
+      <div class="layer-list-scroll">
+        <div class="layer-list" id="layer-list"></div>
+      </div>
+    </div>
+
+    <!-- Style bento. Mirrors the floating toolbar's transparent + hover-fill
+         aesthetic, laid out vertically. Content edits happen inline on the
+         canvas (double-click), so there's no textarea here. -->
+    <div class="bento edit-panel disabled" id="edit-panel">
+      <div class="section-header">Style</div>
+
+      <!-- Text-only controls (.text-only). Hidden for rectangle layers. -->
+      <!-- Font + weight picker (custom flyout — hover a family to choose its weight). -->
+      <button class="font-picker-btn fp-block text-only" id="f-font" type="button" title="Font + weight">
+        <span class="fp-fam">MB Empire</span>
+        <span class="fp-wt">Bold</span>
+        <svg class="fp-chev" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+
+      <div class="ep-row text-only">
+        <div class="ep-spinner" title="Size — click to step, drag to scrub" style="flex:0 0 auto">
+          <input type="number" class="ep-num" id="f-size" min="1" max="2000" step="1" value="64">
+          <div class="ep-arrows" id="f-size-arrows">
+            <button class="ep-arrow" type="button" tabindex="-1" data-dir="up" aria-label="Increase">
+              <svg width="8" height="6" viewBox="0 0 8 6" fill="currentColor" aria-hidden="true"><path d="M4 0l4 6H0z"/></svg>
+            </button>
+            <button class="ep-arrow" type="button" tabindex="-1" data-dir="down" aria-label="Decrease">
+              <svg width="8" height="6" viewBox="0 0 8 6" fill="currentColor" aria-hidden="true"><path d="M4 6L0 0h8z"/></svg>
+            </button>
+          </div>
+        </div>
+        <span class="ep-label" style="flex:1 1 auto">Size</span>
+      </div>
+
+      <div class="ep-row not-image" id="f-color-row">
+        <input type="color" class="ep-color-swatch" id="f-color" value="#ffffff" title="Color">
+        <input type="text" class="ep-hex" id="f-color-hex" value="#FFFFFF" maxlength="7" spellcheck="false" autocomplete="off">
+      </div>
+
+      <div class="ep-row">
+        <span class="ep-label">Opacity</span>
+        <input type="range" class="slider" id="f-opacity" min="0" max="100" step="1" value="100">
+        <input type="number" class="ep-val ep-val-input" id="f-opacity-val" min="0" max="100" step="1" value="100">
+      </div>
+
+      <div class="ep-row text-only">
+        <span class="ep-label">Line</span>
+        <input type="range" class="slider" id="f-lineheight" min="50" max="300" step="1" value="80">
+        <input type="number" class="ep-val ep-val-input" id="f-lineheight-val" min="10" max="500" step="1" value="80">
+      </div>
+
+      <div class="segmented text-only" id="f-align" title="Alignment">
+        <button class="seg-btn" type="button" data-v="left">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 6H3"/><path d="M15 12H3"/><path d="M17 18H3"/></svg>
+        </button>
+        <button class="seg-btn" type="button" data-v="center">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 6H3"/><path d="M17 12H7"/><path d="M19 18H5"/></svg>
+        </button>
+        <button class="seg-btn" type="button" data-v="right">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 6H3"/><path d="M21 12H9"/><path d="M21 18H7"/></svg>
+        </button>
+      </div>
+
+      <!-- Rect-only: corner radius slider -->
+      <div class="ep-row rect-only" style="display:none">
+        <span class="ep-label">Radius</span>
+        <input type="range" class="slider" id="f-radius" min="0" max="500" step="1" value="0">
+        <span class="ep-val" id="f-radius-val">0</span>
+      </div>
+
+      <!-- Shadow (text-only) -->
+      <div class="field text-only" style="gap:8px">
+        <label class="toggle-row">
+          <input type="checkbox" id="f-shadow-on"> Shadow
+        </label>
+        <div id="shadow-fields" style="display:flex;flex-direction:column;gap:8px">
+          <div class="ep-row">
+            <input type="color" class="ep-color-swatch" id="f-shadow-color" value="#000000" title="Shadow color">
+            <input type="text" class="ep-hex" id="f-shadow-color-hex" value="#000000" maxlength="7" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="ep-row">
+            <span class="ep-label">Blur</span>
+            <input type="range" class="slider" id="f-shadow-blur" min="0" max="40" step="1" value="8">
+            <span class="ep-val" id="f-shadow-blur-val">8</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="add-layer-btn ep-delete-btn" id="ep-delete-btn" type="button" style="margin-top:6px">
+        <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Delete
+      </button>
+
+    </div><!-- /.edit-panel -->
+  </aside>
+
+  <!-- ════════════════════════ MAIN COLUMN ════════════════════════ -->
+  <main class="main-column">
+    <div class="canvas-area" id="canvas-area">
+
+      <!-- Floating text toolbar — appears above the selected text layer, with the
+           most-used controls. The sidebar Style panel still holds the full set. -->
+      <div class="text-toolbar hidden" id="text-toolbar">
+        <button class="font-picker-btn" id="tt-font" type="button" title="Font + weight">
+          <span class="fp-fam">MB Empire</span>
+          <span class="fp-wt">Bold</span>
+          <svg class="fp-chev" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="tt-divider"></div>
+        <div class="tt-spinner">
+          <input type="number" class="tt-num" id="tt-size" min="1" max="2000" step="1" title="Size — click arrows to step, drag arrows to scrub">
+          <div class="tt-arrows" id="tt-size-arrows" title="Drag to scrub size">
+            <button class="tt-arrow" type="button" tabindex="-1" data-dir="up" aria-label="Increase">
+              <svg width="8" height="6" viewBox="0 0 8 6" fill="currentColor" aria-hidden="true"><path d="M4 0l4 6H0z"/></svg>
+            </button>
+            <button class="tt-arrow" type="button" tabindex="-1" data-dir="down" aria-label="Decrease">
+              <svg width="8" height="6" viewBox="0 0 8 6" fill="currentColor" aria-hidden="true"><path d="M4 6L0 0h8z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="tt-divider"></div>
+        <label class="tt-color-wrap" title="Color">
+          <input type="color" class="tt-color" id="tt-color" value="#ffffff">
+        </label>
+        <input type="text" class="tt-hex" id="tt-color-hex" value="#FFFFFF" maxlength="7" spellcheck="false" autocomplete="off" title="Hex">
+        <div class="tt-divider"></div>
+        <div class="tt-align" id="tt-align">
+          <button class="tt-btn" type="button" data-v="left" title="Left">
+            <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 6H3"/><path d="M15 12H3"/><path d="M17 18H3"/></svg>
+          </button>
+          <button class="tt-btn" type="button" data-v="center" title="Center">
+            <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 6H3"/><path d="M17 12H7"/><path d="M19 18H5"/></svg>
+          </button>
+          <button class="tt-btn" type="button" data-v="right" title="Right">
+            <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 6H3"/><path d="M21 12H9"/><path d="M21 18H7"/></svg>
+          </button>
+        </div>
+        <div class="tt-divider"></div>
+        <button class="tt-btn tt-delete" id="tt-delete" type="button" title="Delete (Backspace)">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+
+      <!-- Tool bar — three circular icon buttons centred above the canvas,
+           horizontally in line with the Export button. Active tool = gold. -->
+      <div class="canvas-tools">
+        <button class="canvas-tool active" id="tool-select-btn" data-tool="select" type="button" title="Select (V)">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.5 3.5 19.5 12l-7.4 1.7-1.7 7.4L5.5 3.5z"/></svg>
+        </button>
+        <button class="canvas-tool" id="tool-text-btn" data-tool="text" type="button" title="Text (T)" disabled>
+          <span class="ct-letter">T</span>
+        </button>
+        <button class="canvas-tool" id="tool-rect-btn" data-tool="rect" type="button" title="Rectangle (R)" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg>
+        </button>
+      </div>
+
+      <div class="top-actions">
+        <button class="btn primary" id="export-btn" type="button" disabled>
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+          <span>Export video</span>
+        </button>
+      </div>
+
+      <div class="stage" id="stage">
+        <canvas id="canvas"></canvas>
+        <!-- Selection chromes: shared 8-handle layout. Video chrome handles
+             aspect-locked resize (image-fit). Layer chrome resizes the active
+             text/rect layer — text scales font-size from corners only, rect
+             resizes freely with all 8 handles. -->
+        <div class="chrome video-chrome hidden" id="video-chrome">
+          <div class="handle" data-corner="nw"></div>
+          <div class="handle" data-corner="n"></div>
+          <div class="handle" data-corner="ne"></div>
+          <div class="handle" data-corner="e"></div>
+          <div class="handle" data-corner="se"></div>
+          <div class="handle" data-corner="s"></div>
+          <div class="handle" data-corner="sw"></div>
+          <div class="handle" data-corner="w"></div>
+        </div>
+        <div class="chrome layer-chrome hidden" id="layer-chrome">
+          <div class="handle" data-corner="nw"></div>
+          <div class="handle" data-corner="n"></div>
+          <div class="handle" data-corner="ne"></div>
+          <div class="handle" data-corner="e"></div>
+          <div class="handle" data-corner="se"></div>
+          <div class="handle" data-corner="s"></div>
+          <div class="handle" data-corner="sw"></div>
+          <div class="handle" data-corner="w"></div>
+          <!-- Rotate grips: small curved-arrow markers just outside each
+               corner — click+drag rotates the layer around its centre. -->
+          <div class="rotate-grip" data-corner="nw"><svg class="rotate-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.65-7.24"/><path d="M21 4v5h-5"/></svg></div>
+          <div class="rotate-grip" data-corner="ne"><svg class="rotate-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.65-7.24"/><path d="M21 4v5h-5"/></svg></div>
+          <div class="rotate-grip" data-corner="se"><svg class="rotate-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.65-7.24"/><path d="M21 4v5h-5"/></svg></div>
+          <div class="rotate-grip" data-corner="sw"><svg class="rotate-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.65-7.24"/><path d="M21 4v5h-5"/></svg></div>
+        </div>
+        <div class="guide guide-v hidden" id="guide-v"></div>
+        <div class="guide guide-h hidden" id="guide-h"></div>
+        <!-- Inline text editor — positioned and styled to mirror the canvas text it's replacing. -->
+        <textarea class="inline-editor hidden" id="inline-editor" spellcheck="false" wrap="off"></textarea>
+      </div>
+
+
+      <video id="video" playsinline muted style="display:none"></video>
+    </div>
+
+    <!-- Bottom: timeline + transport -->
+    <div class="bottom-bar">
+      <div class="transport-row" style="gap:10px">
+        <button class="btn icon-only" id="play-btn" type="button" disabled title="Play / pause (Space)">
+          <svg class="ico" id="play-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7 5v14l12-7z"/></svg>
+        </button>
+        <button class="btn icon-only active" id="loop-btn" type="button" disabled title="Loop playback">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+        </button>
+        <button class="btn icon-only" id="fit-cover-btn" type="button" disabled title="Fit video to cover the frame">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+        <div class="time"><span id="cur-time">0:00.00</span><span class="total"> / <span id="total-time">0:00.00</span></span></div>
+        <div class="timeline" id="timeline">
+          <div class="timeline-track"></div>
+          <!-- Trim overlays: darkened regions that the user drags inward
+               to set the in/out points. Their inner edge is a thin gold
+               handle that's the drag target. -->
+          <div class="timeline-trim left"  id="trim-left"></div>
+          <div class="timeline-trim right" id="trim-right"></div>
+          <div class="timeline-progress" id="timeline-progress"></div>
+          <div class="timeline-playhead" id="timeline-playhead"></div>
+        </div>
+        <input type="file" id="file-input" accept="video/mp4,video/quicktime,video/webm,video/*">
+        <button class="btn upload-btn primary" id="upload-btn" type="button">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+          Upload video
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Export progress overlay -->
+  <div class="export-overlay" id="export-overlay">
+    <div class="export-card">
+      <h3 id="export-title">Exporting video…</h3>
+      <p id="export-msg">Recording overlays in real time. Please don't switch tabs.</p>
+      <div class="export-progress"><div class="export-progress-bar" id="export-bar"></div></div>
+      <div class="export-actions">
+        <button class="btn" id="export-cancel" type="button">Cancel</button>
+        <button class="btn primary" id="export-download" type="button" style="display:none">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+          Download
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+'use strict';
+
+// ═════════════════════════════════════ Constants ═════════════════════════════════════
+const SIZES = [
+  { id: '1080x1080', label: '1:1',  w: 1080, h: 1080 },
+  { id: '1080x1350', label: '4:5',  w: 1080, h: 1350 },
+  { id: '1080x1920', label: '9:16', w: 1080, h: 1920 },
+  { id: '1920x1080', label: '16:9', w: 1920, h: 1080 },
+  { id: '1080x566',  label: '1.91:1', w: 1080, h: 566 },
+];
+
+// Available stage area is the canvas-area's content box (clientWidth/Height
+// minus paddings), so adjusting .canvas-area padding flows into stage sizing.
+const SNAP = 14;   // smart-guide snap distance (canvas px)
+const MIN_VIDEO_SIZE = 80;
+
+// ─── Font catalog: every available weight per family on disk ─────────────
+const FONT_CATALOG = [
+  { family: 'MB Empire',   weights: [
+    { v: 100, n: 'Thin'    }, { v: 300, n: 'Light' }, { v: 400, n: 'Regular' },
+    { v: 500, n: 'Medium'  }, { v: 700, n: 'Bold'  }, { v: 900, n: 'Black'   },
+  ]},
+  { family: 'Grifo S',     weights: [
+    { v: 300, n: 'Light'   }, { v: 400, n: 'Regular' }, { v: 500, n: 'Medium' },
+    { v: 700, n: 'Bold'    }, { v: 900, n: 'Black'   },
+  ]},
+  { family: 'Grifinito L', weights: [
+    { v: 300, n: 'Light'   }, { v: 400, n: 'Regular' }, { v: 500, n: 'Medium' }, { v: 700, n: 'Bold' },
+  ]},
+  { family: 'Grifinito M', weights: [
+    { v: 300, n: 'Light'   }, { v: 400, n: 'Regular' }, { v: 500, n: 'Medium' }, { v: 700, n: 'Bold' },
+  ]},
+];
+function fontEntry(fam)        { return FONT_CATALOG.find(x => x.family === fam) || FONT_CATALOG[0]; }
+function weightLabel(fam, w)   { return (fontEntry(fam).weights.find(x => x.v === w) || { n: 'Regular' }).n; }
+// Snap a requested weight onto the closest available weight for the family
+// (used when switching families — Grifo S has no Thin, etc.).
+function nearestWeight(fam, w) {
+  const ws = fontEntry(fam).weights;
+  let best = ws[0], bestD = Infinity;
+  for (const x of ws) { const d = Math.abs(x.v - w); if (d < bestD) { bestD = d; best = x; } }
+  return best.v;
+}
+
+// ═════════════════════════════════════ State ═════════════════════════════════════
+const state = {
+  sizeId: '1080x1080',
+  video: {
+    url: null, file: null,
+    duration: 0, naturalW: 0, naturalH: 0,
+    currentTime: 0, playing: false,
+    loaded: false,
+    transform: null,   // { x, y, w, h } in canvas-output coords
+  },
+  videoSelected: false,
+  // layers: text or rect. text { id, kind:'text', content, x, y, fontSize, fontFamily, fontWeight, color, opacity, align, shadow }
+  //         rect { id, kind:'rect', x, y, w, h, color, opacity, radius }
+  layers: [],
+  // Multi-select: ids in selection order. activeLayerId mirrors the last
+  // element (the "primary" — drives edit panel + chrome). Length 0 = none,
+  // length 1 = single select, length > 1 = multi.
+  selectedLayerIds: [],
+  activeLayerId: null,
+  loop: true,          // playback loops by default
+  trimStart: 0,        // playback / export starts here
+  trimEnd: 0,          // and stops here (set to duration on load)
+  // Per-format slots: each sizeId remembers its own layers + video transform.
+  // state.layers and state.video.transform are aliases to the current slot.
+  formats: {},
+  // The first format the user creates a layer in becomes the "master" — new
+  // adds in master clone into every other format, and any later-visited
+  // format is seeded from master. Edits / deletes are always local.
+  masterFormat: null,
+  // Active tool: 'select' (default), 'text', 'rect'. text/rect activate
+  // a draw-on-canvas mode; after a shape is created we revert to 'select'.
+  tool: 'select',
+  exporting: false,
+};
+let viewScale = 1;          // CSS scale from canvas-px → screen-px for the visible stage
+let nextLayerId = 1;
+
+// Unified drag state — kind is 'layer-move' | 'video-move' | 'video-resize'.
+let canvasDrag = null;
+let timelineDrag = null;
+let inlineEditingLayerId = null;   // id of the layer currently being edited inline
+
+// ═════════════════════════════════════ DOM refs ═════════════════════════════════════
+const $ = id => document.getElementById(id);
+const sizeGrid     = $('size-grid');
+const layerList    = $('layer-list');
+const layerCountEl = $('layer-count');
+const editPanel    = $('edit-panel');
+const canvasArea   = $('canvas-area');
+const stage        = $('stage');
+const canvas       = $('canvas');
+const ctx          = canvas.getContext('2d');
+const videoEl      = $('video');
+const uploadBtn    = $('upload-btn');
+const fileInput    = $('file-input');
+const playBtn      = $('play-btn');
+const playIco      = $('play-ico');
+const loopBtn      = $('loop-btn');
+const fitCoverBtn  = $('fit-cover-btn');
+const videoChrome  = $('video-chrome');
+const handles      = Array.from(videoChrome.querySelectorAll('.handle'));
+const layerChrome  = $('layer-chrome');
+const layerHandles = Array.from(layerChrome.querySelectorAll('.handle'));
+const rotateGrips  = Array.from(layerChrome.querySelectorAll('.rotate-grip'));
+const guideV       = $('guide-v');
+const guideH       = $('guide-h');
+const inlineEditor = $('inline-editor');
+const textToolbar  = $('text-toolbar');
+const ttFontBtn    = $('tt-font');
+const ttSize       = $('tt-size');
+const ttSizeArrows = $('tt-size-arrows');
+const ttColor      = $('tt-color');
+const ttColorHex   = $('tt-color-hex');
+const ttAlign      = $('tt-align');
+const ttDelete     = $('tt-delete');
+const epDeleteBtn  = $('ep-delete-btn');
+const curTimeEl    = $('cur-time');
+const totalTimeEl  = $('total-time');
+const exportBtn    = $('export-btn');
+const timeline     = $('timeline');
+const tlProgress   = $('timeline-progress');
+const tlPlayhead   = $('timeline-playhead');
+const tlTrimLeft   = $('trim-left');
+const tlTrimRight  = $('trim-right');
+const MIN_TRIM     = 0.1; // seconds — keep at least this much playable
+const exportOverlay= $('export-overlay');
+const exportTitle  = $('export-title');
+const exportMsg    = $('export-msg');
+const exportBar    = $('export-bar');
+const exportCancel = $('export-cancel');
+const exportDl     = $('export-download');
+
+// Form fields
+const fFontBtn     = $('f-font');
+const fSize        = $('f-size');
+const fSizeArrows  = $('f-size-arrows');
+const fColor       = $('f-color');
+const fOpacity     = $('f-opacity');
+const fOpacityVal  = $('f-opacity-val');
+const fAlign       = $('f-align');
+const fColorHex    = $('f-color-hex');
+const fShadowOn    = $('f-shadow-on');
+const fShadowColor = $('f-shadow-color');
+const fShadowColorHex = $('f-shadow-color-hex');
+const fShadowBlur  = $('f-shadow-blur');
+const fShadowBlurVal = $('f-shadow-blur-val');
+const fRadius      = $('f-radius');
+const fRadiusVal   = $('f-radius-val');
+const fLineHeight  = $('f-lineheight');
+const fLineHeightVal = $('f-lineheight-val');
+const toolSelectBtn = $('tool-select-btn');
+const toolTextBtn   = $('tool-text-btn');
+const toolRectBtn   = $('tool-rect-btn');
+
+// ═════════════════════════════════════ Helpers ═════════════════════════════════════
+function activeSize()  { return SIZES.find(s => s.id === state.sizeId) || SIZES[0]; }
+function activeLayer() { return state.layers.find(l => l.id === state.activeLayerId) || null; }
+
+function fmtTime(s) {
+  if (!isFinite(s) || s < 0) s = 0;
+  const m = Math.floor(s / 60);
+  const sec = s - m * 60;
+  return `${m}:${sec.toFixed(2).padStart(5, '0')}`;
+}
+
+function uid() { return 'L' + (nextLayerId++); }
+
+// Coordinate conversion: screen → canvas (output-resolution) coords.
+function screenToCanvas(clientX, clientY) {
+  const r = canvas.getBoundingClientRect();
+  const sz = activeSize();
+  return {
+    x: (clientX - r.left) * (sz.w / r.width),
+    y: (clientY - r.top)  * (sz.h / r.height),
+  };
+}
+
+// ═════════════════════════════════════ Sizing ═════════════════════════════════════
+function applySizeToCanvas() {
+  const sz = activeSize();
+  canvas.width  = sz.w;
+  canvas.height = sz.h;
+  layoutStage();
+  draw();
+}
+
+function layoutStage() {
+  const sz = activeSize();
+  const cs = getComputedStyle(canvasArea);
+  const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const padY = parseFloat(cs.paddingTop)  + parseFloat(cs.paddingBottom);
+  const availW = canvasArea.clientWidth  - padX;
+  const availH = canvasArea.clientHeight - padY;
+  viewScale = Math.max(0.05, Math.min(availW / sz.w, availH / sz.h, 1));
+  stage.style.width  = (sz.w * viewScale) + 'px';
+  stage.style.height = (sz.h * viewScale) + 'px';
+  updateVideoChrome();
+  updateTextToolbar();
+}
+window.addEventListener('resize', layoutStage);
+
+// ═════════════════════════════════════ Size grid ═════════════════════════════════════
+function buildSizeGrid() {
+  sizeGrid.innerHTML = '';
+  for (const sz of SIZES) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'size-card' + (sz.id === state.sizeId ? ' active' : '');
+    btn.dataset.id = sz.id;
+    btn.setAttribute('aria-pressed', sz.id === state.sizeId ? 'true' : 'false');
+    btn.setAttribute('aria-label', `${sz.w}×${sz.h}`);
+    // Visual swatch: inner rectangle preserves the aspect ratio inside a uniform 1:1 card.
+    const ratio = sz.w / sz.h;
+    const SW = 44; // max swatch inner dimension in px
+    const innerW = ratio >= 1 ? SW : SW * ratio;
+    const innerH = ratio >= 1 ? SW / ratio : SW;
+    btn.innerHTML = `
+      <div class="swatch"><div class="swatch-inner" style="width:${innerW}px;height:${innerH}px"></div></div>
+      <div class="swatch-label">${sz.w}×${sz.h}</div>
+    `;
+    btn.addEventListener('click', () => setSize(sz.id));
+    sizeGrid.appendChild(btn);
+  }
+}
+
+function setSize(id) {
+  if (id === state.sizeId) return;
+  pushUndo();   // format switches are user-significant
+  // Stash the current format's working state, then swap to the target.
+  saveCurrentFormatSlot();
+  state.sizeId = id;
+  sizeGrid.querySelectorAll('.size-card').forEach(b => {
+    const on = b.dataset.id === id;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  loadCurrentFormatSlot();
+  applySizeToCanvas();
+  refreshLayerList();
+  syncEditPanel();
+  updateVideoChrome();
+  updateTextToolbar();
+}
+
+// Each format remembers its own layers + video transform. Editing one
+// format doesn't bleed into another. The slot stores by-reference, so
+// in-place mutations (layer.push, layer.x = …) flow through without
+// extra bookkeeping; only the transform OBJECT is reassigned on fit,
+// so we explicitly sync that back to the slot in fitVideoCover().
+function currentSlot() {
+  if (!state.formats[state.sizeId]) {
+    state.formats[state.sizeId] = { layers: state.layers, videoTransform: state.video.transform };
+  }
+  return state.formats[state.sizeId];
+}
+function saveCurrentFormatSlot() {
+  const slot = currentSlot();
+  slot.layers = state.layers;
+  slot.videoTransform = state.video.transform;
+}
+function loadCurrentFormatSlot() {
+  let slot = state.formats[state.sizeId];
+  if (!slot) {
+    // Fresh format — seed layers from the master format if it exists, so the
+    // user sees their elements in this new aspect. Each clone gets a fresh
+    // id so future edits stay independent.
+    const masterSlot = state.masterFormat && state.formats[state.masterFormat];
+    const seedLayers = masterSlot
+      ? masterSlot.layers.map(l => { const c = JSON.parse(JSON.stringify(l)); c.id = uid(); return c; })
+      : [];
+    slot = state.formats[state.sizeId] = { layers: seedLayers, videoTransform: null };
+  }
+  state.layers = slot.layers;
+  state.video.transform = slot.videoTransform;
+  state.activeLayerId = null;
+  state.selectedLayerIds = [];
+  state.videoSelected = false;
+  if (!state.video.transform && state.video.loaded) {
+    fitVideoCover();   // also syncs the slot
+  }
+}
+
+// When the user creates a new layer in the master format, propagate a deep
+// copy (with its own id) into every other already-initialized format. Formats
+// that don't exist yet will be seeded later in loadCurrentFormatSlot().
+function propagateNewLayerFromMaster(layer) {
+  if (!state.masterFormat || state.sizeId !== state.masterFormat) return;
+  for (const sid in state.formats) {
+    if (sid === state.sizeId) continue;
+    const slot = state.formats[sid];
+    if (!slot) continue;
+    const c = JSON.parse(JSON.stringify(layer));
+    c.id = uid();
+    slot.layers.push(c);
+  }
+}
+
+
+// ═════════════════════════════════════ Layer CRUD ═════════════════════════════════════
+function addBlankLayer() {
+  pushUndo();
+  const sz = activeSize();
+  const layer = {
+    id: uid(),
+    kind: 'text',
+    content: 'New text',
+    fontSize: Math.round(sz.h * 0.08),
+    fontFamily: 'MB Empire', fontWeight: 700,
+    color: contrastingTextColor(sz.w / 2, sz.h / 2), opacity: 1,
+    align: 'center',
+    lineHeight: 0.8,
+    x: sz.w / 2, y: sz.h / 2,
+    shadow: { enabled: false, color: '#000000', blur: 8 },
+    rotation: 0,
+  };
+  state.layers.push(layer);
+  if (!state.masterFormat) state.masterFormat = state.sizeId;
+  propagateNewLayerFromMaster(layer);
+  selectLayer(layer.id);
+  draw();
+}
+
+// Change a text layer's alignment without making the text visibly jump.
+// layer.x is the anchor (whose meaning depends on align), so we re-anchor it
+// so the rendered bbox's left edge stays in the same canvas position.
+function setLayerAlign(l, newAlign) {
+  if (!l || l.kind === 'rect' || l.align === newAlign) { if (l) l.align = newAlign; return; }
+  const b = l._bbox;
+  l.align = newAlign;
+  if (!b) return;
+  const w = b.w;
+  // bbox.x = layer.x - alignOffset(newAlign). Solve for layer.x given bbox.x = b.x.
+  const offset = newAlign === 'left' ? 0 : newAlign === 'right' ? w : w / 2;
+  l.x = b.x + offset;
+}
+
+function addRectLayer() {
+  pushUndo();
+  const sz = activeSize();
+  const w = Math.round(sz.w * 0.4);
+  const h = Math.round(sz.h * 0.15);
+  const layer = {
+    id: uid(),
+    kind: 'rect',
+    x: (sz.w - w) / 2,
+    y: (sz.h - h) / 2,
+    w, h,
+    color: '#A88F4C', opacity: 1,
+    radius: 0,
+    rotation: 0,
+  };
+  state.layers.push(layer);
+  if (!state.masterFormat) state.masterFormat = state.sizeId;
+  propagateNewLayerFromMaster(layer);
+  selectLayer(layer.id);
+  draw();
+}
+
+// ─── Tool-draw: create-shape-on-canvas gestures ────────────────────────
+const DRAW_MOVE_THRESHOLD = 4;   // canvas px before we treat a tool-draw as a drag
+const RECT_DEFAULT = 150;        // rect tool single-click size
+const TEXT_DEFAULT_WIDTH = 240;  // text tool drag-box minimum width
+
+function startRectDraw(e, pt) {
+  pushUndo();
+  const layer = {
+    id: uid(),
+    kind: 'rect',
+    x: pt.x, y: pt.y, w: 1, h: 1,
+    color: '#A88F4C', opacity: 1, radius: 0,
+    rotation: 0,
+  };
+  state.layers.push(layer);
+  if (!state.masterFormat) state.masterFormat = state.sizeId;
+  propagateNewLayerFromMaster(layer);
+  selectLayer(layer.id);
+  canvasDrag = {
+    kind: 'tool-draw-rect',
+    layerId: layer.id,
+    originX: pt.x, originY: pt.y,
+    moved: false,
+    pointerId: e.pointerId,
+  };
+  try { canvas.setPointerCapture(e.pointerId); } catch {}
+  e.preventDefault();
+}
+
+function startTextDraw(e, pt) {
+  pushUndo();
+  const sz = activeSize();
+  const layer = {
+    id: uid(),
+    kind: 'text',
+    content: 'New text',
+    fontSize: Math.round(sz.h * 0.08),
+    fontFamily: 'MB Empire', fontWeight: 700,
+    color: contrastingTextColor(pt.x, pt.y), opacity: 1,
+    align: 'left',
+    lineHeight: 0.8,
+    x: pt.x, y: pt.y,
+    shadow: { enabled: false, color: '#000000', blur: 8 },
+    rotation: 0,
+    // maxWidth: set only if the user drags
+  };
+  state.layers.push(layer);
+  if (!state.masterFormat) state.masterFormat = state.sizeId;
+  propagateNewLayerFromMaster(layer);
+  selectLayer(layer.id);
+  canvasDrag = {
+    kind: 'tool-draw-text',
+    layerId: layer.id,
+    originX: pt.x, originY: pt.y,
+    moved: false,
+    pointerId: e.pointerId,
+  };
+  try { canvas.setPointerCapture(e.pointerId); } catch {}
+  e.preventDefault();
+}
+
+// Alt-drag uses this: clone every selected layer AT THE SAME POSITION,
+// flip the selection to the new copies, and return their new ids. The
+// caller starts a drag on the copies, leaving the originals in place.
+function duplicateSelectedLayersInPlace() {
+  if (!state.selectedLayerIds.length) return [];
+  pushUndo();
+  const newIds = [];
+  for (const id of state.selectedLayerIds.slice()) {
+    const src = state.layers.find(l => l.id === id);
+    if (!src) continue;
+    const copy = JSON.parse(JSON.stringify(src));
+    copy.id = uid();
+    const idx = state.layers.findIndex(l => l.id === id);
+    state.layers.splice(idx + 1, 0, copy);
+    newIds.push(copy.id);
+    propagateNewLayerFromMaster(copy);
+  }
+  if (!newIds.length) return [];
+  state.selectedLayerIds = newIds;
+  state.activeLayerId = newIds[newIds.length - 1];
+  state.videoSelected = false;
+  return newIds;
+}
+
+// Bulk operations on the current multi-selection.
+function duplicateSelectedLayers() {
+  if (!state.selectedLayerIds.length) return;
+  pushUndo();
+  const newIds = [];
+  const sourceIds = state.selectedLayerIds.slice();
+  for (const id of sourceIds) {
+    const src = state.layers.find(l => l.id === id);
+    if (!src) continue;
+    const copy = JSON.parse(JSON.stringify(src));
+    copy.id = uid();
+    copy.x += 24; copy.y += 24;
+    const idx = state.layers.findIndex(l => l.id === id);
+    state.layers.splice(idx + 1, 0, copy);
+    newIds.push(copy.id);
+    propagateNewLayerFromMaster(copy);
+  }
+  if (!newIds.length) return;
+  state.selectedLayerIds = newIds;
+  state.activeLayerId = newIds[newIds.length - 1];
+  state.videoSelected = false;
+  refreshLayerList();
+  syncEditPanel();
+  draw();
+  updateTextToolbar();
+}
+
+function deleteSelectedLayers() {
+  if (!state.selectedLayerIds.length) return;
+  pushUndo();
+  const ids = new Set(state.selectedLayerIds);
+  for (let i = state.layers.length - 1; i >= 0; i--) {
+    if (ids.has(state.layers[i].id)) state.layers.splice(i, 1);
+  }
+  deselectAll();
+  draw();
+}
+
+function duplicateLayer(id) {
+  const src = state.layers.find(l => l.id === id);
+  if (!src) return;
+  pushUndo();
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id = uid();
+  copy.x += 24; copy.y += 24;
+  const idx = state.layers.findIndex(l => l.id === id);
+  state.layers.splice(idx + 1, 0, copy);
+  propagateNewLayerFromMaster(copy);
+  selectLayer(copy.id);
+  draw();
+}
+
+function deleteLayer(id) {
+  const idx = state.layers.findIndex(l => l.id === id);
+  if (idx < 0) return;
+  pushUndo();
+  state.layers.splice(idx, 1);
+  const nextId = state.activeLayerId === id ? (state.layers[Math.min(idx, state.layers.length - 1)]?.id || null) : state.activeLayerId;
+  if (nextId) selectLayer(nextId); else deselectAll();
+  draw();
+}
+
+function setActiveLayer(id) {
+  selectLayer(id);
+  draw();
+}
+
+// Reorder helper used by the layer-list drag-and-drop.
+//   srcId      — id of the layer being dragged
+//   targetId   — id of the layer it was dropped on
+//   beforeTarget — true if dropped on the upper half (insert above target in display)
+// The list shows REVERSED draw order (top of list = top of stack = last in
+// state.layers), so "above in list" → "after in state.layers".
+function reorderLayer(srcId, targetId, beforeTarget) {
+  const srcIdx = state.layers.findIndex(l => l.id === srcId);
+  if (srcIdx < 0) return;
+  pushUndo();
+  const [moved] = state.layers.splice(srcIdx, 1);
+  let tgtIdx = state.layers.findIndex(l => l.id === targetId);
+  if (tgtIdx < 0) { state.layers.splice(srcIdx, 0, moved); return; }
+  // "Above target in display" = higher state index = after target in array.
+  const insertAt = beforeTarget ? tgtIdx + 1 : tgtIdx;
+  state.layers.splice(insertAt, 0, moved);
+  refreshLayerList();
+  draw();
+}
+
+function refreshLayerList() {
+  layerList.innerHTML = '';
+  // Render top-to-bottom in REVERSE draw order so the visually-front layer is at the top.
+  const ordered = state.layers.slice().reverse();
+  for (const layer of ordered) {
+    const row = document.createElement('div');
+    const sel = isLayerSelected(layer.id);
+    const primary = layer.id === state.activeLayerId;
+    row.className = 'layer-row' + (sel ? ' active' : '') + (primary && state.selectedLayerIds.length > 1 ? ' primary' : '');
+    row.tabIndex = 0;
+    row.draggable = true;
+    row.dataset.id = layer.id;
+    const isRect  = layer.kind === 'rect';
+    const isImage = layer.kind === 'image';
+    const preview = isImage
+      ? `Image · ${Math.round(layer.w)}×${Math.round(layer.h)}`
+      : isRect
+        ? `Rectangle · ${Math.round(layer.w)}×${Math.round(layer.h)}`
+        : ((layer.content || '').replace(/\s+/g, ' ').trim() || '(empty)');
+    const kindIcon = isImage
+      ? '<svg class="ico layer-kind" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>'
+      : isRect
+        ? '<svg class="ico layer-kind" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="14" x="3" y="5" rx="2"/></svg>'
+        : '<svg class="ico layer-kind" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/></svg>';
+    row.innerHTML = `
+      ${kindIcon}
+      <div class="layer-text" title="${escapeAttr(preview)}">${escapeHtml(preview)}</div>
+      <div class="layer-actions">
+        <button class="layer-icon-btn" data-act="dup" title="Duplicate"><svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
+        <button class="layer-icon-btn" data-act="del" title="Delete"><svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+      </div>
+    `;
+    row.addEventListener('click', e => {
+      const actBtn = e.target.closest('[data-act]');
+      if (actBtn) {
+        if (actBtn.dataset.act === 'dup') duplicateLayer(layer.id);
+        else if (actBtn.dataset.act === 'del') deleteLayer(layer.id);
+        return;
+      }
+      if (e.shiftKey) toggleLayerSelection(layer.id);
+      else setActiveLayer(layer.id);
+    });
+    // Drag-and-drop reorder (within the layer list).
+    row.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', layer.id); } catch {}
+      row.classList.add('dragging');
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      layerList.querySelectorAll('.drop-before, .drop-after').forEach(el => el.classList.remove('drop-before', 'drop-after'));
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const r = row.getBoundingClientRect();
+      const before = (e.clientY - r.top) < r.height / 2;
+      layerList.querySelectorAll('.drop-before, .drop-after').forEach(el => el.classList.remove('drop-before', 'drop-after'));
+      row.classList.add(before ? 'drop-before' : 'drop-after');
+    });
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('drop-before', 'drop-after');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      const r = row.getBoundingClientRect();
+      const before = (e.clientY - r.top) < r.height / 2;
+      const srcId = e.dataTransfer.getData('text/plain');
+      row.classList.remove('drop-before', 'drop-after');
+      if (srcId && srcId !== layer.id) reorderLayer(srcId, layer.id, before);
+    });
+    layerList.appendChild(row);
+  }
+  layerCountEl.textContent = state.layers.length ? `${state.layers.length} layer${state.layers.length === 1 ? '' : 's'}` : '';
+  if (!state.layers.length) {
+    const hint = document.createElement('div');
+    hint.className = 'empty-hint';
+    hint.textContent = 'No layers yet. Pick a tool (T / R) or drop an image.';
+    layerList.appendChild(hint);
+  }
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s) { return escapeHtml(s); }
+
+// ═════════════════════════════════════ Edit panel sync ═════════════════════════════════════
+function syncEditPanel() {
+  const l = activeLayer();
+  editPanel.classList.toggle('disabled', !l);
+  if (!l) return;
+  const isRect  = l.kind === 'rect';
+  const isImage = l.kind === 'image';
+  const isText  = !isRect && !isImage;
+  // Show/hide kind-specific fields. Image layers expose only opacity + delete.
+  editPanel.querySelectorAll('.text-only').forEach(el => el.style.display = isText ? '' : 'none');
+  editPanel.querySelectorAll('.rect-only').forEach(el => el.style.display = isRect ? '' : 'none');
+  editPanel.querySelectorAll('.not-image').forEach(el => el.style.display = isImage ? 'none' : '');
+  // Shared: opacity (also color, but image layers don't expose a colour).
+  if (!isImage) {
+    fColor.value    = l.color;
+    fColorHex.value = fmtHex(l.color);
+  }
+  const opacityPct = Math.round(l.opacity * 100);
+  fOpacity.value = opacityPct;
+  if (document.activeElement !== fOpacityVal) fOpacityVal.value = String(opacityPct);
+  if (isImage) return;          // images only have opacity + delete
+  if (isRect) {
+    fRadius.value = l.radius || 0;
+    fRadiusVal.textContent = String(Math.round(l.radius || 0));
+    return;
+  }
+  // Text-specific.
+  setFontPickerBtn(fFontBtn, l.fontFamily, l.fontWeight);
+  if (document.activeElement !== fSize) fSize.value = l.fontSize;
+  const lhPct = Math.round((l.lineHeight ?? 0.8) * 100);
+  fLineHeight.value = lhPct;
+  if (document.activeElement !== fLineHeightVal) fLineHeightVal.value = String(lhPct);
+  fAlign.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.v === l.align));
+  fShadowOn.checked   = l.shadow.enabled;
+  fShadowColor.value  = l.shadow.color;
+  fShadowColorHex.value = fmtHex(l.shadow.color);
+  fShadowBlur.value   = l.shadow.blur;    fShadowBlurVal.textContent = l.shadow.blur;
+}
+
+function bindEditPanel() {
+  // Apply mutator to EVERY selected layer (the mutator is responsible for
+  // any kind-guarding — e.g. radius is rect-only and ignored on text).
+  const update = (mutator, undoKey) => {
+    if (!state.selectedLayerIds.length) return;
+    pushUndo(undoKey || 'sidebar-edit');
+    for (const id of state.selectedLayerIds) {
+      const l = state.layers.find(x => x.id === id);
+      if (l) mutator(l);
+    }
+    refreshLayerList();
+    draw();
+    updateTextToolbar();
+  };
+  fSize.addEventListener('input',   () => {
+    const v = parseInt(fSize.value, 10);
+    if (!isFinite(v) || v < 1) return;
+    update(l => { if (l.kind !== 'rect') l.fontSize = v; });
+  });
+  bindScrubArrows(fSizeArrows, {
+    min: 1, max: 2000, pxPerUnit: 2,
+    get: () => +fSize.value || activeLayer()?.fontSize || 64,
+    set: (v) => { fSize.value = v; update(l => { if (l.kind !== 'rect') l.fontSize = v; }); },
+  });
+  fColor.addEventListener('input',   () => { fColorHex.value = fmtHex(fColor.value); update(l => l.color = fColor.value); });
+  // HEX text: apply on every keystroke if valid, but only commit normalized value on blur/Enter.
+  fColorHex.addEventListener('input', () => {
+    const hex = parseHex(fColorHex.value);
+    if (hex) { fColor.value = hex; update(l => l.color = hex); }
+  });
+  fColorHex.addEventListener('blur',  () => { fColorHex.value = fmtHex(fColor.value); });
+  fColorHex.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fColorHex.blur(); } });
+  fOpacity.addEventListener('input', () => { fOpacityVal.value = fOpacity.value; update(l => l.opacity = +fOpacity.value / 100); });
+  // Typing a number directly into the readout also commits it.
+  fOpacityVal.addEventListener('input', () => {
+    const v = clamp(parseInt(fOpacityVal.value, 10) || 0, 0, 100);
+    fOpacity.value = v;
+    update(l => l.opacity = v / 100);
+  });
+  fOpacityVal.addEventListener('blur', () => { fOpacityVal.value = String(Math.round((activeLayer()?.opacity ?? 1) * 100)); });
+  fAlign.addEventListener('click',   e => {
+    const b = e.target.closest('.seg-btn'); if (!b) return;
+    fAlign.querySelectorAll('.seg-btn').forEach(x => x.classList.toggle('active', x === b));
+    update(l => setLayerAlign(l, b.dataset.v));
+  });
+  fShadowOn.addEventListener('change',    () => update(l => { if (l.kind !== 'rect') l.shadow.enabled = fShadowOn.checked; }));
+  fShadowColor.addEventListener('input',  () => { fShadowColorHex.value = fmtHex(fShadowColor.value); update(l => { if (l.kind !== 'rect') l.shadow.color = fShadowColor.value; }); });
+  fShadowColorHex.addEventListener('input', () => {
+    const hex = parseHex(fShadowColorHex.value);
+    if (hex) { fShadowColor.value = hex; update(l => { if (l.kind !== 'rect') l.shadow.color = hex; }); }
+  });
+  fShadowColorHex.addEventListener('blur', () => { fShadowColorHex.value = fmtHex(fShadowColor.value); });
+  fShadowColorHex.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fShadowColorHex.blur(); } });
+  fShadowBlur.addEventListener('input',   () => { fShadowBlurVal.textContent = fShadowBlur.value; update(l => { if (l.kind !== 'rect') l.shadow.blur = +fShadowBlur.value; }); });
+  fRadius.addEventListener('input', () => {
+    fRadiusVal.textContent = fRadius.value;
+    update(l => { if (l.kind === 'rect') l.radius = +fRadius.value; });
+  });
+  fLineHeight.addEventListener('input', () => {
+    fLineHeightVal.value = fLineHeight.value;
+    update(l => { if (l.kind !== 'rect') l.lineHeight = +fLineHeight.value / 100; });
+  });
+  fLineHeightVal.addEventListener('input', () => {
+    const v = clamp(parseInt(fLineHeightVal.value, 10) || 0, 10, 500);
+    // Keep the slider showing its own clamp range, but the layer takes the raw value.
+    fLineHeight.value = clamp(v, +fLineHeight.min, +fLineHeight.max);
+    update(l => { if (l.kind !== 'rect') l.lineHeight = v / 100; });
+  });
+  fLineHeightVal.addEventListener('blur', () => {
+    const pct = Math.round(((activeLayer()?.lineHeight) ?? 0.8) * 100);
+    fLineHeightVal.value = String(pct);
+  });
+}
+
+// ═════════════════════════════════════ Canvas drawing ═════════════════════════════════════
+// One draw() function feeds both preview and export — that's the WYSIWYG guarantee.
+function draw() {
+  const sz = activeSize();
+  // Background fill in case the video doesn't fully cover the canvas.
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, sz.w, sz.h);
+
+  // Video frame, drawn per the user-controlled transform.
+  if (state.video.loaded && state.video.transform) {
+    const t = state.video.transform;
+    try { ctx.drawImage(videoEl, t.x, t.y, t.w, t.h); } catch (e) {}
+  }
+
+  // Text layers (draw in array order = stacking order). Layers are always
+  // visible — no time-range gating.
+  for (const layer of state.layers) {
+    if (layer.id === inlineEditingLayerId) {
+      // Inline textarea is showing the text — don't paint the canvas copy,
+      // but still measure so _bbox is current (chrome + floating toolbar
+      // need it to stay positioned while the user types).
+      drawTextLayer(layer, true);
+      continue;
+    }
+    drawLayer(layer);
+  }
+  // Selection chrome is DOM (.layer-chrome / .video-chrome); update positions
+  // off the freshly computed bboxes so it tracks live edits frame-to-frame.
+  if (!state.exporting) updateLayerChrome();
+}
+
+function drawLayer(layer) {
+  if (layer.kind === 'rect')  return drawRectLayer(layer);
+  if (layer.kind === 'image') return drawImageLayer(layer);
+  return drawTextLayer(layer);
+}
+
+// Image cache — src URL → HTMLImageElement. Shared across format clones
+// (deep-copied layers keep the same src string, so the cache hit works).
+const imageCache = new Map();
+
+function drawImageLayer(layer) {
+  layer._bbox = { x: layer.x, y: layer.y, w: layer.w, h: layer.h };
+  ctx.save();
+  ctx.globalAlpha = layer.opacity;
+  if (layer.rotation) {
+    const cx = layer.x + layer.w / 2;
+    const cy = layer.y + layer.h / 2;
+    ctx.translate(cx, cy);
+    ctx.rotate(layer.rotation * Math.PI / 180);
+    ctx.translate(-cx, -cy);
+  }
+  const img = imageCache.get(layer.src);
+  if (img && img.complete) {
+    try { ctx.drawImage(img, layer.x, layer.y, layer.w, layer.h); } catch {}
+  }
+  ctx.restore();
+}
+
+// Word-wrap content within maxWidth. Preserves explicit \n. Long single words
+// are placed on their own line and may overflow if they exceed the box.
+function wrapTextLines(text, maxWidth) {
+  const out = [];
+  for (const para of String(text || '').split('\n')) {
+    if (!para) { out.push(''); continue; }
+    const words = para.split(' ');
+    let line = '';
+    for (const word of words) {
+      const test = line ? line + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        out.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+function drawTextLayer(layer, measureOnly) {
+  const fontFamily = layer.fontFamily.includes(' ') && !/['",]/.test(layer.fontFamily)
+    ? `"${layer.fontFamily}"`
+    : layer.fontFamily;
+  ctx.save();
+  ctx.font = `${layer.fontWeight} ${layer.fontSize}px ${fontFamily}, system-ui, sans-serif`;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = layer.align;
+  ctx.globalAlpha = layer.opacity;
+
+  // maxWidth = constrained text box (text-tool drag). Without it, the layer
+  // is unbounded and content lines are split only on \n.
+  const lines = layer.maxWidth
+    ? wrapTextLines(layer.content, layer.maxWidth)
+    : String(layer.content || '').split('\n');
+
+  const lineH = layer.fontSize * (layer.lineHeight ?? 0.8);
+  let measuredMaxW = 0;
+  for (const line of lines) {
+    const w = ctx.measureText(line).width;
+    if (w > measuredMaxW) measuredMaxW = w;
+  }
+  const totalH = lineH * lines.length;
+  // When line-height is tight (< 1) the last line's descender (g/p/y) sticks
+  // out below `lineH × lines`. Pad the bbox so it covers actual glyph extent
+  // — otherwise the inline editor's overflow clips descenders while typing.
+  const descenderPad = Math.max(0, layer.fontSize - lineH);
+  const visualH = totalH + descenderPad;
+
+  // Effective bbox width: the explicit constraint when set (so the user
+  // sees the text box they drew), otherwise the actual measured extent.
+  // Effective bbox height: the explicit boxHeight if the user drew a box,
+  // otherwise the natural text extent (incl. descender padding).
+  const effW = layer.maxWidth  || measuredMaxW;
+  const effH = layer.boxHeight || visualH;
+  const bx = layer.align === 'left'  ? layer.x
+           : layer.align === 'right' ? layer.x - effW
+           :                            layer.x - effW / 2;
+  layer._bbox = { x: bx, y: layer.y, w: effW, h: effH };
+  // Measure-only: bbox is enough (e.g. inline editing is showing the textarea
+  // on top of this layer and we just need positioning info for the toolbar).
+  if (measureOnly) { ctx.restore(); return; }
+
+  // Apply rotation around the bbox centre AFTER measurement so _bbox stays
+  // axis-aligned in local coords; hit-test inverse-transforms.
+  if (layer.rotation) {
+    const cx = bx + effW / 2;
+    const cy = layer.y + effH / 2;
+    ctx.translate(cx, cy);
+    ctx.rotate(layer.rotation * Math.PI / 180);
+    ctx.translate(-cx, -cy);
+  }
+
+  if (layer.shadow && layer.shadow.enabled) {
+    ctx.shadowColor = layer.shadow.color;
+    ctx.shadowBlur  = layer.shadow.blur;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  }
+
+  ctx.fillStyle = layer.color;
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], layer.x, layer.y + i * lineH);
+  }
+  ctx.restore();
+}
+
+function drawRectLayer(layer) {
+  layer._bbox = { x: layer.x, y: layer.y, w: layer.w, h: layer.h };
+  ctx.save();
+  ctx.globalAlpha = layer.opacity;
+  if (layer.rotation) {
+    const cx = layer.x + layer.w / 2;
+    const cy = layer.y + layer.h / 2;
+    ctx.translate(cx, cy);
+    ctx.rotate(layer.rotation * Math.PI / 180);
+    ctx.translate(-cx, -cy);
+  }
+  ctx.fillStyle = layer.color;
+  if (layer.radius > 0) {
+    drawRoundRect(ctx, layer.x, layer.y, layer.w, layer.h, layer.radius);
+    ctx.fill();
+  } else {
+    ctx.fillRect(layer.x, layer.y, layer.w, layer.h);
+  }
+  ctx.restore();
+}
+
+function drawRoundRect(ctx, x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+// Hex parsing / formatting. Accepts "#RGB", "#RRGGBB", with or without "#".
+// Returns a normalized "#RRGGBB" string or null if invalid.
+function parseHex(s) {
+  if (!s) return null;
+  let t = String(s).trim().replace(/^#/, '');
+  if (/^[0-9a-f]{3}$/i.test(t)) t = t.split('').map(c => c + c).join('');
+  if (/^[0-9a-f]{6}$/i.test(t)) return '#' + t.toUpperCase();
+  return null;
+}
+function fmtHex(s) { return parseHex(s) || '#FFFFFF'; }
+
+// Sample a small neighbourhood of the canvas at (cx, cy) — average the
+// luminance and return white on a dark patch, black on a light patch. Used
+// to pick a sensible default colour for newly-added text. Safe to call any
+// time after the rAF loop has drawn at least one frame.
+function contrastingTextColor(cx, cy) {
+  try {
+    const SAMPLE = 11;
+    const half = (SAMPLE - 1) / 2;
+    const sx = clamp(Math.round(cx - half), 0, canvas.width  - SAMPLE);
+    const sy = clamp(Math.round(cy - half), 0, canvas.height - SAMPLE);
+    const data = ctx.getImageData(sx, sy, SAMPLE, SAMPLE).data;
+    let sum = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      // Rec. 601 luma — good enough for "is this dark or light"
+      sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    }
+    const avg = sum / (data.length / 4);
+    return avg < 128 ? '#ffffff' : '#000000';
+  } catch {
+    return '#ffffff';
+  }
+}
+
+// ═════════════════════════════════════ Video transform helpers ═════════════════════════════════════
+function fitVideoCover() {
+  if (!state.video.naturalW || !state.video.naturalH) {
+    state.video.transform = null;
+  } else {
+    const sz = activeSize();
+    const sw = state.video.naturalW, sh = state.video.naturalH;
+    const scale = Math.max(sz.w / sw, sz.h / sh);
+    const w = sw * scale, h = sh * scale;
+    state.video.transform = { x: (sz.w - w) / 2, y: (sz.h - h) / 2, w, h };
+  }
+  // Reassignment — sync the new object back into the current format slot
+  // so the per-format memory stays consistent.
+  if (state.formats[state.sizeId]) state.formats[state.sizeId].videoTransform = state.video.transform;
+}
+
+// Each selection helper pushes a (debounced) undo entry so undo/redo
+// retraces the user's selection history alongside their edits.
+function selectionChanged() {
+  pushUndo('select');
+}
+function selectVideo() {
+  if (state.videoSelected && !state.selectedLayerIds.length) return; // no change
+  selectionChanged();
+  state.videoSelected = true;
+  state.selectedLayerIds = [];
+  state.activeLayerId = null;
+  refreshLayerList();
+  syncEditPanel();
+  updateVideoChrome();
+  updateTextToolbar();
+}
+function selectLayer(id) {
+  // No-op if it's already the single primary selection.
+  if (!state.videoSelected && state.selectedLayerIds.length === 1 && state.selectedLayerIds[0] === id) return;
+  selectionChanged();
+  state.selectedLayerIds = [id];
+  state.activeLayerId = id;
+  state.videoSelected = false;
+  refreshLayerList();
+  syncEditPanel();
+  updateVideoChrome();
+  draw();
+  updateTextToolbar();
+}
+function toggleLayerSelection(id) {
+  selectionChanged();
+  state.videoSelected = false;
+  const idx = state.selectedLayerIds.indexOf(id);
+  if (idx >= 0) {
+    state.selectedLayerIds.splice(idx, 1);
+  } else {
+    state.selectedLayerIds.push(id);
+  }
+  state.activeLayerId = state.selectedLayerIds[state.selectedLayerIds.length - 1] || null;
+  refreshLayerList();
+  syncEditPanel();
+  updateVideoChrome();
+  draw();
+  updateTextToolbar();
+}
+function isLayerSelected(id) { return state.selectedLayerIds.indexOf(id) >= 0; }
+function deselectAll() {
+  if (!state.videoSelected && !state.selectedLayerIds.length) return;
+  selectionChanged();
+  state.videoSelected = false;
+  state.selectedLayerIds = [];
+  state.activeLayerId = null;
+  refreshLayerList();
+  syncEditPanel();
+  updateVideoChrome();
+  updateTextToolbar();
+  hideGuides();
+}
+
+function updateVideoChrome() {
+  const t = state.video.transform;
+  if (!state.videoSelected || !t) {
+    videoChrome.classList.add('hidden');
+    return;
+  }
+  videoChrome.classList.remove('hidden');
+  videoChrome.style.left   = (t.x * viewScale) + 'px';
+  videoChrome.style.top    = (t.y * viewScale) + 'px';
+  videoChrome.style.width  = (t.w * viewScale) + 'px';
+  videoChrome.style.height = (t.h * viewScale) + 'px';
+}
+
+// Selection chrome for the active text/rect layer. Sits over the layer's
+// bbox (which drawLayer() computed in canvas coords). Edge handles are
+// hidden via CSS for text layers; corner handles scale the font there.
+function updateLayerChrome() {
+  const layer = activeLayer();
+  // Keep the chrome visible during inline edit so it still wraps the bbox.
+  if (!layer || state.videoSelected) {
+    layerChrome.classList.add('hidden');
+    return;
+  }
+  // Compute the bbox to draw the chrome around:
+  //   single-select → the layer's own bbox (with full resize handles)
+  //   multi-select  → union of every selected layer's bbox (corners only)
+  let b;
+  const multi = state.selectedLayerIds.length > 1;
+  if (multi) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const id of state.selectedLayerIds) {
+      const ly = state.layers.find(x => x.id === id);
+      if (!ly || !ly._bbox) continue;
+      const bb = ly._bbox;
+      if (bb.x < minX) minX = bb.x;
+      if (bb.y < minY) minY = bb.y;
+      if (bb.x + bb.w > maxX) maxX = bb.x + bb.w;
+      if (bb.y + bb.h > maxY) maxY = bb.y + bb.h;
+    }
+    if (!isFinite(minX)) { layerChrome.classList.add('hidden'); return; }
+    b = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  } else {
+    if (!layer._bbox) { layerChrome.classList.add('hidden'); return; }
+    b = layer._bbox;
+  }
+  layerChrome.classList.remove('hidden');
+  layerChrome.classList.toggle('kind-text',  !multi && layer.kind === 'text');
+  layerChrome.classList.toggle('kind-rect',  !multi && layer.kind === 'rect');
+  layerChrome.classList.toggle('kind-image', !multi && layer.kind === 'image');
+  layerChrome.classList.toggle('multi', multi);
+  // Text WITH a maxWidth-constrained box uses the rect-style 8-handle resize
+  // (changes the box, not the font). Reflected via .has-box so CSS shows edges.
+  layerChrome.classList.toggle('has-box', !multi && layer.kind === 'text' && layer.maxWidth != null);
+  const rot = (!multi && layer.rotation) ? layer.rotation : 0;
+  layerChrome.classList.toggle('rotated', rot !== 0);
+  layerChrome.style.left   = (b.x * viewScale) + 'px';
+  layerChrome.style.top    = (b.y * viewScale) + 'px';
+  layerChrome.style.width  = (b.w * viewScale) + 'px';
+  layerChrome.style.height = (b.h * viewScale) + 'px';
+  layerChrome.style.transform       = rot ? `rotate(${rot}deg)` : '';
+  layerChrome.style.transformOrigin = 'center';
+  applyHandleCursorsForRotation(rot);
+}
+
+// CSS cursors don't rotate with the chrome. Pick the standard cursor that
+// matches each handle's resize axis once the chrome has been rotated.
+function applyHandleCursorsForRotation(rotation) {
+  // Each handle's natural resize-axis direction in degrees (0=horizontal,
+  // 90=vertical, 45=NE-SW diagonal, 135=NW-SE diagonal).
+  const baseAxis = { nw: 135, ne: 45, se: 135, sw: 45, n: 90, s: 90, w: 0, e: 0 };
+  // Cursors indexed by axis / 45 (snapped to nearest 45°): 0=ew, 1=nesw, 2=ns, 3=nwse.
+  const cursors = ['ew-resize', 'nesw-resize', 'ns-resize', 'nwse-resize'];
+  for (const h of layerHandles) {
+    const base = baseAxis[h.dataset.corner] || 0;
+    let axis = (base + rotation) % 180;
+    if (axis < 0) axis += 180;
+    h.style.cursor = cursors[Math.round(axis / 45) % 4];
+  }
+}
+
+// Wire handle pointerdowns ONCE on init (handles are static).
+layerHandles.forEach(h => {
+  h.addEventListener('pointerdown', e => {
+    const layer = activeLayer();
+    if (!layer || !layer._bbox) return;
+    e.preventDefault();
+    e.stopPropagation();
+    // Multi-selection: uniform-scale every selected layer (sizes AND positions
+    // relative to the opposite corner of the union bbox).
+    if (state.selectedLayerIds.length > 1) {
+      pushUndo();
+      const union = computeUnionBbox(state.selectedLayerIds);
+      const snapshots = state.selectedLayerIds.map(id => {
+        const l = state.layers.find(x => x.id === id);
+        if (!l) return null;
+        return {
+          id, kind: l.kind,
+          x: l.x, y: l.y,
+          w: l.w, h: l.h,
+          fontSize: l.fontSize,
+          maxWidth: l.maxWidth, boxHeight: l.boxHeight,
+        };
+      }).filter(Boolean);
+      canvasDrag = {
+        kind: 'multi-resize',
+        corner: h.dataset.corner,
+        startClientX: e.clientX, startClientY: e.clientY,
+        union, snapshots,
+        pointerId: e.pointerId,
+        target: h,
+      };
+      try { h.setPointerCapture(e.pointerId); } catch {}
+      return;
+    }
+    pushUndo();
+    canvasDrag = {
+      kind: 'layer-resize',
+      layerId: layer.id,
+      corner: h.dataset.corner,
+      startClientX: e.clientX, startClientY: e.clientY,
+      startBbox: { ...layer._bbox },
+      // Snapshot whatever mutable state determines that bbox so we can re-derive.
+      snapshot: (layer.kind === 'rect' || layer.kind === 'image')
+        ? { x: layer.x, y: layer.y, w: layer.w, h: layer.h }
+        : { x: layer.x, y: layer.y, fontSize: layer.fontSize, align: layer.align,
+            maxWidth: layer.maxWidth, boxHeight: layer.boxHeight },
+      pointerId: e.pointerId,
+      target: h,
+    };
+    try { h.setPointerCapture(e.pointerId); } catch {}
+    updateTextToolbar();   // hides during drag
+  });
+});
+
+// Rotate grips — drag rotates around the bbox centre. Holding Shift snaps
+// to 15° increments (Figma convention).
+rotateGrips.forEach(g => {
+  g.addEventListener('pointerdown', e => {
+    const layer = activeLayer();
+    if (!layer || !layer._bbox) return;
+    e.preventDefault();
+    e.stopPropagation();
+    pushUndo();
+    const sz = activeSize();
+    const r = canvas.getBoundingClientRect();
+    // Multi-selection rotates the whole group about the union centre.
+    if (state.selectedLayerIds.length > 1) {
+      const union = computeUnionBbox(state.selectedLayerIds);
+      const groupCx = union.x + union.w / 2;
+      const groupCy = union.y + union.h / 2;
+      const cxScreen = r.left + groupCx * (r.width  / sz.w);
+      const cyScreen = r.top  + groupCy * (r.height / sz.h);
+      const snapshots = state.selectedLayerIds.map(id => {
+        const l = state.layers.find(x => x.id === id);
+        if (!l || !l._bbox) return null;
+        return {
+          id,
+          x: l.x, y: l.y,
+          rotation: l.rotation || 0,
+          bbox: { x: l._bbox.x, y: l._bbox.y, w: l._bbox.w, h: l._bbox.h },
+        };
+      }).filter(Boolean);
+      canvasDrag = {
+        kind: 'multi-rotate',
+        cxScreen, cyScreen,
+        groupCx, groupCy,
+        startAngle: Math.atan2(e.clientY - cyScreen, e.clientX - cxScreen),
+        snapshots,
+        pointerId: e.pointerId,
+        target: g,
+      };
+      try { g.setPointerCapture(e.pointerId); } catch {}
+      return;
+    }
+    // Single-layer rotation: about the layer's own bbox centre.
+    const b = layer._bbox;
+    const cxScreen = r.left + (b.x + b.w / 2) * (r.width  / sz.w);
+    const cyScreen = r.top  + (b.y + b.h / 2) * (r.height / sz.h);
+    canvasDrag = {
+      kind: 'layer-rotate',
+      layerId: layer.id,
+      cxScreen, cyScreen,
+      startAngle:   Math.atan2(e.clientY - cyScreen, e.clientX - cxScreen),
+      startRotation: layer.rotation || 0,
+      pointerId: e.pointerId,
+      target: g,
+    };
+    try { g.setPointerCapture(e.pointerId); } catch {}
+  });
+});
+
+// Floating contextual text toolbar — appears above the selected layer's
+// bbox; flips below when there isn't enough room above. Hides during drag.
+function updateTextToolbar() {
+  const layer = activeLayer();
+  // Only show for TEXT layers — rect layers use sidebar controls.
+  const visible = layer && layer.kind === 'text' && !state.videoSelected && !!layer._bbox && !canvasDrag;
+  if (!visible) {
+    textToolbar.classList.add('hidden');
+    return;
+  }
+  // Sync control values from the current layer.
+  setFontPickerBtn(ttFontBtn, layer.fontFamily, layer.fontWeight);
+  ttSize.value  = layer.fontSize;
+  ttColor.value = layer.color;
+  if (document.activeElement !== ttColorHex) ttColorHex.value = fmtHex(layer.color);
+  ttAlign.querySelectorAll('.tt-btn').forEach(b => b.classList.toggle('active', b.dataset.v === layer.align));
+
+  textToolbar.classList.remove('hidden');
+
+  // Position: above bbox, or below if too close to the top of the canvas.
+  const b = layer._bbox;
+  const tw = textToolbar.offsetWidth  || 280;
+  const th = textToolbar.offsetHeight || 32;
+  const stageTop  = stage.offsetTop;
+  const stageLeft = stage.offsetLeft;
+  const bboxTop = stageTop + b.y * viewScale;
+  const bboxBot = stageTop + (b.y + b.h) * viewScale;
+  const bboxCx  = stageLeft + (b.x + b.w / 2) * viewScale;
+
+  const gap = 10;
+  let top = bboxTop - th - gap;
+  if (top < 6) top = bboxBot + gap;       // flip below
+  let left = bboxCx - tw / 2;
+  // Keep within canvas-area's content box.
+  const maxLeft = canvasArea.clientWidth - tw - 6;
+  left = Math.max(6, Math.min(left, maxLeft));
+
+  textToolbar.style.left = left + 'px';
+  textToolbar.style.top  = top + 'px';
+}
+
+// Click-to-step / drag-to-scrub arrows. The arrows column is the pointer-event
+// target (arrow buttons themselves have pointer-events: none) so we can
+// classify down→up without movement as a "click on the up/down half".
+function bindScrubArrows(el, opts) {
+  let drag = null;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const rect = el.getBoundingClientRect();
+    const upHalf = (e.clientY - rect.top) < rect.height / 2;
+    drag = {
+      startY: e.clientY,
+      startVal: opts.get(),
+      moved: false,
+      direction: upHalf ? +1 : -1,
+      pointerId: e.pointerId,
+    };
+    try { el.setPointerCapture(e.pointerId); } catch {}
+  });
+  el.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dy = drag.startY - e.clientY;  // up-positive
+    if (!drag.moved && Math.abs(dy) > 3) drag.moved = true;
+    if (!drag.moved) return;
+    const fast = e.shiftKey ? 4 : 1;
+    const delta = Math.round((dy * fast) / (opts.pxPerUnit || 2));
+    const next = clamp(drag.startVal + delta, opts.min, opts.max);
+    if (next !== opts.get()) opts.set(next);
+  });
+  const finish = (e) => {
+    if (!drag) return;
+    try { el.releasePointerCapture(drag.pointerId); } catch {}
+    if (!drag.moved) {
+      const step = (e.shiftKey ? 10 : 1) * drag.direction;
+      const next = clamp(drag.startVal + step, opts.min, opts.max);
+      opts.set(next);
+    }
+    drag = null;
+  };
+  el.addEventListener('pointerup', finish);
+  el.addEventListener('pointercancel', () => { drag = null; });
+}
+
+// ─── Font picker (family list with hover-to-weight flyout) ──────────────
+// One menu lives in <body>; we point it at whichever picker button opened it
+// and route the selection back through the supplied onSelect callback.
+let fontMenu = null;
+let weightMenu = null;
+let activeFontBtn = null;
+let activeFontCtx = null;          // { onSelect, getCurrent }
+
+function setFontPickerBtn(btn, family, weight) {
+  const fam = btn.querySelector('.fp-fam');
+  const wt  = btn.querySelector('.fp-wt');
+  if (fam) fam.textContent = family;
+  if (wt)  wt.textContent  = weightLabel(family, weight);
+  // Render the button's own font in its own family so it previews.
+  btn.style.fontFamily = `"${family}", system-ui, sans-serif`;
+}
+
+function mountFontPicker(btn, ctx) {
+  // ctx: { onSelect: (family, weight) => void, getCurrent: () => ({family, weight}) }
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (activeFontBtn === btn) { closeFontMenu(); return; }
+    openFontMenu(btn, ctx);
+  });
+}
+
+function openFontMenu(btn, ctx) {
+  closeFontMenu();
+  activeFontBtn = btn;
+  activeFontCtx = ctx;
+  const cur = ctx.getCurrent();
+  fontMenu = document.createElement('div');
+  fontMenu.className = 'font-menu';
+  for (const item of FONT_CATALOG) {
+    const row = document.createElement('div');
+    row.className = 'font-row' + (item.family === cur.family ? ' active' : '');
+    row.dataset.family = item.family;
+    row.innerHTML = `
+      <span class="check">${item.family === cur.family ? '✓' : ''}</span>
+      <span class="name" style="font-family:'${item.family}', system-ui, sans-serif">${item.family}</span>
+      <span class="arrow">›</span>
+    `;
+    row.addEventListener('mouseenter', () => openWeightMenu(item, row));
+    row.addEventListener('click', () => openWeightMenu(item, row));
+    fontMenu.appendChild(row);
+  }
+  document.body.appendChild(fontMenu);
+  const r = btn.getBoundingClientRect();
+  // Position menu below the button, clamped to the viewport.
+  const mw = fontMenu.offsetWidth;
+  const mh = fontMenu.offsetHeight;
+  let left = r.left;
+  let top  = r.bottom + 4;
+  if (left + mw > window.innerWidth - 8)  left = window.innerWidth - mw - 8;
+  if (top  + mh > window.innerHeight - 8) top  = r.top - mh - 4;     // flip above
+  fontMenu.style.left = Math.max(8, left) + 'px';
+  fontMenu.style.top  = Math.max(8, top)  + 'px';
+  // Open the weights flyout for the active family by default.
+  const activeRow = fontMenu.querySelector('.font-row.active');
+  if (activeRow) openWeightMenu(fontEntry(cur.family), activeRow);
+  // Close on outside click / Escape.
+  setTimeout(() => {
+    document.addEventListener('mousedown', fontMenuOutside, true);
+    document.addEventListener('keydown',   fontMenuKeydown);
+  }, 0);
+}
+
+function openWeightMenu(item, fromRow) {
+  if (weightMenu) weightMenu.remove();
+  weightMenu = document.createElement('div');
+  weightMenu.className = 'font-weights-menu';
+  const cur = activeFontCtx.getCurrent();
+  for (const w of item.weights) {
+    const wr = document.createElement('div');
+    const isActive = item.family === cur.family && w.v === cur.weight;
+    wr.className = 'weight-row' + (isActive ? ' active' : '');
+    wr.innerHTML = `<span class="check">${isActive ? '✓' : ''}</span><span class="label">${w.n}</span>`;
+    wr.style.fontWeight = String(w.v);
+    wr.style.fontFamily = `'${item.family}', system-ui, sans-serif`;
+    wr.addEventListener('click', () => {
+      activeFontCtx.onSelect(item.family, w.v);
+      closeFontMenu();
+    });
+    weightMenu.appendChild(wr);
+  }
+  document.body.appendChild(weightMenu);
+  // Mark the source row as the active family so user sees current selection.
+  if (fontMenu) {
+    fontMenu.querySelectorAll('.font-row').forEach(r => {
+      const isFam = r.dataset.family === item.family;
+      r.classList.toggle('open', isFam);
+    });
+  }
+  const r = fromRow.getBoundingClientRect();
+  const ww = weightMenu.offsetWidth;
+  let left = r.right + 4;
+  let top = r.top;
+  if (left + ww > window.innerWidth - 8) left = r.left - ww - 4; // flip left
+  if (top + weightMenu.offsetHeight > window.innerHeight - 8) {
+    top = window.innerHeight - weightMenu.offsetHeight - 8;
+  }
+  weightMenu.style.left = Math.max(8, left) + 'px';
+  weightMenu.style.top  = Math.max(8, top)  + 'px';
+}
+
+function fontMenuOutside(e) {
+  if (fontMenu   && fontMenu.contains(e.target))   return;
+  if (weightMenu && weightMenu.contains(e.target)) return;
+  if (activeFontBtn && activeFontBtn.contains(e.target)) return;
+  closeFontMenu();
+}
+function fontMenuKeydown(e) {
+  if (e.key === 'Escape') { e.preventDefault(); closeFontMenu(); }
+}
+function closeFontMenu() {
+  if (fontMenu)   fontMenu.remove();
+  if (weightMenu) weightMenu.remove();
+  fontMenu = weightMenu = null;
+  activeFontBtn = null;
+  activeFontCtx = null;
+  document.removeEventListener('mousedown', fontMenuOutside, true);
+  document.removeEventListener('keydown',   fontMenuKeydown);
+}
+
+function bindTextToolbar() {
+  // Apply to every selected layer (text only — the toolbar is hidden for rects).
+  const apply = (mut, undoKey) => {
+    if (!state.selectedLayerIds.length) return;
+    pushUndo(undoKey || 'toolbar-edit');
+    for (const id of state.selectedLayerIds) {
+      const l = state.layers.find(x => x.id === id);
+      if (l && l.kind !== 'rect') mut(l);
+    }
+    refreshLayerList();
+    draw();
+    syncEditPanel();
+    updateTextToolbar();
+  };
+  ttSize.addEventListener('input',  () => {
+    const v = parseInt(ttSize.value, 10);
+    if (!isFinite(v) || v < 1) return;
+    apply(l => l.fontSize = v);
+  });
+  // Spinner arrows: click to step ±1 (Shift = ±10); pointer-down + vertical drag = scrub.
+  bindScrubArrows(ttSizeArrows, {
+    min: 1,
+    max: 2000,
+    pxPerUnit: 2,   // 2 screen-px ≈ 1 size unit while scrubbing
+    get: () => +ttSize.value || activeLayer()?.fontSize || 64,
+    set: (v) => { ttSize.value = v; apply(l => l.fontSize = v); },
+  });
+  ttColor.addEventListener('input', () => { ttColorHex.value = fmtHex(ttColor.value); apply(l => l.color = ttColor.value); });
+  ttColorHex.addEventListener('input', () => {
+    const hex = parseHex(ttColorHex.value);
+    if (hex) { ttColor.value = hex; apply(l => l.color = hex); }
+  });
+  ttColorHex.addEventListener('blur', () => { ttColorHex.value = fmtHex(ttColor.value); });
+  ttColorHex.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ttColorHex.blur(); } });
+  ttAlign.addEventListener('click', e => {
+    const b = e.target.closest('.tt-btn'); if (!b) return;
+    apply(l => setLayerAlign(l, b.dataset.v));
+  });
+}
+
+// ═════════════════════════════════════ Smart guides (snap to canvas edges/centre) ═════════════════════════════════════
+function showGuideV(canvasX) {
+  guideV.style.left = (canvasX * viewScale) + 'px';
+  guideV.classList.remove('hidden');
+}
+function showGuideH(canvasY) {
+  guideH.style.top = (canvasY * viewScale) + 'px';
+  guideH.classList.remove('hidden');
+}
+function hideGuideV() { guideV.classList.add('hidden'); }
+function hideGuideH() { guideH.classList.add('hidden'); }
+function hideGuides() { hideGuideV(); hideGuideH(); }
+
+// ─── Undo / redo ─────────────────────────────────────────────────────────
+// Snapshots capture the WHOLE document — every per-format slot, the active
+// size, and the trim range. Selection state is ephemeral and not stored, so
+// undoing also clears selection (predictable: same as reload-and-pick-up).
+const undoStack = [];
+const redoStack = [];
+const UNDO_MAX = 100;
+const UNDO_DEBOUNCE_MS = 600;
+let lastUndoKey = null;
+let lastUndoTime = 0;
+
+function snapshotDoc() {
+  // Flush working state into its slot first so it's captured.
+  saveCurrentFormatSlot();
+  return {
+    sizeId:           state.sizeId,
+    formats:          JSON.parse(JSON.stringify(state.formats)),
+    trimStart:        state.trimStart,
+    trimEnd:          state.trimEnd,
+    masterFormat:     state.masterFormat,
+    // Selection is part of the user's editing context — undo/redo should
+    // restore the same set of selected items so the next action lands on
+    // what they expect.
+    selection: {
+      videoSelected:    state.videoSelected,
+      activeLayerId:    state.activeLayerId,
+      selectedLayerIds: state.selectedLayerIds.slice(),
+    },
+  };
+}
+function restoreSnapshot(snap) {
+  state.sizeId       = snap.sizeId;
+  state.formats      = JSON.parse(JSON.stringify(snap.formats));
+  state.trimStart    = snap.trimStart;
+  state.trimEnd      = snap.trimEnd;
+  state.masterFormat = snap.masterFormat || null;
+  const slot = state.formats[state.sizeId] || (state.formats[state.sizeId] = { layers: [], videoTransform: null });
+  state.layers          = slot.layers;
+  state.video.transform = slot.videoTransform;
+  // Restore selection, but only ids that still exist in the current slot.
+  const sel = snap.selection || { videoSelected: false, activeLayerId: null, selectedLayerIds: [] };
+  const exist = new Set(state.layers.map(l => l.id));
+  state.selectedLayerIds = sel.selectedLayerIds.filter(id => exist.has(id));
+  state.activeLayerId   = exist.has(sel.activeLayerId) ? sel.activeLayerId : (state.selectedLayerIds[state.selectedLayerIds.length - 1] || null);
+  state.videoSelected   = !!sel.videoSelected;
+  sizeGrid.querySelectorAll('.size-card').forEach(b => {
+    const on = b.dataset.id === state.sizeId;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  applySizeToCanvas();
+  refreshLayerList();
+  syncEditPanel();
+  updateVideoChrome();
+  updateTextToolbar();
+  updateTrimOverlay();
+  draw();
+  // Reset debounce window so the next user edit pushes a fresh entry.
+  lastUndoKey = null; lastUndoTime = 0;
+}
+
+// `key` collapses consecutive same-keyed edits (e.g. dragging a slider)
+// into one undo entry within UNDO_DEBOUNCE_MS. Omit `key` to never collapse.
+function pushUndo(key) {
+  const now = Date.now();
+  if (key && key === lastUndoKey && (now - lastUndoTime) < UNDO_DEBOUNCE_MS) {
+    lastUndoTime = now;
+    return;
+  }
+  undoStack.push(snapshotDoc());
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  redoStack.length = 0;
+  lastUndoKey = key || null;
+  lastUndoTime = now;
+}
+function undo() {
+  if (!undoStack.length) return;
+  redoStack.push(snapshotDoc());
+  restoreSnapshot(undoStack.pop());
+}
+function redo() {
+  if (!redoStack.length) return;
+  undoStack.push(snapshotDoc());
+  restoreSnapshot(redoStack.pop());
+}
+
+// ─── Generalized snap targets ───────────────────────────────────────────
+// excludeId: 'video' to exclude the video transform; otherwise a layer id.
+// Returns the X- and Y-axis line positions that the moving/resizing element
+// should snap to: canvas edges + center, every other layer's left/centre/
+// right (or top/middle/bottom), and the video's edges if not excluded.
+// excludeId can be a single id string ('video' or a layer id) OR a Set of
+// ids to exclude (used when snapping a multi-selection: every selected
+// layer is excluded so the group doesn't snap to itself).
+function _isExcluded(exclude, id) {
+  return exclude instanceof Set ? exclude.has(id) : exclude === id;
+}
+function getXSnapTargets(exclude) {
+  const sz = activeSize();
+  const out = [0, sz.w / 2, sz.w];
+  for (const l of state.layers) {
+    if (!l._bbox || _isExcluded(exclude, l.id)) continue;
+    const b = l._bbox;
+    out.push(b.x, b.x + b.w / 2, b.x + b.w);
+  }
+  if (!_isExcluded(exclude, 'video') && state.video.transform) {
+    const t = state.video.transform;
+    out.push(t.x, t.x + t.w / 2, t.x + t.w);
+  }
+  return out;
+}
+function getYSnapTargets(exclude) {
+  const sz = activeSize();
+  const out = [0, sz.h / 2, sz.h];
+  for (const l of state.layers) {
+    if (!l._bbox || _isExcluded(exclude, l.id)) continue;
+    const b = l._bbox;
+    out.push(b.y, b.y + b.h / 2, b.y + b.h);
+  }
+  if (!_isExcluded(exclude, 'video') && state.video.transform) {
+    const t = state.video.transform;
+    out.push(t.y, t.y + t.h / 2, t.y + t.h);
+  }
+  return out;
+}
+
+// Snap a bbox's left/centre/right (X) and top/middle/bottom (Y) to the
+// nearest targets within SNAP. `exclude` may be a single id or a Set.
+// Returns { bestX, bestY } with { cur, v } or null per axis.
+function snapBboxMove(bbox, exclude) {
+  const xs = getXSnapTargets(exclude);
+  const ys = getYSnapTargets(exclude);
+  const candX = [bbox.x, bbox.x + bbox.w / 2, bbox.x + bbox.w];
+  const candY = [bbox.y, bbox.y + bbox.h / 2, bbox.y + bbox.h];
+  let bestX = null, bestXd = SNAP;
+  for (const cx of candX) for (const tx of xs) {
+    const d = Math.abs(cx - tx);
+    if (d < bestXd) { bestXd = d; bestX = { cur: cx, v: tx }; }
+  }
+  let bestY = null, bestYd = SNAP;
+  for (const cy of candY) for (const ty of ys) {
+    const d = Math.abs(cy - ty);
+    if (d < bestYd) { bestYd = d; bestY = { cur: cy, v: ty }; }
+  }
+  return { bestX, bestY };
+}
+
+// Multi-selection move: snap the union bbox against everything that isn't
+// in the selection (canvas + non-selected layers + video). Returns the
+// shift {dx, dy} so the caller can apply it to every selected layer
+// uniformly — keeping their relative spacing intact while the group as a
+// whole locks to a guide.
+function snapMoveSelectionDelta() {
+  if (state.selectedLayerIds.length < 2) return { dx: 0, dy: 0 };
+  const union = computeUnionBbox(state.selectedLayerIds);
+  if (!union.w || !union.h) { hideGuides(); return { dx: 0, dy: 0 }; }
+  const excludeSet = new Set(state.selectedLayerIds);
+  const { bestX, bestY } = snapBboxMove(union, excludeSet);
+  if (bestX) showGuideV(bestX.v); else hideGuideV();
+  if (bestY) showGuideH(bestY.v); else hideGuideH();
+  return {
+    dx: bestX ? (bestX.v - bestX.cur) : 0,
+    dy: bestY ? (bestY.v - bestY.cur) : 0,
+  };
+}
+
+function applySnapMove() {
+  const t = state.video.transform;
+  const { bestX, bestY } = snapBboxMove({ x: t.x, y: t.y, w: t.w, h: t.h }, 'video');
+  if (bestX) { t.x += (bestX.v - bestX.cur); showGuideV(bestX.v); } else hideGuideV();
+  if (bestY) { t.y += (bestY.v - bestY.cur); showGuideH(bestY.v); } else hideGuideH();
+}
+
+// Snap a text/rect layer based on its rendered bbox. Shifts the layer's
+// anchor (layer.x / layer.y) by the same delta so the bbox follows.
+function applySnapMoveLayer(layer) {
+  const b = layer._bbox;
+  if (!b) { hideGuides(); return; }
+  const { bestX, bestY } = snapBboxMove(b, layer.id);
+  if (bestX) { layer.x += (bestX.v - bestX.cur); showGuideV(bestX.v); } else hideGuideV();
+  if (bestY) { layer.y += (bestY.v - bestY.cur); showGuideH(bestY.v); } else hideGuideH();
+}
+
+// Smallest axis-aligned bbox covering every layer in `ids`. Falls back to
+// a zero-area rect at the canvas origin if no layer has a usable bbox.
+function computeUnionBbox(ids) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const id of ids) {
+    const l = state.layers.find(x => x.id === id);
+    if (!l || !l._bbox) continue;
+    if (l._bbox.x < minX) minX = l._bbox.x;
+    if (l._bbox.y < minY) minY = l._bbox.y;
+    if (l._bbox.x + l._bbox.w > maxX) maxX = l._bbox.x + l._bbox.w;
+    if (l._bbox.y + l._bbox.h > maxY) maxY = l._bbox.y + l._bbox.h;
+  }
+  if (!isFinite(minX)) return { x: 0, y: 0, w: 0, h: 0 };
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+// World-space anchor for resizing a ROTATED layer. After the resize logic
+// anchors the opposite corner in LOCAL coords, the bbox centre has moved,
+// which (under the layer's rotation around its centre) shifts that corner
+// in WORLD space. Translate layer.x/y so the opposite corner ends up at
+// the same world position it started at — making the visual drag feel
+// the same as it would on an unrotated layer.
+function applyRotatedWorldAnchor(layer, startBbox, corner, rotDeg) {
+  if (!layer._bbox) return;
+  const r = rotDeg * Math.PI / 180;
+  const opp = (function () {
+    // Opposite of the dragged handle (for edges, the midpoint of the
+    // opposite edge; for corners, the diagonally opposite corner).
+    if (corner === 'n')  return { kx: 0.5, ky: 1 };
+    if (corner === 's')  return { kx: 0.5, ky: 0 };
+    if (corner === 'w')  return { kx: 1,   ky: 0.5 };
+    if (corner === 'e')  return { kx: 0,   ky: 0.5 };
+    return {
+      kx: corner.includes('w') ? 1 : 0,
+      ky: corner.includes('n') ? 1 : 0,
+    };
+  })();
+  const oldOpp = { x: startBbox.x + startBbox.w * opp.kx, y: startBbox.y + startBbox.h * opp.ky };
+  const oldC   = { x: startBbox.x + startBbox.w / 2,      y: startBbox.y + startBbox.h / 2 };
+  const oldDx = oldOpp.x - oldC.x, oldDy = oldOpp.y - oldC.y;
+  const oldWorld = { x: oldC.x + oldDx * Math.cos(r) - oldDy * Math.sin(r),
+                     y: oldC.y + oldDx * Math.sin(r) + oldDy * Math.cos(r) };
+
+  const nb = layer._bbox;
+  const newOpp = { x: nb.x + nb.w * opp.kx, y: nb.y + nb.h * opp.ky };
+  const newC   = { x: nb.x + nb.w / 2,      y: nb.y + nb.h / 2 };
+  const newDx = newOpp.x - newC.x, newDy = newOpp.y - newC.y;
+  const newWorld = { x: newC.x + newDx * Math.cos(r) - newDy * Math.sin(r),
+                     y: newC.y + newDx * Math.sin(r) + newDy * Math.cos(r) };
+
+  layer.x += (oldWorld.x - newWorld.x);
+  layer.y += (oldWorld.y - newWorld.y);
+}
+
+// Snap while a new shape is being drawn with the rect/text tool. The
+// origin corner is fixed; the cursor corner moves. We snap the moving
+// edges (x and y) to the nearest target. Works for both kinds — text uses
+// maxWidth/boxHeight, rect uses w/h.
+function snapToolDraw(layer, originX, originY, ptX, ptY) {
+  const b = layer._bbox;
+  if (!b) { hideGuides(); return; }
+  const movX = ptX < originX ? 'left' : 'right';
+  const movY = ptY < originY ? 'top'  : 'bottom';
+  const xs = getXSnapTargets(layer.id);
+  const ys = getYSnapTargets(layer.id);
+  hideGuides();
+  const setW = (l, w) => { if (l.kind === 'rect' || l.kind === 'image') l.w = w; else l.maxWidth  = w; };
+  const setH = (l, h) => { if (l.kind === 'rect' || l.kind === 'image') l.h = h; else l.boxHeight = h; };
+
+  const curX = movX === 'left' ? b.x : b.x + b.w;
+  let bestX = null, bestXd = SNAP;
+  for (const t of xs) { const d = Math.abs(curX - t); if (d < bestXd) { bestXd = d; bestX = t; } }
+  if (bestX !== null) {
+    if (movX === 'left') {
+      const right = b.x + b.w;
+      const newW = Math.max(2, right - bestX);
+      layer.x = bestX;
+      setW(layer, newW);
+    } else {
+      const newW = Math.max(2, bestX - layer.x);
+      setW(layer, newW);
+    }
+    showGuideV(bestX);
+  }
+  const curY = movY === 'top' ? b.y : b.y + b.h;
+  let bestY = null, bestYd = SNAP;
+  for (const t of ys) { const d = Math.abs(curY - t); if (d < bestYd) { bestYd = d; bestY = t; } }
+  if (bestY !== null) {
+    if (movY === 'top') {
+      const bottom = b.y + b.h;
+      const newH = Math.max(2, bottom - bestY);
+      layer.y = bestY;
+      setH(layer, newH);
+    } else {
+      const newH = Math.max(2, bestY - layer.y);
+      setH(layer, newH);
+    }
+    showGuideH(bestY);
+  }
+}
+
+// Snap a rect layer being resized: snap the moving edge(s) to the nearest
+// guide. Free aspect (no ratio lock) — adjusts the corresponding dimension
+// independently per axis.
+function applySnapResizeRect(layer, corner) {
+  hideGuides();
+  const xs = getXSnapTargets(layer.id);
+  const ys = getYSnapTargets(layer.id);
+  const MIN = 8;
+  let movX = null, movY = null;
+  if (corner.includes('w')) movX = 'left'; else if (corner.includes('e')) movX = 'right';
+  if (corner.includes('n')) movY = 'top';  else if (corner.includes('s')) movY = 'bottom';
+  // Generic width/height accessors — also covers text-with-box (maxWidth/boxHeight).
+  const hasDirectWH = layer.kind === 'rect' || layer.kind === 'image';
+  const getW = () => hasDirectWH ? layer.w : (layer.maxWidth  || 0);
+  const getH = () => hasDirectWH ? layer.h : (layer.boxHeight || 0);
+  const setW = (w) => { if (hasDirectWH) layer.w = w; else layer.maxWidth  = w; };
+  const setH = (h) => { if (hasDirectWH) layer.h = h; else layer.boxHeight = h; };
+
+  if (movX) {
+    const cur = movX === 'left' ? layer.x : layer.x + getW();
+    let bestT = null, bestD = SNAP;
+    for (const t of xs) { const d = Math.abs(cur - t); if (d < bestD) { bestD = d; bestT = t; } }
+    if (bestT !== null) {
+      if (movX === 'left') {
+        const right = layer.x + getW();
+        const newW = right - bestT;
+        if (newW >= MIN) { layer.x = bestT; setW(newW); showGuideV(bestT); }
+      } else {
+        const newW = bestT - layer.x;
+        if (newW >= MIN) { setW(newW); showGuideV(bestT); }
+      }
+    }
+  }
+  if (movY) {
+    const cur = movY === 'top' ? layer.y : layer.y + getH();
+    let bestT = null, bestD = SNAP;
+    for (const t of ys) { const d = Math.abs(cur - t); if (d < bestD) { bestD = d; bestT = t; } }
+    if (bestT !== null) {
+      if (movY === 'top') {
+        const bottom = layer.y + getH();
+        const newH = bottom - bestT;
+        if (newH >= MIN) { layer.y = bestT; setH(newH); showGuideH(bestT); }
+      } else {
+        const newH = bestT - layer.y;
+        if (newH >= MIN) { setH(newH); showGuideH(bestT); }
+      }
+    }
+  }
+}
+
+function applySnapResize(corner, alt) {
+  hideGuides();
+  const t = state.video.transform;
+  const sz = activeSize();
+  const ratio = t.w / t.h;
+  const MIN = MIN_VIDEO_SIZE;
+  const curLeft = t.x, curRight = t.x + t.w, curTop = t.y, curBottom = t.y + t.h;
+  const curCx = (curLeft + curRight) / 2, curCy = (curTop + curBottom) / 2;
+
+  let movX = null, movY = null;
+  if (corner.includes('w')) movX = 'left'; else if (corner.includes('e')) movX = 'right';
+  if (corner.includes('n')) movY = 'top';  else if (corner.includes('s')) movY = 'bottom';
+
+  // Snap targets are now generalized — canvas edges/centre PLUS every layer's
+  // bbox edges/centre, so the video aligns to rectangles/text too.
+  const xTargets = getXSnapTargets('video');
+  const yTargets = getYSnapTargets('video');
+
+  let bestX = null, bestXd = SNAP;
+  if (movX) { const v = movX === 'left' ? curLeft : curRight; for (const tg of xTargets) { const d = Math.abs(v - tg); if (d < bestXd) { bestXd = d; bestX = tg; } } }
+  let bestY = null, bestYd = SNAP;
+  if (movY) { const v = movY === 'top' ? curTop : curBottom; for (const tg of yTargets) { const d = Math.abs(v - tg); if (d < bestYd) { bestYd = d; bestY = tg; } } }
+  let snapX = bestX, snapY = bestY;
+  if (corner.length === 2 && snapX !== null && snapY !== null) {
+    if (bestXd <= bestYd) snapY = null; else snapX = null;
+  }
+  if (snapX !== null) {
+    const newW = alt ? Math.max(MIN, Math.abs(curCx - snapX) * 2) : (movX === 'left' ? curRight - snapX : snapX - curLeft);
+    if (newW >= MIN) {
+      const newH = newW / ratio;
+      if (alt) t.x = curCx - newW / 2; else if (movX === 'left') t.x = snapX; else t.x = curLeft;
+      if (alt) t.y = curCy - newH / 2; else if (corner.length === 1) t.y = curCy - newH / 2; else t.y = movY === 'top' ? curBottom - newH : curTop;
+      t.w = newW; t.h = newH;
+      showGuideV(snapX);
+    }
+  }
+  if (snapY !== null) {
+    const newH = alt ? Math.max(MIN / ratio, Math.abs(curCy - snapY) * 2) : (movY === 'top' ? curBottom - snapY : snapY - curTop);
+    if (newH >= MIN / ratio) {
+      const newW = newH * ratio;
+      if (alt) t.y = curCy - newH / 2; else if (movY === 'top') t.y = snapY; else t.y = curTop;
+      if (alt) t.x = curCx - newW / 2; else if (corner.length === 1) t.x = curCx - newW / 2; else t.x = movX === 'left' ? curRight - newW : curLeft;
+      t.w = newW; t.h = newH;
+      showGuideH(snapY);
+    }
+  }
+}
+
+// ─── Tools ──────────────────────────────────────────────────────────────
+// Active tool drives the canvas cursor and what a pointerdown on the canvas
+// means. After a draw, we revert to 'select' so the user can immediately
+// edit / move the new layer (Figma behavior).
+function setTool(name) {
+  state.tool = name;
+  toolSelectBtn.classList.toggle('active', name === 'select');
+  toolTextBtn.classList.toggle('active',  name === 'text');
+  toolRectBtn.classList.toggle('active',  name === 'rect');
+  canvas.classList.toggle('tool-text', name === 'text');
+  canvas.classList.toggle('tool-rect', name === 'rect');
+  // Stepping into a draw tool clears any selection so the new shape is the
+  // sole focus of the next pointerdown.
+  if (name !== 'select') deselectAll();
+}
+
+// ═════════════════════════════════════ Canvas pointer (layer or video selection + drag) ═════════════════════════════════════
+canvas.addEventListener('pointerdown', e => {
+  // If the user is mid-inline-edit and they click on the canvas, commit the
+  // edit and hand selection back to the video (if one is loaded) — otherwise
+  // just clear selection.
+  if (inlineEditingLayerId) {
+    endInlineEdit();
+    if (state.video.loaded) selectVideo(); else deselectAll();
+    e.preventDefault();
+    return;
+  }
+
+  const pt = screenToCanvas(e.clientX, e.clientY);
+
+  // 0) Active draw tool — create a shape rooted at the click, then drag
+  //    to size; on pointerup, single-click vs drag is resolved.
+  if (state.tool === 'rect') { startRectDraw(e, pt); return; }
+  if (state.tool === 'text') { startTextDraw(e, pt); return; }
+
+  // 1) Layer hit test (top-most first). Rotated layers: inverse-transform
+  //    the pointer into the layer's local (unrotated) frame before testing.
+  for (let i = state.layers.length - 1; i >= 0; i--) {
+    const l = state.layers[i];
+    if (!l._bbox) continue;
+    const b = l._bbox;
+    let px = pt.x, py = pt.y;
+    if (l.rotation) {
+      const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      const dx = pt.x - cx, dy = pt.y - cy;
+      const r = -l.rotation * Math.PI / 180;
+      px = dx * Math.cos(r) - dy * Math.sin(r) + cx;
+      py = dx * Math.sin(r) + dy * Math.cos(r) + cy;
+    }
+    if (px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) {
+      if (e.shiftKey) {
+        // Shift-click: toggle membership; don't start a drag.
+        toggleLayerSelection(l.id);
+        e.preventDefault();
+        return;
+      }
+      // Alt-drag = duplicate-in-place + drag the copy (Figma/Sketch).
+      // If the clicked layer wasn't selected, treat it as the one source.
+      if (e.altKey) {
+        if (!isLayerSelected(l.id)) {
+          state.selectedLayerIds = [l.id];
+          state.activeLayerId = l.id;
+          state.videoSelected = false;
+        }
+        duplicateSelectedLayersInPlace();   // selection now = the new copies
+        refreshLayerList();
+        syncEditPanel();
+      } else {
+        // Plain click on an unselected layer = exclusive select. On an
+        // already-selected layer = keep the current multi-selection.
+        if (!isLayerSelected(l.id)) selectLayer(l.id);
+        pushUndo();   // each layer drag = one undo entry
+      }
+      const movedIds = state.selectedLayerIds.slice();
+      const starts = movedIds.map(id => {
+        const ly = state.layers.find(x => x.id === id);
+        return ly ? { id, x: ly.x, y: ly.y } : null;
+      }).filter(Boolean);
+      canvasDrag = {
+        kind: 'layer-move',
+        starts,
+        startCanvasX: pt.x, startCanvasY: pt.y,
+        primaryId: state.activeLayerId,
+        pointerId: e.pointerId,
+      };
+      try { canvas.setPointerCapture(e.pointerId); } catch {}
+      updateTextToolbar(); // hides because canvasDrag is set
+      e.preventDefault();
+      return;
+    }
+  }
+
+  // 2) Video hit test.
+  const t = state.video.transform;
+  if (t && pt.x >= t.x && pt.x <= t.x + t.w && pt.y >= t.y && pt.y <= t.y + t.h) {
+    selectVideo();
+    pushUndo();
+    canvasDrag = {
+      kind: 'video-move',
+      startCanvasX: pt.x, startCanvasY: pt.y,
+      snapshot: { x: t.x, y: t.y, w: t.w, h: t.h },
+      pointerId: e.pointerId,
+    };
+    try { canvas.setPointerCapture(e.pointerId); } catch {}
+    e.preventDefault();
+    return;
+  }
+
+  // 3) Empty click — deselect.
+  deselectAll();
+  draw();
+});
+
+// Resize handles (DOM) — pointer events resolved against the original client position
+// so we work in canvas-coords regardless of the live transform.
+handles.forEach(h => {
+  h.addEventListener('pointerdown', e => {
+    if (!state.video.transform) return;
+    e.preventDefault();
+    e.stopPropagation();
+    selectVideo();
+    pushUndo();
+    const t = state.video.transform;
+    canvasDrag = {
+      kind: 'video-resize',
+      corner: h.dataset.corner,
+      startClientX: e.clientX, startClientY: e.clientY,
+      snapshot: { x: t.x, y: t.y, w: t.w, h: t.h },
+      pointerId: e.pointerId,
+      target: h,
+    };
+    try { h.setPointerCapture(e.pointerId); } catch {}
+  });
+});
+
+window.addEventListener('pointermove', e => {
+  if (!canvasDrag) return;
+
+  if (canvasDrag.kind === 'multi-rotate') {
+    const ang = Math.atan2(e.clientY - canvasDrag.cyScreen, e.clientX - canvasDrag.cxScreen);
+    let deltaDeg = (ang - canvasDrag.startAngle) * 180 / Math.PI;
+    if (e.shiftKey) deltaDeg = Math.round(deltaDeg / 15) * 15;
+    const dRad = deltaDeg * Math.PI / 180;
+    const cos = Math.cos(dRad), sin = Math.sin(dRad);
+    for (const snap of canvasDrag.snapshots) {
+      const l = state.layers.find(x => x.id === snap.id);
+      if (!l) continue;
+      const sbCx = snap.bbox.x + snap.bbox.w / 2;
+      const sbCy = snap.bbox.y + snap.bbox.h / 2;
+      const dx = sbCx - canvasDrag.groupCx;
+      const dy = sbCy - canvasDrag.groupCy;
+      // Each layer's bbox CENTRE orbits the group centre by deltaDeg.
+      const newCx = canvasDrag.groupCx + dx * cos - dy * sin;
+      const newCy = canvasDrag.groupCy + dx * sin + dy * cos;
+      const newBboxX = newCx - snap.bbox.w / 2;
+      const newBboxY = newCy - snap.bbox.h / 2;
+      // layer.x / layer.y is the anchor — for rect/image it equals bbox.x/y;
+      // for text it's offset by alignment. Preserve that offset from the snap.
+      const anchorOffsetX = snap.x - snap.bbox.x;
+      const anchorOffsetY = snap.y - snap.bbox.y;
+      l.x = newBboxX + anchorOffsetX;
+      l.y = newBboxY + anchorOffsetY;
+      // Each layer also spins by the same angle (its own rotation += delta).
+      l.rotation = snap.rotation + deltaDeg;
+    }
+    draw();
+    return;
+  }
+
+  if (canvasDrag.kind === 'multi-resize') {
+    const u = canvasDrag.union;
+    if (u.w < 1 || u.h < 1) return;     // can't scale a zero-area selection
+    const corner = canvasDrag.corner;
+    const alt = e.altKey;
+    const k = alt ? 2 : 1;              // Alt = scale from centre (double rate)
+    const dx = (e.clientX - canvasDrag.startClientX) / viewScale;
+    const dy = (e.clientY - canvasDrag.startClientY) / viewScale;
+    // Anchor: opposite corner (default) or union centre (Alt).
+    const anchorX = alt ? u.x + u.w / 2 : (corner.includes('w') ? u.x + u.w : u.x);
+    const anchorY = alt ? u.y + u.h / 2 : (corner.includes('n') ? u.y + u.h : u.y);
+    // How much the dragged corner moves in each axis, signed so growing the
+    // bbox is positive regardless of which corner is being dragged. With Alt,
+    // both sides of the centre expand so we apply 2× the drag amount.
+    const dragW = (corner.includes('w') ? -dx : dx) * k;
+    const dragH = (corner.includes('n') ? -dy : dy) * k;
+    // Uniform scale: pick the axis whose drag ratio is bigger so the cursor
+    // stays at-or-past the dragged corner of the new bbox.
+    const sX = (u.w + dragW) / u.w;
+    const sY = (u.h + dragH) / u.h;
+    let s = Math.abs(sX) >= Math.abs(sY) ? sX : sY;
+    // Clamp positive — disallow flipping for now (cleaner UX for groups).
+    s = Math.max(0.05, s);
+    for (const snap of canvasDrag.snapshots) {
+      const l = state.layers.find(x => x.id === snap.id);
+      if (!l) continue;
+      // Scale POSITION relative to the anchor (preserves group spacing).
+      l.x = anchorX + (snap.x - anchorX) * s;
+      l.y = anchorY + (snap.y - anchorY) * s;
+      // Scale SIZE per kind. Text uses fontSize (+ box dims if it has a box).
+      if (snap.kind === 'rect' || snap.kind === 'image') {
+        l.w = Math.max(2, snap.w * s);
+        l.h = Math.max(2, snap.h * s);
+      } else {
+        if (snap.fontSize  != null) l.fontSize  = Math.max(1, Math.round(snap.fontSize * s));
+        if (snap.maxWidth  != null) l.maxWidth  = Math.max(8, snap.maxWidth  * s);
+        if (snap.boxHeight != null) l.boxHeight = Math.max(8, snap.boxHeight * s);
+      }
+    }
+    draw();
+    return;
+  }
+
+  if (canvasDrag.kind === 'layer-rotate') {
+    const layer = state.layers.find(l => l.id === canvasDrag.layerId);
+    if (!layer) return;
+    const ang = Math.atan2(e.clientY - canvasDrag.cyScreen, e.clientX - canvasDrag.cxScreen);
+    const dDeg = (ang - canvasDrag.startAngle) * 180 / Math.PI;
+    let rot = (canvasDrag.startRotation + dDeg) % 360;
+    if (rot > 180)  rot -= 360;
+    if (rot <= -180) rot += 360;
+    if (e.shiftKey) rot = Math.round(rot / 15) * 15;   // Shift snaps to 15°
+    layer.rotation = rot;
+    draw();
+    return;
+  }
+
+  if (canvasDrag.kind === 'tool-draw-rect') {
+    const layer = state.layers.find(l => l.id === canvasDrag.layerId);
+    if (!layer) return;
+    const pt = screenToCanvas(e.clientX, e.clientY);
+    const dx = pt.x - canvasDrag.originX;
+    const dy = pt.y - canvasDrag.originY;
+    if (Math.abs(dx) > DRAW_MOVE_THRESHOLD || Math.abs(dy) > DRAW_MOVE_THRESHOLD) canvasDrag.moved = true;
+    if (canvasDrag.moved) {
+      layer.x = Math.min(canvasDrag.originX, pt.x);
+      layer.y = Math.min(canvasDrag.originY, pt.y);
+      layer.w = Math.max(2, Math.abs(dx));
+      layer.h = Math.max(2, Math.abs(dy));
+      draw();
+      snapToolDraw(layer, canvasDrag.originX, canvasDrag.originY, pt.x, pt.y);
+      draw();
+    }
+    return;
+  }
+
+  if (canvasDrag.kind === 'tool-draw-text') {
+    const layer = state.layers.find(l => l.id === canvasDrag.layerId);
+    if (!layer) return;
+    const pt = screenToCanvas(e.clientX, e.clientY);
+    const dx = pt.x - canvasDrag.originX;
+    const dy = pt.y - canvasDrag.originY;
+    if (Math.abs(dx) > DRAW_MOVE_THRESHOLD || Math.abs(dy) > DRAW_MOVE_THRESHOLD) canvasDrag.moved = true;
+    if (canvasDrag.moved) {
+      // Drag = constrained text BOX. Anchor stays at the top-left of the
+      // dragged rectangle; both width AND height follow the drag, so the
+      // bbox is whatever shape the user draws — not just the text fit.
+      layer.x = Math.min(canvasDrag.originX, pt.x);
+      layer.y = Math.min(canvasDrag.originY, pt.y);
+      layer.maxWidth  = Math.max(20, Math.abs(dx));
+      layer.boxHeight = Math.max(20, Math.abs(dy));
+      draw();
+      snapToolDraw(layer, canvasDrag.originX, canvasDrag.originY, pt.x, pt.y);
+      draw();
+    }
+    return;
+  }
+
+  if (canvasDrag.kind === 'layer-move') {
+    const pt = screenToCanvas(e.clientX, e.clientY);
+    let dx = pt.x - canvasDrag.startCanvasX;
+    let dy = pt.y - canvasDrag.startCanvasY;
+    if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }
+    // Apply the same dx/dy to every selected layer. No clamping — layers can
+    // be positioned anywhere (off-canvas in any direction), like Figma.
+    for (const s of canvasDrag.starts) {
+      const ly = state.layers.find(l => l.id === s.id);
+      if (!ly) continue;
+      ly.x = s.x + dx;
+      ly.y = s.y + dy;
+    }
+    draw();
+    // Snap as a GROUP: the union bbox of every selected layer gets snapped
+    // to canvas + non-selected element guides; the resulting shift is
+    // applied uniformly so the whole group locks to the guide together.
+    // Single-selection still uses the per-layer snap.
+    if (state.selectedLayerIds.length > 1) {
+      const { dx: sdx, dy: sdy } = snapMoveSelectionDelta();
+      if (sdx !== 0 || sdy !== 0) {
+        for (const s of canvasDrag.starts) {
+          const ly = state.layers.find(l => l.id === s.id);
+          if (ly) { ly.x += sdx; ly.y += sdy; }
+        }
+        draw();
+      }
+    } else {
+      const primary = state.layers.find(l => l.id === canvasDrag.primaryId);
+      if (primary) {
+        applySnapMoveLayer(primary);
+        draw();
+      }
+    }
+
+  } else if (canvasDrag.kind === 'video-move') {
+    const t = state.video.transform;
+    const s = canvasDrag.snapshot;
+    const pt = screenToCanvas(e.clientX, e.clientY);
+    let dx = pt.x - canvasDrag.startCanvasX;
+    let dy = pt.y - canvasDrag.startCanvasY;
+    if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }
+    t.x = s.x + dx;
+    t.y = s.y + dy;
+    applySnapMove();
+    updateVideoChrome();
+    draw();
+
+  } else if (canvasDrag.kind === 'video-resize') {
+    const t = state.video.transform;
+    const s = canvasDrag.snapshot;
+    const dx = (e.clientX - canvasDrag.startClientX) / viewScale;
+    const dy = (e.clientY - canvasDrag.startClientY) / viewScale;
+    const ratio = s.w / s.h;
+    const corner = canvasDrag.corner;
+    const alt = e.altKey;
+    const k = alt ? 2 : 1;
+    const MIN = MIN_VIDEO_SIZE;
+    let newW, newH, newX, newY;
+
+    if (corner.length === 2) {
+      const dwUser = (corner.includes('w') ? -dx : dx) * k;
+      const dhUser = (corner.includes('n') ? -dy : dy) * k;
+      const dw = (Math.abs(dwUser) > Math.abs(dhUser) * ratio) ? dwUser : dhUser * ratio;
+      newW = Math.max(MIN, s.w + dw);
+      newH = newW / ratio;
+      if (alt) {
+        const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+        newX = cx - newW / 2; newY = cy - newH / 2;
+      } else {
+        newX = corner.includes('w') ? (s.x + s.w) - newW : s.x;
+        newY = corner.includes('n') ? (s.y + s.h) - newH : s.y;
+      }
+    } else if (corner === 'n' || corner === 's') {
+      const dh = (corner === 'n' ? -dy : dy) * k;
+      newH = Math.max(MIN / ratio, s.h + dh);
+      newW = newH * ratio;
+      const cx = s.x + s.w / 2;
+      newX = cx - newW / 2;
+      newY = alt ? (s.y + s.h / 2) - newH / 2 : (corner === 'n' ? (s.y + s.h) - newH : s.y);
+    } else {
+      const dw = (corner === 'w' ? -dx : dx) * k;
+      newW = Math.max(MIN, s.w + dw);
+      newH = newW / ratio;
+      const cy = s.y + s.h / 2;
+      newY = cy - newH / 2;
+      newX = alt ? (s.x + s.w / 2) - newW / 2 : (corner === 'w' ? (s.x + s.w) - newW : s.x);
+    }
+    t.x = newX; t.y = newY; t.w = newW; t.h = newH;
+    applySnapResize(corner, alt);
+    updateVideoChrome();
+    draw();
+
+  } else if (canvasDrag.kind === 'layer-resize') {
+    const layer = state.layers.find(l => l.id === canvasDrag.layerId);
+    if (!layer) return;
+    const s = canvasDrag.snapshot;
+    const startBbox = canvasDrag.startBbox;
+    const corner = canvasDrag.corner;
+
+    const alt = e.altKey;
+    const k = alt ? 2 : 1;     // alt scales twice as fast → center stays fixed
+
+    // Inverse-rotate the screen-space drag delta into the layer's LOCAL
+    // (unrotated) frame so the existing axis-aligned resize logic still
+    // works for rotated layers. The world-space anchor of the opposite
+    // corner is then re-applied at the end (see below).
+    const rotDeg = layer.rotation || 0;
+    const dxRaw = (e.clientX - canvasDrag.startClientX) / viewScale;
+    const dyRaw = (e.clientY - canvasDrag.startClientY) / viewScale;
+    let dx, dy;
+    if (rotDeg) {
+      const r = -rotDeg * Math.PI / 180;
+      dx = dxRaw * Math.cos(r) - dyRaw * Math.sin(r);
+      dy = dxRaw * Math.sin(r) + dyRaw * Math.cos(r);
+    } else { dx = dxRaw; dy = dyRaw; }
+
+    // Text WITHOUT a box → corner-only font-scale resize (existing behavior).
+    // Everything else (text-with-box, rect, image) → free 8-handle BOX resize.
+    const useFontScale = layer.kind === 'text' && layer.maxWidth == null;
+    const hasDirectWH = layer.kind === 'rect' || layer.kind === 'image';
+
+    if (useFontScale) {
+      const ratio = startBbox.w / startBbox.h;
+      const dwUser = (corner.includes('w') ? -dx : dx) * k;
+      const dhUser = (corner.includes('n') ? -dy : dy) * k;
+      const dw = (Math.abs(dwUser) > Math.abs(dhUser) * ratio) ? dwUser : dhUser * ratio;
+      const newW = Math.max(8, startBbox.w + dw);
+      const scale = newW / startBbox.w;
+      layer.fontSize = Math.max(1, Math.round(s.fontSize * scale));
+      layer.x = s.x;
+      layer.y = s.y;
+      draw();                  // re-measures with new font
+      const nb = layer._bbox;
+      if (alt) {
+        const cx_start = startBbox.x + startBbox.w / 2;
+        const cy_start = startBbox.y + startBbox.h / 2;
+        const cx_new   = nb.x + nb.w / 2;
+        const cy_new   = nb.y + nb.h / 2;
+        layer.x += (cx_start - cx_new);
+        layer.y += (cy_start - cy_new);
+      } else {
+        const fixedX_s = corner.includes('w') ? startBbox.x + startBbox.w : startBbox.x;
+        const fixedY_s = corner.includes('n') ? startBbox.y + startBbox.h : startBbox.y;
+        const fixedX_n = corner.includes('w') ? nb.x + nb.w               : nb.x;
+        const fixedY_n = corner.includes('n') ? nb.y + nb.h               : nb.y;
+        layer.x += (fixedX_s - fixedX_n);
+        layer.y += (fixedY_s - fixedY_n);
+      }
+    } else {
+      // Box resize — operates on (x, y, w, h) for rect or (x, y, maxWidth,
+      // boxHeight) for text. Font size is preserved; text re-wraps inside
+      // the new box.
+      const MIN = 8;
+      const lockRatio = e.shiftKey;
+      const sw = hasDirectWH ? s.w : (s.maxWidth  || 0);
+      const sh = hasDirectWH ? s.h : (s.boxHeight || 0);
+      const ratio = sw / sh;
+      const cx = s.x + sw / 2, cy = s.y + sh / 2;
+      let newX = s.x, newY = s.y, newW = sw, newH = sh;
+      if (corner.includes('e')) newW = Math.max(MIN, sw + dx * k);
+      if (corner.includes('w')) newW = Math.max(MIN, sw - dx * k);
+      if (corner.includes('s')) newH = Math.max(MIN, sh + dy * k);
+      if (corner.includes('n')) newH = Math.max(MIN, sh - dy * k);
+      if (lockRatio && corner.length === 2) {
+        if (Math.abs(newW - sw) * (1 / ratio) > Math.abs(newH - sh)) newH = newW / ratio;
+        else                                                          newW = newH * ratio;
+      }
+      if (alt) {
+        if (newW !== sw) newX = cx - newW / 2;
+        if (newH !== sh) newY = cy - newH / 2;
+      } else {
+        if (corner.includes('w')) newX = s.x + (sw - newW);
+        if (corner.includes('n')) newY = s.y + (sh - newH);
+      }
+      layer.x = newX; layer.y = newY;
+      if (hasDirectWH) { layer.w = newW; layer.h = newH; }
+      else             { layer.maxWidth = newW; layer.boxHeight = newH; }
+      // Snap. Skip while user holds a constraint, or for rotated layers
+      // (snap targets aren't meaningful against a rotated bbox edge).
+      if (!e.shiftKey && !alt && !rotDeg) applySnapResizeRect(layer, corner);
+    }
+    draw();
+    // Rotated layers: the existing resize logic anchored the opposite corner
+    // in the LOCAL (unrotated) frame. With rotation around the BBOX CENTRE,
+    // that corner moves in WORLD space because the centre shifted. Compensate
+    // by translating the layer so the opposite corner's WORLD position stays
+    // exactly where it was at drag-start (matches how Figma anchors resizes).
+    if (rotDeg && !alt) {
+      applyRotatedWorldAnchor(layer, startBbox, corner, rotDeg);
+      draw();
+    }
+  }
+});
+
+window.addEventListener('pointerup', e => {
+  if (!canvasDrag) return;
+  // Tool-draws: resolve single-click vs drag, then revert tool to 'select'.
+  if (canvasDrag.kind === 'tool-draw-rect') {
+    const layer = state.layers.find(l => l.id === canvasDrag.layerId);
+    if (layer && !canvasDrag.moved) {
+      // Single click — 150×150 centred at the cursor.
+      layer.x = canvasDrag.originX - RECT_DEFAULT / 2;
+      layer.y = canvasDrag.originY - RECT_DEFAULT / 2;
+      layer.w = RECT_DEFAULT;
+      layer.h = RECT_DEFAULT;
+    }
+    try { canvas.releasePointerCapture(canvasDrag.pointerId); } catch {}
+    canvasDrag = null;
+    setTool('select');
+    selectLayer(layer ? layer.id : null);
+    draw();
+    return;
+  }
+  if (canvasDrag.kind === 'tool-draw-text') {
+    const layer = state.layers.find(l => l.id === canvasDrag.layerId);
+    try { canvas.releasePointerCapture(canvasDrag.pointerId); } catch {}
+    canvasDrag = null;
+    setTool('select');
+    if (layer) {
+      selectLayer(layer.id);
+      // Auto-enter inline edit so the user can immediately type.
+      startInlineEdit(layer);
+    }
+    draw();
+    return;
+  }
+  try {
+    if (canvasDrag.target) canvasDrag.target.releasePointerCapture(canvasDrag.pointerId);
+    else canvas.releasePointerCapture(canvasDrag.pointerId);
+  } catch {}
+  canvasDrag = null;
+  hideGuides();
+  updateTextToolbar();
+});
+window.addEventListener('pointercancel', () => { canvasDrag = null; hideGuides(); updateTextToolbar(); });
+
+// Click anywhere outside the canvas / chrome to deselect the video — matches
+// how kadreerija drops selection when you click off the photo. The canvas
+// handler already deselects on empty-canvas clicks, so this only needs to
+// cover clicks that land elsewhere (sidebar, transport, padding).
+// `click` (not `pointerdown`) so drags inside the sidebar don't trigger it
+// and so buttons like Fit-cover can re-select the video in their own handler.
+// Outside-click deselect. Clicks land inside a whitelist of "keep selection"
+// zones (canvas + chromes + sidebar layer list + style panel + toolbars +
+// font menus + inline editor + fit-cover) — anything else drops the
+// selection. This matches a typical editor where clicking the page chrome
+// outside the canvas exits the current selection cleanly.
+document.addEventListener('click', e => {
+  if (!state.videoSelected && !state.selectedLayerIds.length) return;
+  if (e.target === canvas) return;
+  const t = e.target;
+  if (t.closest('.video-chrome'))                return;
+  if (t.closest('.layer-chrome'))                return;
+  if (t.closest('.text-toolbar'))                return;
+  if (t.closest('.font-menu'))                   return;
+  if (t.closest('.font-weights-menu'))           return;
+  if (t.closest('.inline-editor'))               return;
+  if (t.closest('.layer-row'))                   return; // sidebar list selection
+  if (t.closest('.edit-panel'))                  return; // style controls for active layer
+  if (t.closest('#fit-cover-btn'))               return; // re-selects video itself
+  if (t.closest('.canvas-tools'))                return; // setTool handles deselect itself
+  deselectAll();
+  draw();
+});
+
+// ═════════════════════════════════════ Double-click to edit text inline ═════════════════════════════════════
+canvas.addEventListener('dblclick', e => {
+  const pt = screenToCanvas(e.clientX, e.clientY);
+  for (let i = state.layers.length - 1; i >= 0; i--) {
+    const l = state.layers[i];
+    if (!l._bbox) continue;
+    const b = l._bbox;
+    let px = pt.x, py = pt.y;
+    if (l.rotation) {
+      const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      const dx = pt.x - cx, dy = pt.y - cy;
+      const r = -l.rotation * Math.PI / 180;
+      px = dx * Math.cos(r) - dy * Math.sin(r) + cx;
+      py = dx * Math.sin(r) + dy * Math.cos(r) + cy;
+    }
+    if (px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) {
+      if (l.kind !== 'text') return;        // only text layers have content to edit
+      startInlineEdit(l);
+      return;
+    }
+  }
+});
+
+function startInlineEdit(layer) {
+  pushUndo();
+  selectLayer(layer.id);
+  // Make sure the bbox is current.
+  draw();
+  const b = layer._bbox;
+  if (!b) return;
+  inlineEditingLayerId = layer.id;
+  inlineEditor.value = layer.content;
+  positionInlineEditor(layer);
+  inlineEditor.classList.remove('hidden');
+  // Re-draw so the canvas-rendered version of this layer is hidden under the editor.
+  draw();
+  inlineEditor.focus();
+  inlineEditor.select();
+  // Keep the contextual toolbar visible above the inline editor.
+  updateTextToolbar();
+}
+
+function positionInlineEditor(layer) {
+  const b = layer._bbox;
+  if (!b) return;
+  const fontFamily = layer.fontFamily.includes(' ') && !/['",]/.test(layer.fontFamily)
+    ? `"${layer.fontFamily}", system-ui, sans-serif`
+    : `${layer.fontFamily}, system-ui, sans-serif`;
+  // Match the canvas-drawn text exactly — same font, size, weight, alignment.
+  // All dimensions are in screen-px (canvas-coords × viewScale).
+  inlineEditor.style.left       = (b.x * viewScale) + 'px';
+  inlineEditor.style.top        = (b.y * viewScale) + 'px';
+  inlineEditor.style.width      = Math.max(20, b.w * viewScale) + 'px';
+  inlineEditor.style.height     = Math.max(20, b.h * viewScale) + 'px';
+  inlineEditor.style.fontFamily = fontFamily;
+  inlineEditor.style.fontSize   = (layer.fontSize * viewScale) + 'px';
+  inlineEditor.style.fontWeight = String(layer.fontWeight);
+  inlineEditor.style.color      = layer.color;
+  inlineEditor.style.opacity    = String(layer.opacity);
+  inlineEditor.style.textAlign  = layer.align;
+  inlineEditor.style.lineHeight = String(layer.lineHeight ?? 0.8);
+}
+
+inlineEditor.addEventListener('input', () => {
+  if (!inlineEditingLayerId) return;
+  const l = state.layers.find(x => x.id === inlineEditingLayerId);
+  if (!l) return;
+  l.content = inlineEditor.value;
+  // Re-measure so the editor box can grow/shrink with the text.
+  // We have to temporarily un-hide the layer in draw so a fresh _bbox is computed.
+  const savedId = inlineEditingLayerId;
+  inlineEditingLayerId = null;
+  draw();                  // updates _bbox using new content
+  inlineEditingLayerId = savedId;
+  positionInlineEditor(l);
+  refreshLayerList();
+  draw();                  // re-render with editor visible
+});
+
+inlineEditor.addEventListener('blur', endInlineEdit);
+inlineEditor.addEventListener('keydown', e => {
+  // Escape commits and exits. Cmd/Ctrl+Enter also exits. Plain Enter inserts a newline.
+  if (e.key === 'Escape') { e.preventDefault(); endInlineEdit(); }
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); endInlineEdit(); }
+});
+
+function endInlineEdit() {
+  if (!inlineEditingLayerId) return;
+  inlineEditingLayerId = null;
+  inlineEditor.classList.add('hidden');
+  refreshLayerList();
+  draw();
+  updateTextToolbar();
+}
+
+// ═════════════════════════════════════ Video upload ═════════════════════════════════════
+let currentObjectUrl = null;
+const VIDEO_EXT_RE = /\.(mp4|m4v|mov|qt|webm|mkv|ogv|ogg)$/i;
+const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp)$/i;
+function looksLikeVideo(file) {
+  if (!file) return false;
+  if (file.type && file.type.startsWith('video/')) return true;
+  if (file.name && VIDEO_EXT_RE.test(file.name)) return true;
+  return false;
+}
+function looksLikeImage(file) {
+  if (!file) return false;
+  if (file.type && file.type.startsWith('image/')) return true;
+  if (file.name && IMAGE_EXT_RE.test(file.name)) return true;
+  return false;
+}
+
+// Drop an image file onto the canvas (or anywhere) — creates an image
+// layer centred at the drop point, sized to fit within ~40% of the canvas
+// while preserving the source aspect ratio.
+function addImageLayerFromFile(file, dropCanvasX, dropCanvasY) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    imageCache.set(url, img);
+    const sz = activeSize();
+    const maxW = sz.w * 0.4;
+    const maxH = sz.h * 0.4;
+    const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1);
+    const w = img.naturalWidth  * scale;
+    const h = img.naturalHeight * scale;
+    const cx = (dropCanvasX == null) ? sz.w / 2 : dropCanvasX;
+    const cy = (dropCanvasY == null) ? sz.h / 2 : dropCanvasY;
+    pushUndo();
+    const layer = {
+      id: uid(),
+      kind: 'image',
+      src: url,
+      naturalW: img.naturalWidth,
+      naturalH: img.naturalHeight,
+      x: cx - w / 2, y: cy - h / 2, w, h,
+      opacity: 1,
+      rotation: 0,
+    };
+    state.layers.push(layer);
+    if (!state.masterFormat) state.masterFormat = state.sizeId;
+    propagateNewLayerFromMaster(layer);
+    selectLayer(layer.id);
+    draw();
+  };
+  img.onerror = () => {
+    URL.revokeObjectURL(url);
+    alert("Couldn't load that image.");
+  };
+  img.src = url;
+}
+function loadVideoFromFile(file) {
+  if (!looksLikeVideo(file)) {
+    alert('That doesn\'t look like a video. Supported: .mp4, .mov, .webm');
+    return;
+  }
+  if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+  currentObjectUrl = URL.createObjectURL(file);
+  state.video.file = file;
+  state.video.url = currentObjectUrl;
+  videoEl.onerror = () => {
+    console.error('Video element error:', videoEl.error);
+    alert('This browser couldn\'t decode the video. Try MP4 (H.264) or WebM, or open in Chrome.');
+  };
+  videoEl.src = currentObjectUrl;
+  videoEl.load();
+}
+
+videoEl.addEventListener('loadedmetadata', () => {
+  state.video.duration  = videoEl.duration || 0;
+  state.video.naturalW  = videoEl.videoWidth;
+  state.video.naturalH  = videoEl.videoHeight;
+  state.video.loaded    = true;
+  state.video.currentTime = 0;
+  // Manual loop management (so trim is respected). The native videoEl.loop
+  // would loop to 0; we want to loop to trimStart.
+  videoEl.loop = false;
+  state.trimStart = 0;
+  state.trimEnd   = state.video.duration;
+  // New video → reset every format's per-slot layout. (Layers won't carry
+  // across videos since they were positioned for an older clip.)
+  state.formats = {};
+  state.masterFormat = null;
+  // Drop any cached image-layer bitmaps; their layers are gone with the slots.
+  imageCache.clear();
+  state.layers = [];
+  state.video.transform = null;
+  state.activeLayerId = null;
+  state.selectedLayerIds = [];
+  state.videoSelected = false;
+  setUiEnabled(true);
+  totalTimeEl.textContent = fmtTime(state.video.duration);
+  curTimeEl.textContent   = fmtTime(0);
+  fitVideoCover();
+  // Seed the slot from the working state.
+  state.formats[state.sizeId] = { layers: state.layers, videoTransform: state.video.transform };
+  refreshLayerList();
+  selectVideo();
+  syncEditPanel();
+  draw();
+  // HEVC / iPhone .mov workaround: paused frame 0 often won't render in
+  // Chrome until the decoder is primed. Briefly play-and-pause silently.
+  primeFirstFrame();
+});
+
+// HEVC / iPhone .mov: Chrome can decode for playback but sometimes can't
+// read a paused frame back into a 2D canvas. Briefly play-and-pause to
+// prime the decoder; the video element is muted so this is silent.
+async function primeFirstFrame() {
+  try {
+    videoEl.muted = true;
+    const p = videoEl.play();
+    if (p) await p;
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    videoEl.pause();
+    videoEl.currentTime = 0;
+  } catch {}
+}
+
+videoEl.addEventListener('timeupdate', () => {
+  if (state.exporting) return; // exporter manages currentTime updates from rAF anyway
+  state.video.currentTime = videoEl.currentTime;
+  reflectTime();
+});
+videoEl.addEventListener('seeked',  () => {
+  state.video.currentTime = videoEl.currentTime;
+  reflectTime();
+  draw();
+});
+videoEl.addEventListener('play',    () => { state.video.playing = true;  reflectPlayIcon(); });
+videoEl.addEventListener('pause',   () => { state.video.playing = false; reflectPlayIcon(); });
+videoEl.addEventListener('ended',   () => {
+  state.video.playing = false;
+  reflectPlayIcon();
+  // Always loop unless we're exporting (the exporter's 'ended' listener
+  // owns end-of-stream). The rAF loop normally catches end-of-trim before
+  // the native ended event, but if it ever fires (natural end, or a tiny
+  // gap between rAF ticks) we restart from trimStart.
+  if (state.loop && state.video.loaded && !state.exporting) {
+    videoEl.currentTime = state.trimStart || 0;
+    videoEl.play().catch(() => {});
+  }
+});
+
+function reflectTime() {
+  curTimeEl.textContent = fmtTime(state.video.currentTime);
+  if (state.video.duration > 0) {
+    const pct = (state.video.currentTime / state.video.duration) * 100;
+    tlProgress.style.width = pct + '%';
+    tlPlayhead.style.left  = pct + '%';
+    updateTrimOverlay();
+  }
+}
+
+// Sync the trim overlays to state.trimStart / state.trimEnd.
+function updateTrimOverlay() {
+  const d = state.video.duration;
+  if (!d) { tlTrimLeft.style.width = '0%'; tlTrimRight.style.width = '0%'; return; }
+  const leftPct  = Math.max(0, Math.min(100, (state.trimStart  / d) * 100));
+  const rightPct = Math.max(0, Math.min(100, ((d - state.trimEnd) / d) * 100));
+  tlTrimLeft.style.width  = leftPct  + '%';
+  tlTrimRight.style.width = rightPct + '%';
+}
+function reflectPlayIcon() {
+  // Pause icon when playing, play icon when paused.
+  if (state.video.playing) {
+    playIco.innerHTML = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+  } else {
+    playIco.innerHTML = '<path d="M7 5v14l12-7z"/>';
+  }
+}
+
+function setUiEnabled(loaded) {
+  // Video-dependent controls only.
+  playBtn.disabled     = !loaded;
+  loopBtn.disabled     = !loaded;
+  fitCoverBtn.disabled = !loaded;
+  exportBtn.disabled   = !loaded;
+  // Drawing tools work on an empty canvas too — no video required.
+  toolTextBtn.disabled = false;
+  toolRectBtn.disabled = false;
+}
+
+uploadBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if (f) loadVideoFromFile(f);
+  fileInput.value = '';
+});
+
+// Drag-and-drop video upload.
+// Listen on the WHOLE window AND in capture phase so nothing else can swallow
+// the events. preventDefault on both dragenter and dragover is required for
+// drop to fire at all. No `types`-based filter — we accept all drags and let
+// the drop handler inspect dataTransfer.files.
+// Only treat a drag as a video-drop if it carries OS files. Layer-list
+// reorder drags use 'text/plain' instead and shouldn't trigger the overlay.
+function isFileDrag(e) {
+  return e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+}
+let dragDepth = 0;
+window.addEventListener('dragenter', e => {
+  if (!isFileDrag(e)) return;
+  e.preventDefault();
+  if (state.exporting) return;
+  dragDepth++;
+  canvasArea.classList.add('drop-target');
+}, true);
+window.addEventListener('dragover', e => {
+  if (!isFileDrag(e)) return;
+  e.preventDefault();
+  if (state.exporting) return;
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+}, true);
+window.addEventListener('dragleave', e => {
+  if (!isFileDrag(e)) return;
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (dragDepth === 0) canvasArea.classList.remove('drop-target');
+}, true);
+window.addEventListener('drop', e => {
+  if (!isFileDrag(e)) return;   // layer reorder drops have no Files type — let them handle themselves
+  e.preventDefault();
+  dragDepth = 0;
+  canvasArea.classList.remove('drop-target');
+  if (state.exporting) return;
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  if (looksLikeVideo(f)) {
+    loadVideoFromFile(f);
+  } else if (looksLikeImage(f)) {
+    // Where in the canvas did the drop land? If outside, centre it.
+    const r = canvas.getBoundingClientRect();
+    const sz = activeSize();
+    let cx = sz.w / 2, cy = sz.h / 2;
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      cx = (e.clientX - r.left) * (sz.w / r.width);
+      cy = (e.clientY - r.top)  * (sz.h / r.height);
+    }
+    addImageLayerFromFile(f, cx, cy);
+  } else {
+    alert('Drop a video (.mp4 .mov .webm) or an image (.png .jpg .svg).');
+  }
+}, true);
+
+// ═════════════════════════════════════ Transport ═════════════════════════════════════
+function togglePlay() {
+  if (!state.video.loaded) return;
+  if (videoEl.paused) {
+    // Snap to trim range if currently outside it.
+    if (videoEl.currentTime < state.trimStart || videoEl.currentTime >= state.trimEnd - 1e-3) {
+      videoEl.currentTime = state.trimStart;
+    }
+    videoEl.play();
+  } else {
+    videoEl.pause();
+  }
+}
+playBtn.addEventListener('click', togglePlay);
+
+// Loop — default on. We manage loop manually (so it loops to trimStart, not 0),
+// so videoEl.loop stays false; only the state.loop flag matters.
+loopBtn.addEventListener('click', () => {
+  state.loop = !state.loop;
+  loopBtn.classList.toggle('active', state.loop);
+});
+
+// Fit video to cover the canvas frame (resets manual transform).
+fitCoverBtn.addEventListener('click', () => {
+  if (!state.video.loaded) return;
+  pushUndo();
+  fitVideoCover();
+  selectVideo();
+  draw();
+});
+
+// Spacebar = play/pause, but only when not focused in a typing surface
+// (so users can press space inside the layer-text textarea normally).
+function isTypingTarget(el) {
+  if (!el) return false;
+  const tag = el.tagName;
+  // Used for arrow nudges & shortcut keys — keep INPUT/TEXTAREA/SELECT/BUTTON
+  // as "typing" so their default key handling isn't hijacked.
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return true;
+  return el.isContentEditable;
+}
+// Stricter check for SPACE — only true text-content fields really need a
+// space character. Everywhere else (buttons, number/range/color inputs,
+// selects, the canvas) space should toggle play/pause.
+function isSpaceTextTarget(el) {
+  if (!el) return false;
+  if (el.tagName === 'TEXTAREA') return true;
+  if (el.tagName === 'INPUT') {
+    const t = (el.type || 'text').toLowerCase();
+    return t === 'text' || t === 'search' || t === 'password' || t === 'url' || t === 'email' || t === 'tel';
+  }
+  return el.isContentEditable;
+}
+window.addEventListener('keydown', e => {
+  // Cmd/Ctrl+Z = undo, Cmd/Ctrl+Shift+Z (or Cmd+Y) = redo.
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
+    e.preventDefault();
+    if (e.shiftKey) redo(); else undo();
+    return;
+  }
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || e.key === 'Y')) {
+    e.preventDefault();
+    redo();
+    return;
+  }
+  // Cmd/Ctrl+D — duplicate every selected layer. Browser default is
+  // "bookmark page" which we replace. Available regardless of focus context.
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'd' || e.key === 'D')) {
+    if (state.selectedLayerIds.length && !state.videoSelected) {
+      e.preventDefault();
+      duplicateSelectedLayers();
+    }
+    return;
+  }
+  // Delete / Backspace — remove every selected layer. Skipped while typing.
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !isTypingTarget(e.target)) {
+    if (state.selectedLayerIds.length && !state.videoSelected) {
+      e.preventDefault();
+      deleteSelectedLayers();
+    }
+    return;
+  }
+  if (e.code === 'Space' && !isSpaceTextTarget(e.target)) {
+    e.preventDefault();
+    togglePlay();
+  }
+  // Tool shortcuts — V / T / R (Figma convention). Skip while typing or
+  // when a modifier is held (so Cmd+V/etc. still works).
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target)) {
+    const k = e.key.toLowerCase();
+    if (k === 'v' || k === 't' || k === 'r') {
+      // Text and Rect tools need a loaded video to create something on.
+      const wanted = k === 'v' ? 'select' : k === 't' ? 'text' : 'rect';
+      if (wanted === 'select' || state.video.loaded) {
+        e.preventDefault();
+        setTool(wanted);
+      }
+    }
+  }
+  // Arrow keys nudge the active element by 1px (Shift = 10px). Skipped when
+  // a text field / inline editor has focus so normal text navigation works.
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    if (isTypingTarget(e.target)) return;
+    const step = e.shiftKey ? 10 : 1;
+    let dx = 0, dy = 0;
+    if (e.key === 'ArrowLeft')  dx = -step;
+    if (e.key === 'ArrowRight') dx =  step;
+    if (e.key === 'ArrowUp')    dy = -step;
+    if (e.key === 'ArrowDown')  dy =  step;
+    if (nudgeActive(dx, dy)) e.preventDefault();
+  }
+});
+
+// Returns true if the nudge applied so we can preventDefault page scroll.
+function nudgeActive(dx, dy) {
+  pushUndo('nudge');
+  if (state.videoSelected && state.video.transform) {
+    state.video.transform.x += dx;
+    state.video.transform.y += dy;
+    updateVideoChrome();
+    draw();
+    return true;
+  }
+  if (state.selectedLayerIds.length) {
+    for (const id of state.selectedLayerIds) {
+      const l = state.layers.find(x => x.id === id);
+      if (l) { l.x += dx; l.y += dy; }
+    }
+    refreshLayerList();
+    draw();
+    return true;
+  }
+  return false;
+}
+
+// ═════════════════════════════════════ Timeline scrubbing + per-layer range ═════════════════════════════════════
+function timelineXToTime(clientX) {
+  const r = timeline.getBoundingClientRect();
+  const pct = clamp((clientX - r.left) / r.width, 0, 1);
+  return pct * (state.video.duration || 0);
+}
+
+timeline.addEventListener('pointerdown', e => {
+  if (!state.video.loaded) return;
+  // If the click landed on a trim handle, defer to its own handler.
+  if (e.target === tlTrimLeft || e.target === tlTrimRight) return;
+  timelineDrag = { pointerId: e.pointerId, kind: 'scrub' };
+  videoEl.currentTime = timelineXToTime(e.clientX);
+  try { timeline.setPointerCapture(e.pointerId); } catch {}
+  e.preventDefault();
+});
+timeline.addEventListener('pointermove', e => {
+  if (!timelineDrag || timelineDrag.kind !== 'scrub') return;
+  videoEl.currentTime = timelineXToTime(e.clientX);
+});
+timeline.addEventListener('pointerup', e => {
+  if (!timelineDrag) return;
+  try { timeline.releasePointerCapture(timelineDrag.pointerId); } catch {}
+  timelineDrag = null;
+});
+
+// Trim handles — dragging either overlay's inner edge moves the in/out
+// point. We seek the video to the new trim position so the user previews
+// the exact frame they're trimming to.
+function bindTrimHandle(el, which) {
+  let drag = null;
+  el.addEventListener('pointerdown', e => {
+    if (!state.video.loaded) return;
+    e.preventDefault();
+    e.stopPropagation();
+    pushUndo();
+    drag = {
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startVal: which === 'start' ? state.trimStart : state.trimEnd,
+    };
+    el.classList.add('dragging');
+    try { el.setPointerCapture(e.pointerId); } catch {}
+  });
+  el.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const r = timeline.getBoundingClientRect();
+    const dxSec = ((e.clientX - drag.startClientX) / r.width) * state.video.duration;
+    let v = drag.startVal + dxSec;
+    if (which === 'start') {
+      v = clamp(v, 0, state.trimEnd - MIN_TRIM);
+      state.trimStart = v;
+      videoEl.currentTime = v;
+    } else {
+      v = clamp(v, state.trimStart + MIN_TRIM, state.video.duration);
+      state.trimEnd = v;
+      videoEl.currentTime = Math.max(state.trimStart, v - 0.001);
+    }
+    updateTrimOverlay();
+  });
+  const finish = () => {
+    if (!drag) return;
+    try { el.releasePointerCapture(drag.pointerId); } catch {}
+    el.classList.remove('dragging');
+    drag = null;
+  };
+  el.addEventListener('pointerup', finish);
+  el.addEventListener('pointercancel', finish);
+}
+bindTrimHandle(tlTrimLeft,  'start');
+bindTrimHandle(tlTrimRight, 'end');
+
+// ═════════════════════════════════════ Render loop ═════════════════════════════════════
+// The draw loop is always-on. It re-draws on every animation frame so:
+//   (1) the canvas reflects video playback frame-by-frame,
+//   (2) canvas.captureStream picks up smooth motion during export,
+//   (3) scrubbing/dragging/editing visibly updates immediately.
+function rafLoop() {
+  if (!state.exporting && state.video.loaded) {
+    state.video.currentTime = videoEl.currentTime;
+    // Enforce trim-out: loop to trimStart if looping is on, else pause.
+    // The exporter has its own end-of-trim logic so we skip this branch then.
+    if (!videoEl.paused && state.trimEnd > state.trimStart &&
+        videoEl.currentTime >= state.trimEnd - 1e-3) {
+      if (state.loop) {
+        videoEl.currentTime = state.trimStart;
+      } else {
+        videoEl.pause();
+        videoEl.currentTime = state.trimEnd;
+      }
+    }
+  }
+  draw();
+  if (state.video.loaded) reflectTime();
+  requestAnimationFrame(rafLoop);
+}
+
+// ═════════════════════════════════════ Export ═════════════════════════════════════
+// MediaRecorder approach (real-time):
+//   • canvas.captureStream(fps) emits frames as we draw them
+//   • videoEl.captureStream() gives us the AUDIO track (we drop its video)
+//   • MediaRecorder mixes them, we collect chunks, and offer a download.
+// Real-time means: a 30s clip records in ~30s. This is a documented limitation.
+let exportRec = null;
+let exportBlob = null;
+
+async function startExport() {
+  if (!state.video.loaded || state.exporting) return;
+
+  // Pick the best supported MIME (mp4 in Safari, webm otherwise).
+  const candidates = [
+    'video/mp4;codecs=h264,aac',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+  ];
+  const mimeType = candidates.find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+  if (!mimeType) {
+    alert('This browser does not support MediaRecorder video recording.');
+    return;
+  }
+
+  state.exporting = true;
+  showExportOverlay('Exporting video…', 'Recording overlays in real time. Please don\'t switch tabs.');
+  exportBtn.disabled = true;
+
+  // Prepare canvas stream.
+  const fps = 30;
+  const canvasStream = canvas.captureStream(fps);
+
+  // Try to capture audio from the video element. This MAY fail (Safari, CORS,
+  // older Chromium versions) — we fall back to silent video.
+  let audioTrack = null;
+  try {
+    const fn = videoEl.captureStream || videoEl.mozCaptureStream;
+    if (fn) {
+      const vs = fn.call(videoEl);
+      const aTracks = vs.getAudioTracks();
+      if (aTracks.length) audioTrack = aTracks[0];
+    }
+  } catch (e) {
+    console.warn('Audio capture not available; exporting silent video.', e);
+  }
+  if (audioTrack) canvasStream.addTrack(audioTrack);
+
+  // Unmute for export so audio is recorded. (Restore after.)
+  // Disable loop too — otherwise the 'ended' event never fires and the
+  // recorder runs forever (the progress bar appears to loop).
+  const wasMuted = videoEl.muted;
+  const wasLoop  = videoEl.loop;
+  videoEl.muted = false;
+  videoEl.loop  = false;
+
+  const chunks = [];
+  exportRec = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 8_000_000 });
+  exportRec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+
+  // Seek to trim-in, then play and record up to trim-out.
+  const trimA = state.trimStart;
+  const trimB = state.trimEnd;
+  const trimDur = Math.max(0.05, trimB - trimA);
+  await seekTo(trimA);
+
+  const finishPromise = new Promise(resolve => {
+    exportRec.onstop = () => resolve();
+  });
+
+  exportRec.start(250); // chunk every 250ms for smoother progress
+  await videoEl.play().catch(() => {});
+
+  // Stop at trim-out + drive progress bar off the trimmed range.
+  const stopAndProgress = setInterval(() => {
+    if (!state.exporting) return;
+    const pct = Math.max(0, Math.min(100, ((videoEl.currentTime - trimA) / trimDur) * 100));
+    exportBar.style.width = pct.toFixed(1) + '%';
+    if (videoEl.currentTime >= trimB - 1e-3) {
+      clearInterval(stopAndProgress);
+      if (exportRec && exportRec.state !== 'inactive') exportRec.stop();
+    }
+  }, 50);
+
+  // Fallback: if the source ends naturally before trim-out (e.g. trimEnd =
+  // duration), still stop the recorder.
+  const onEnded = () => {
+    if (!exportRec) return;
+    if (exportRec.state !== 'inactive') exportRec.stop();
+  };
+  videoEl.addEventListener('ended', onEnded, { once: true });
+
+  await finishPromise;
+  clearInterval(stopAndProgress);
+  videoEl.removeEventListener('ended', onEnded);
+  videoEl.muted = wasMuted;
+  videoEl.loop  = wasLoop;
+  videoEl.pause();
+
+  if (!state.exporting) {
+    // Cancelled mid-way.
+    cleanupExport();
+    return;
+  }
+
+  const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+  exportBlob = new Blob(chunks, { type: mimeType });
+  exportBlob._ext = ext;
+  showExportComplete(ext);
+}
+
+function seekTo(t) {
+  return new Promise(resolve => {
+    if (Math.abs(videoEl.currentTime - t) < 0.001) return resolve();
+    const onSeek = () => { videoEl.removeEventListener('seeked', onSeek); resolve(); };
+    videoEl.addEventListener('seeked', onSeek);
+    videoEl.currentTime = t;
+  });
+}
+
+function showExportOverlay(title, msg) {
+  exportTitle.textContent = title;
+  exportMsg.textContent   = msg;
+  exportBar.style.width   = '0%';
+  exportDl.style.display  = 'none';
+  exportCancel.textContent = 'Cancel';
+  exportOverlay.classList.add('visible');
+}
+
+function showExportComplete(ext) {
+  exportTitle.textContent = 'Export complete';
+  exportMsg.textContent   = `Your video is ready as .${ext}. Click Download to save it.`;
+  exportBar.style.width   = '100%';
+  exportDl.style.display  = 'inline-flex';
+  exportCancel.textContent = 'Close';
+}
+
+function cleanupExport() {
+  state.exporting = false;
+  exportBtn.disabled = !state.video.loaded;
+  exportOverlay.classList.remove('visible');
+  exportRec = null;
+}
+
+exportBtn.addEventListener('click', startExport);
+
+exportCancel.addEventListener('click', () => {
+  if (exportRec && exportRec.state === 'recording') {
+    state.exporting = false;
+    try { exportRec.stop(); } catch {}
+  }
+  cleanupExport();
+  exportBlob = null;
+});
+
+exportDl.addEventListener('click', () => {
+  if (!exportBlob) return;
+  const url = URL.createObjectURL(exportBlob);
+  const a = document.createElement('a');
+  const stem = (state.video.file && state.video.file.name) ? state.video.file.name.replace(/\.[^.]+$/, '') : 'video';
+  a.href = url;
+  a.download = `${stem}-overlay.${exportBlob._ext}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+});
+
+// ═════════════════════════════════════ Init ═════════════════════════════════════
+function init() {
+  buildSizeGrid();
+  applySizeToCanvas();
+  refreshLayerList();
+  syncEditPanel();
+  bindEditPanel();
+  bindTextToolbar();
+  // Tool buttons activate a draw-on-canvas mode. Clicking Select returns to
+  // the default. Clicking the active draw tool again also returns.
+  toolSelectBtn.addEventListener('click', () => setTool('select'));
+  toolTextBtn.addEventListener('click',   () => setTool(state.tool === 'text' ? 'select' : 'text'));
+  toolRectBtn.addEventListener('click',   () => setTool(state.tool === 'rect' ? 'select' : 'rect'));
+  // Delete buttons (toolbar + sidebar) — remove all selected layers.
+  ttDelete.addEventListener('click',    () => deleteSelectedLayers());
+  epDeleteBtn.addEventListener('click', () => deleteSelectedLayers());
+  // Escape returns to select tool while a tool is armed.
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && state.tool !== 'select' && !inlineEditingLayerId) {
+      e.preventDefault();
+      setTool('select');
+    }
+  });
+
+  // Font picker — same component on both surfaces, sets fontFamily + fontWeight together.
+  const fontPickerCtx = {
+    getCurrent: () => {
+      const l = activeLayer();
+      return l && l.kind !== 'rect'
+        ? { family: l.fontFamily, weight: l.fontWeight }
+        : { family: 'MB Empire', weight: 700 };
+    },
+    onSelect: (family, weight) => {
+      if (!state.selectedLayerIds.length) return;
+      pushUndo();
+      for (const id of state.selectedLayerIds) {
+        const l = state.layers.find(x => x.id === id);
+        if (!l || l.kind === 'rect') continue;
+        l.fontFamily = family;
+        l.fontWeight = weight;
+      }
+      refreshLayerList();
+      syncEditPanel();
+      updateTextToolbar();
+      draw();
+    },
+  };
+  mountFontPicker(fFontBtn,  fontPickerCtx);
+  mountFontPicker(ttFontBtn, fontPickerCtx);
+  setUiEnabled(false);
+  requestAnimationFrame(rafLoop);
+  preloadFonts();
+}
+
+// Canvas drawImage of text only uses fonts already loaded — @font-face is
+// lazy by default. Explicitly trigger loads for every (family × weight)
+// pair we expose so the first draw isn't a system-font fallback.
+async function preloadFonts() {
+  if (!document.fonts || !document.fonts.load) return;
+  const families = ['MB Empire', 'Grifo S', 'Grifinito L', 'Grifinito M'];
+  const weights = [300, 400, 500, 700];
+  const tasks = [];
+  for (const fam of families) {
+    for (const w of weights) tasks.push(document.fonts.load(`${w} 64px "${fam}"`));
+  }
+  try { await Promise.allSettled(tasks); } catch {}
+  draw();  // re-render now that the OTF files are decoded
+}
+init();
+</script>
+</body>
+</html>
