@@ -433,6 +433,7 @@
   .adjust-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
+    box-sizing: border-box;   /* 14px is the total button size, incl. the 2px ring (matches Figma) */
     width: 14px;
     height: 14px;
     border-radius: 50%;
@@ -442,6 +443,7 @@
     cursor: pointer;
   }
   .adjust-slider::-moz-range-thumb {
+    box-sizing: border-box;
     width: 14px;
     height: 14px;
     border-radius: 50%;
