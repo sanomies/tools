@@ -485,27 +485,27 @@
   /* ───── Mobile (≤ 860px): stack the sidebar below the canvas ───── */
   @media (max-width: 860px) {
     body { overflow: auto; }
-    .app-shell { flex-direction: column; height: auto; min-height: 100%; gap: 28px; padding: 20px; }
-    .main-column { flex: 0 0 auto; }
-    .app-header { font-size: 20px; }
-    .brand-face { height: 26px; }
-    .canvas-area { min-height: 46vh; }
-    .sidebar { width: 100%; height: auto; gap: 28px; }
-    .panel-template { padding-bottom: 16px; }
-    .template-list {
-      flex-direction: row;
-      align-items: stretch;
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: 4px 4px 8px;
-      gap: 12px;
-    }
-    .tpl { width: 132px; flex: 0 0 auto; }
+    .app-shell { flex-direction: column; height: auto; min-height: 100%; gap: 36px; padding: 24px 16px; }
+
+    /* Header · canvas · floating toolbar stack and spread vertically (header keeps 22px/36px logo) */
+    .main-column { justify-content: space-between; gap: 16px; }
+    .canvas-area { flex: 0 0 auto; width: 100%; aspect-ratio: 16 / 9; min-height: 0; }
+    .bottom-toolbar { margin-top: 0; }
+
+    /* Template + Edit panels sit side by side, equal width */
+    .sidebar { flex-direction: row; width: 100%; height: auto; gap: 8px; align-items: stretch; }
+    .panel-template,
+    .panel-edit { flex: 1 1 0; min-width: 0; padding-left: 8px; padding-right: 8px; }
+
+    /* Template list stays vertical; it scrolls inside the panel, whose height tracks the Edit panel */
+    .template-list { flex: 1 1 0; min-height: 0; overflow-x: hidden; overflow-y: auto; padding-right: 4px; }
+    .tpl { width: 100%; max-width: 130px; }
+
     /* Comfortable touch targets */
     .tool { padding: 15px; }
     .adjust-slider { height: 6px; }
-    .adjust-slider::-webkit-slider-thumb { width: 22px; height: 22px; }
-    .adjust-slider::-moz-range-thumb { width: 22px; height: 22px; }
+    .adjust-slider::-webkit-slider-thumb { width: 14px; height: 14px; }
+    .adjust-slider::-moz-range-thumb { width: 14px; height: 14px; }
     .image-chrome .handle { width: 20px; height: 20px; }
     .image-chrome .handle[data-corner="nw"] { left: -11px; top: -11px; }
     .image-chrome .handle[data-corner="ne"] { right: -11px; top: -11px; }
