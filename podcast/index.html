@@ -129,6 +129,10 @@
     pointer-events: auto;
     cursor: move;
     touch-action: none;
+    /* Promote the photo to its own layer so a live CSS filter doesn't blank it in iOS Safari.
+       Uploads are downscaled to MAX_DIM on load, so this layer stays small and re-filtering is cheap. */
+    will-change: filter;
+    -webkit-backface-visibility: hidden;
   }
   .user-image.empty { display: none; }
   .artboard > .ov-layer {
@@ -944,6 +948,10 @@
   }
 
   // ════════════════════════ Upload ════════════════════════
+  // Cap uploads at the export resolution. A larger source only slows the live CSS filter and
+  // bloats the photo's GPU layer (→ choppy adjustments on phones); the export is 1920×1080, so
+  // there's no visible quality loss at fill size.
+  const MAX_DIM = 1920;
   let currentObjectUrl = null;
   function loadImageFromFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
@@ -951,11 +959,36 @@
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     currentObjectUrl = URL.createObjectURL(file);
     const probe = new Image();
+    probe.onerror = () => { if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; } };
     probe.onload = () => {
+      const nW = probe.naturalWidth, nH = probe.naturalHeight;
+      const scale = Math.min(1, MAX_DIM / Math.max(nW, nH));
+      if (scale < 1) {
+        const w = Math.max(1, Math.round(nW * scale)), h = Math.max(1, Math.round(nH * scale));
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const cx = c.getContext('2d');
+        cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+        cx.drawImage(probe, 0, 0, w, h);
+        c.toBlob((blob) => {
+          if (!blob) { commitImage(probe, nW, nH); return; }   // fall back to full-res if encode fails
+          URL.revokeObjectURL(currentObjectUrl);
+          currentObjectUrl = URL.createObjectURL(blob);
+          const small = new Image();
+          small.onload = () => commitImage(small, w, h);
+          small.src = currentObjectUrl;
+        }, 'image/png');
+      } else {
+        commitImage(probe, nW, nH);
+      }
+    };
+    probe.src = currentObjectUrl;
+
+    function commitImage(imgEl, w, h) {
       state.image.url = currentObjectUrl;
-      state.image.naturalW = probe.naturalWidth;
-      state.image.naturalH = probe.naturalHeight;
-      state.image.imgEl = probe;
+      state.image.naturalW = w;
+      state.image.naturalH = h;
+      state.image.imgEl = imgEl;
       state.adjust = { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false };
       syncAdjustUI();
       userImg.src = currentObjectUrl;
@@ -963,8 +996,7 @@
       applyImageTransform();
       setEnabled(true);
       selectImage();
-    };
-    probe.src = currentObjectUrl;
+    }
   }
 
   // Clear the loaded photo and return to the empty state.
