@@ -948,55 +948,56 @@
   }
 
   // ════════════════════════ Upload ════════════════════════
-  // Cap uploads at the export resolution. A larger source only slows the live CSS filter and
-  // bloats the photo's GPU layer (→ choppy adjustments on phones); the export is 1920×1080, so
-  // there's no visible quality loss at fill size.
+  // The export is 1920×1080, so the download uses a source capped there. But the on-screen photo is
+  // re-filtered on every slider tick, so the LIVE preview uses a smaller, cheaper source — small on
+  // phones, where re-filtering a big bitmap each frame is what makes the sliders choppy. Export
+  // quality is unaffected: it composites the full 1920 source (state.image.imgEl), not the preview.
   const MAX_DIM = 1920;
+  function makeScaledCanvas(img, nW, nH, max) {
+    const scale = Math.min(1, max / Math.max(nW, nH));
+    const w = Math.max(1, Math.round(nW * scale)), h = Math.max(1, Math.round(nH * scale));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+    cx.drawImage(img, 0, 0, w, h);
+    return c;
+  }
   let currentObjectUrl = null;
   function loadImageFromFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
     pushUndo();
-    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-    currentObjectUrl = URL.createObjectURL(file);
+    const srcUrl = URL.createObjectURL(file);
     const probe = new Image();
-    probe.onerror = () => { if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; } };
+    probe.onerror = () => URL.revokeObjectURL(srcUrl);
     probe.onload = () => {
       const nW = probe.naturalWidth, nH = probe.naturalHeight;
-      const scale = Math.min(1, MAX_DIM / Math.max(nW, nH));
-      if (scale < 1) {
-        const w = Math.max(1, Math.round(nW * scale)), h = Math.max(1, Math.round(nH * scale));
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        const cx = c.getContext('2d');
-        cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
-        cx.drawImage(probe, 0, 0, w, h);
-        c.toBlob((blob) => {
-          if (!blob) { commitImage(probe, nW, nH); return; }   // fall back to full-res if encode fails
-          URL.revokeObjectURL(currentObjectUrl);
-          currentObjectUrl = URL.createObjectURL(blob);
-          const small = new Image();
-          small.onload = () => commitImage(small, w, h);
-          small.src = currentObjectUrl;
-        }, 'image/png');
-      } else {
-        commitImage(probe, nW, nH);
-      }
+      const exportCanvas = makeScaledCanvas(probe, nW, nH, MAX_DIM);                 // crisp download source
+      const previewMax = matchMedia('(max-width: 860px)').matches ? 1024 : MAX_DIM;  // cheap live-filter source
+      const previewCanvas = makeScaledCanvas(probe, nW, nH, previewMax);
+      URL.revokeObjectURL(srcUrl);
+      previewCanvas.toBlob((blob) => {
+        const url = blob ? URL.createObjectURL(blob) : previewCanvas.toDataURL('image/png');
+        if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = blob ? url : null;   // only object URLs need revoking
+        const pv = new Image();
+        pv.onload = () => {
+          state.image.url = url;
+          state.image.naturalW = previewCanvas.width;
+          state.image.naturalH = previewCanvas.height;
+          state.image.imgEl = exportCanvas;       // full-res source, used only by download()
+          state.adjust = { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false };
+          syncAdjustUI();
+          userImg.src = url;
+          fitHeight();
+          applyImageTransform();
+          setEnabled(true);
+          selectImage();
+        };
+        pv.src = url;
+      }, 'image/png');
     };
-    probe.src = currentObjectUrl;
-
-    function commitImage(imgEl, w, h) {
-      state.image.url = currentObjectUrl;
-      state.image.naturalW = w;
-      state.image.naturalH = h;
-      state.image.imgEl = imgEl;
-      state.adjust = { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false };
-      syncAdjustUI();
-      userImg.src = currentObjectUrl;
-      fitHeight();
-      applyImageTransform();
-      setEnabled(true);
-      selectImage();
-    }
+    probe.src = srcUrl;
   }
 
   // Clear the loaded photo and return to the empty state.
