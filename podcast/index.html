@@ -129,9 +129,6 @@
     pointer-events: auto;
     cursor: move;
     touch-action: none;
-    /* Keep a stable compositing layer so live filter changes don't blank the photo on iOS Safari. */
-    will-change: filter;
-    -webkit-backface-visibility: hidden;
   }
   .user-image.empty { display: none; }
   .artboard > .ov-layer {
@@ -928,7 +925,9 @@
     state.adjust[key] = value;
     if (key !== 'bw') adjVals[key].textContent = value;
     if (key === 'temperature') updateTempMatrix(value);
-    applyImageTransform();
+    // Adjusting only changes the photo's filter — update just that and skip the transform/size
+    // rewrite that the full render does (cheaper per slider event).
+    if (state.image.url && state.transform) userImg.style.filter = filterString();
   }
   function resetAdjust() {
     state.adjust = { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false };
