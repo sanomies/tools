@@ -113,7 +113,9 @@
     transform-origin: top left;
     overflow: hidden;
     background: var(--canvas);
-    border-radius: 2px;
+    /* No border-radius here: a rounded overflow:hidden clip drops filtered children in iOS Safari
+       (adjusting brightness/contrast made the photo vanish). The visible 2px was imperceptible at scale. */
+    border-radius: 0;
     touch-action: none;
   }
   /* Empty state still shows the (last-used) template overlay on the black photo window; the upload prompt floats on top. */
@@ -127,6 +129,9 @@
     pointer-events: auto;
     cursor: move;
     touch-action: none;
+    /* Keep a stable compositing layer so live filter changes don't blank the photo on iOS Safari. */
+    will-change: filter;
+    -webkit-backface-visibility: hidden;
   }
   .user-image.empty { display: none; }
   .artboard > .ov-layer {
@@ -1277,6 +1282,12 @@
   resetBtn.addEventListener('click', () => { if (!state.image.url) return; pushUndo(); resetAdjust(); });
 
   searchInput.addEventListener('input', () => filterTemplates(searchInput.value));
+
+  // The mobile search field is narrow, so show a shorter "Search" placeholder there.
+  const searchMq = matchMedia('(max-width: 860px)');
+  const syncSearchPlaceholder = () => { searchInput.placeholder = searchMq.matches ? 'Search' : 'Search for template'; };
+  searchMq.addEventListener('change', syncSearchPlaceholder);
+  syncSearchPlaceholder();
 
   // Sliders: one undo step per drag gesture; pointer-drag snaps to each slider's neutral value.
   let sliderUndoArmed = true;
