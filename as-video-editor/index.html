@@ -1171,6 +1171,39 @@
 </head>
 <body>
 
+  <!-- ▼ Onu Sano page-in transition (stage 2). A black cover matching the launcher's
+       wipe is present on load, then sweeps off to the left to reveal this tool.
+       Self-contained; removes itself when done. Honors reduced-motion. -->
+  <div id="osIntro" aria-hidden="true" style="position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;will-change:transform;transition:transform .45s cubic-bezier(.4,0,.2,1);">
+    <img src="assets/onu-sano-face.svg" alt="" style="width:96px;height:auto;transition:opacity .3s ease;filter:drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(1.4px 1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff) drop-shadow(1.4px -1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff);">
+  </div>
+  <script>
+  (function () {
+    var el = document.getElementById('osIntro');
+    if (!el) return;
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var done = false;
+    function cleanup() { if (el && el.parentNode) el.parentNode.removeChild(el); }
+    function dismiss() {
+      if (done) return; done = true;
+      if (reduce) { cleanup(); return; }
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          el.style.transform = 'translateX(-100%)';
+          var img = el.querySelector('img'); if (img) img.style.opacity = '0';
+        });
+      });
+      el.addEventListener('transitionend', function (ev) {
+        if (ev.target === el && ev.propertyName === 'transform') cleanup();
+      });
+      setTimeout(cleanup, 800); // fallback
+    }
+    if (document.readyState === 'loading')
+      document.addEventListener('DOMContentLoaded', function () { setTimeout(dismiss, 150); });
+    else setTimeout(dismiss, 150);
+  })();
+  </script>
+
   <!-- ════════════════════════ MAIN COLUMN (left) ════════════════════════ -->
   <main class="main-column">
     <h1 class="app-header">
