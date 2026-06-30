@@ -193,17 +193,45 @@
   .page-footer a:hover { color: var(--ink); text-decoration: underline; }
 
   /* ───── Responsive ───── */
+  /* ───── Page-open wipe — a branded panel slides in to cover the page,
+     then the chosen tool loads behind it. Driven by JS (.is-active). ───── */
+  .page-wipe {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(100%);
+    pointer-events: none;
+    transition: transform .45s cubic-bezier(.4, 0, .2, 1);
+  }
+  .page-wipe.is-active { transform: translateX(0); }
+  .page-wipe-face {
+    width: 96px;
+    height: auto;
+    /* Render the face as a clean white silhouette on the red panel. */
+    filter: brightness(0) invert(1);
+    opacity: 0;
+    transform: scale(.94);
+    transition: opacity .25s ease .12s, transform .25s ease .12s;
+  }
+  .page-wipe.is-active .page-wipe-face { opacity: 1; transform: scale(1); }
+
   @media (max-width: 600px) {
     .page { padding: 40px 18px 32px; }
     .app-header { font-size: 22px; }
     .brand-face { height: 34px; }
     .tool-grid { margin-top: 32px; gap: 14px; }
+    .page-wipe-face { width: 76px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; }
     .tool-card:hover { transform: none; }
     .tool-card:hover .tool-cta svg { transform: none; }
+    .page-wipe { transition: none; }
   }
 </style>
 </head>
@@ -222,6 +250,11 @@
   <footer class="page-footer">
     © <span id="year"></span> Onu Sano® · Delfi Meedia
   </footer>
+
+  <!-- Branded transition panel; slides in over the page when a tool is opened. -->
+  <div class="page-wipe" id="pageWipe" aria-hidden="true">
+    <img class="page-wipe-face" src="assets/onu-sano-face.svg" alt="">
+  </div>
 
   <!-- Lucide-style line icons, referenced by id from the TOOLS data below -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -267,6 +300,30 @@
 
     const grid = document.getElementById("toolGrid");
     const svgNS = "http://www.w3.org/2000/svg";
+    const wipe = document.getElementById("pageWipe");
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    /* Play the branded wipe, then navigate. Falls back to plain navigation when the
+       user wants a new tab/window, on non-left clicks, or under reduced-motion. */
+    function openTool(e, href) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      if (prefersReduced.matches) return;
+      e.preventDefault();
+      let navigated = false;
+      const go = () => {
+        if (navigated) return;
+        navigated = true;
+        wipe.removeEventListener("transitionend", onEnd);
+        window.location.href = href;
+      };
+      // Wait for the panel's own slide to finish — ignore the bubbling face fade.
+      const onEnd = (ev) => {
+        if (ev.target === wipe && ev.propertyName === "transform") go();
+      };
+      wipe.addEventListener("transitionend", onEnd);
+      setTimeout(go, 600); // fallback if transitionend never fires
+      wipe.classList.add("is-active");
+    }
 
     function lineSvg(symbolId) {
       const svg = document.createElementNS(svgNS, "svg");
@@ -287,6 +344,7 @@
       const card = document.createElement("a");
       card.className = "tool-card";
       card.href = encodeURI(tool.href);
+      card.addEventListener("click", (e) => openTool(e, card.href));
 
       const icon = document.createElement("div");
       icon.className = "tool-icon";
@@ -328,6 +386,10 @@
     grid.appendChild(soon);
 
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    /* Reset the wipe if the user returns via Back (incl. bfcache restore),
+       so the red panel never stays stuck over the launcher. */
+    window.addEventListener("pageshow", () => wipe.classList.remove("is-active"));
   </script>
 </body>
 </html>
