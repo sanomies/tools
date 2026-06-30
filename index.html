@@ -27,7 +27,7 @@
     --muted:        #708597;   /* delfi-darkgray: secondary text */
     --track:        #edf2f4;   /* delfi-lightgray: icon plate fill */
     --hover:        #f2f4f6;   /* subtle hover wash */
-    --accent:       #fa044f;   /* delfi-red: hover + selection chrome */
+    --accent:       #000000;   /* hover + selection chrome + transition panel */
     --focus:        #000000;   /* keyboard focus ring */
     --shadow-card:  0 4px 5px rgba(0,0,0,0.10);
     --shadow-hover: 0 10px 28px rgba(17,19,23,0.14);
@@ -208,11 +208,18 @@
     transition: transform .45s cubic-bezier(.4, 0, .2, 1);
   }
   .page-wipe.is-active { transform: translateX(0); }
+  /* Used to jump the panel to its covering state without animating, so the
+     Back-button reverse can start from "covered" and only animate sliding out. */
+  .page-wipe.no-anim, .page-wipe.no-anim .page-wipe-face { transition: none !important; }
   .page-wipe-face {
     width: 96px;
     height: auto;
-    /* Render the face as a clean white silhouette on the red panel. */
-    filter: brightness(0) invert(1);
+    /* Original face colors, lifted off the dark panel by a 2px white outline. */
+    filter:
+      drop-shadow( 2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+      drop-shadow( 0 2px 0 #fff) drop-shadow( 0 -2px 0 #fff)
+      drop-shadow( 1.4px 1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff)
+      drop-shadow( 1.4px -1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff);
     opacity: 0;
     transform: scale(.94);
     transition: opacity .25s ease .12s, transform .25s ease .12s;
@@ -387,9 +394,21 @@
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    /* Reset the wipe if the user returns via Back (incl. bfcache restore),
-       so the red panel never stays stuck over the launcher. */
-    window.addEventListener("pageshow", () => wipe.classList.remove("is-active"));
+    /* When the user returns via Back/Forward (incl. bfcache restore), play the
+       transition in reverse: start covered, then slide the panel back out. */
+    function reverseWipeOut() {
+      wipe.classList.add("no-anim", "is-active"); // jump to covered, no animation
+      void wipe.offsetWidth;                      // commit that state
+      wipe.classList.remove("no-anim");           // re-enable transitions
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => wipe.classList.remove("is-active"))); // slide out
+    }
+    window.addEventListener("pageshow", (e) => {
+      const nav = performance.getEntriesByType("navigation")[0];
+      const isBack = e.persisted || (nav && nav.type === "back_forward");
+      if (isBack && !prefersReduced.matches) reverseWipeOut();
+      else wipe.classList.remove("is-active"); // fresh load: ensure panel is hidden
+    });
   </script>
 </body>
 </html>
