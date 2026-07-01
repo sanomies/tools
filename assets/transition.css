@@ -65,6 +65,26 @@
 :root:active-view-transition-type(back)::view-transition-new(vt-card-10) { animation-name: os-rise-in; animation-delay: 1.2s; }
 :root:active-view-transition-type(back)::view-transition-new(vt-card-11) { animation-name: os-rise-in; animation-delay: 1.3s; }
 
+/* ============ Generic tool entrance (auto-assigned by transition.js) ============
+   Any tool without manual choreography has its regions named auto-<dir>-<i>;
+   each enters from its nearest edge, 0.1s apart, while the backdrop fades. */
+:root:active-view-transition-type(tool-enter)::view-transition-new(root) { animation-name: os-fade-in; }
+
+::view-transition-new(auto-left-0),::view-transition-new(auto-left-1),::view-transition-new(auto-left-2),::view-transition-new(auto-left-3),::view-transition-new(auto-left-4),::view-transition-new(auto-left-5),::view-transition-new(auto-left-6),::view-transition-new(auto-left-7) { animation-name: os-in-left; }
+::view-transition-new(auto-right-0),::view-transition-new(auto-right-1),::view-transition-new(auto-right-2),::view-transition-new(auto-right-3),::view-transition-new(auto-right-4),::view-transition-new(auto-right-5),::view-transition-new(auto-right-6),::view-transition-new(auto-right-7) { animation-name: os-in-right; }
+::view-transition-new(auto-top-0),::view-transition-new(auto-top-1),::view-transition-new(auto-top-2),::view-transition-new(auto-top-3),::view-transition-new(auto-top-4),::view-transition-new(auto-top-5),::view-transition-new(auto-top-6),::view-transition-new(auto-top-7) { animation-name: os-in-top; }
+::view-transition-new(auto-bottom-0),::view-transition-new(auto-bottom-1),::view-transition-new(auto-bottom-2),::view-transition-new(auto-bottom-3),::view-transition-new(auto-bottom-4),::view-transition-new(auto-bottom-5),::view-transition-new(auto-bottom-6),::view-transition-new(auto-bottom-7) { animation-name: os-in-bottom; }
+::view-transition-new(auto-pop-0),::view-transition-new(auto-pop-1),::view-transition-new(auto-pop-2),::view-transition-new(auto-pop-3),::view-transition-new(auto-pop-4),::view-transition-new(auto-pop-5),::view-transition-new(auto-pop-6),::view-transition-new(auto-pop-7) { animation-name: os-in-pop; }
+
+::view-transition-new(auto-left-0),::view-transition-new(auto-right-0),::view-transition-new(auto-top-0),::view-transition-new(auto-bottom-0),::view-transition-new(auto-pop-0) { animation-delay: 0s;  }
+::view-transition-new(auto-left-1),::view-transition-new(auto-right-1),::view-transition-new(auto-top-1),::view-transition-new(auto-bottom-1),::view-transition-new(auto-pop-1) { animation-delay: .1s; }
+::view-transition-new(auto-left-2),::view-transition-new(auto-right-2),::view-transition-new(auto-top-2),::view-transition-new(auto-bottom-2),::view-transition-new(auto-pop-2) { animation-delay: .2s; }
+::view-transition-new(auto-left-3),::view-transition-new(auto-right-3),::view-transition-new(auto-top-3),::view-transition-new(auto-bottom-3),::view-transition-new(auto-pop-3) { animation-delay: .3s; }
+::view-transition-new(auto-left-4),::view-transition-new(auto-right-4),::view-transition-new(auto-top-4),::view-transition-new(auto-bottom-4),::view-transition-new(auto-pop-4) { animation-delay: .4s; }
+::view-transition-new(auto-left-5),::view-transition-new(auto-right-5),::view-transition-new(auto-top-5),::view-transition-new(auto-bottom-5),::view-transition-new(auto-pop-5) { animation-delay: .5s; }
+::view-transition-new(auto-left-6),::view-transition-new(auto-right-6),::view-transition-new(auto-top-6),::view-transition-new(auto-bottom-6),::view-transition-new(auto-pop-6) { animation-delay: .6s; }
+::view-transition-new(auto-left-7),::view-transition-new(auto-right-7),::view-transition-new(auto-top-7),::view-transition-new(auto-bottom-7),::view-transition-new(auto-pop-7) { animation-delay: .7s; }
+
 /* ============ keyframes ============ */
 /* Reusable directional entrances — tools reference these per region. */
 @keyframes os-in-left   { from { opacity: 0; transform: translateX(-100%); } }
