@@ -25,8 +25,8 @@
   animation-fill-mode: both;
   mix-blend-mode: normal;
 }
-::view-transition-new(*) { animation-timing-function: cubic-bezier(.34, 1.3, .64, 1); } /* slight overshoot in */
-::view-transition-old(*) { animation-timing-function: cubic-bezier(.4, 0, .3, 1); }       /* ease out */
+::view-transition-new(*) { animation-timing-function: cubic-bezier(.22, 1, .36, 1); } /* strong ease-out */
+::view-transition-old(*) { animation-timing-function: cubic-bezier(.5, 0, .9, .3); }  /* ease-in — accelerate off */
 
 /* Backdrops cross-fade first (0–.4s) so the incoming page is ready underneath
    before its regions arrive. */
@@ -101,29 +101,35 @@
 ::view-transition-new(auto-left-7),::view-transition-new(auto-right-7),::view-transition-new(auto-top-7),::view-transition-new(auto-bottom-7),::view-transition-new(auto-pop-7) { animation-delay: 1.15s; }
 
 /* ============ keyframes ============ */
+/* Only the backdrop cross-fades (it can't leave the frame). Every named element
+   below moves fully out of / in from OUTSIDE the viewport, or zooms to nothing —
+   no opacity fade. */
 @keyframes os-fade-out { to   { opacity: 0; } }
 @keyframes os-fade-in  { from { opacity: 0; } }
-@keyframes os-zoom-out { to   { opacity: 0; transform: scale(.4); } }
-@keyframes os-zoom-in  { from { opacity: 0; transform: scale(.4); } }
 
-/* Logo + tagline: move up and out of the frame (and back down on return). */
-@keyframes os-up-out { to   { opacity: 0; transform: translateY(-180%); } }
-@keyframes os-up-in  { from { opacity: 0; transform: translateY(-180%); } }
+/* Launcher cards/footer zoom to a point on the way out, and pop back with a small
+   bounce on return. No fade — scale(0) makes them vanish. */
+@keyframes os-zoom-out { to { transform: scale(0); } }
+@keyframes os-zoom-in  { 0% { transform: scale(0); } 65% { transform: scale(1.08); } 100% { transform: scale(1); } }
 
-/* Regions ARRIVE from outside the frame with no fade (just slide in); they LEAVE
-   sliding back out plus a fade at the end, so they always fully disappear even
-   if the translate alone wouldn't fully clear the viewport. */
-@keyframes os-in-left   { from { transform: translateX(-110%); } }
-@keyframes os-in-right  { from { transform: translateX(110%); } }
-@keyframes os-in-top    { from { transform: translateY(-110%); } }
-@keyframes os-in-bottom { from { transform: translateY(110%); } }
-@keyframes os-exit-left   { to { opacity: 0; transform: translateX(-110%); } }
-@keyframes os-exit-right  { to { opacity: 0; transform: translateX(110%); } }
-@keyframes os-exit-top    { to { opacity: 0; transform: translateY(-110%); } }
-@keyframes os-exit-bottom { to { opacity: 0; transform: translateY(110%); } }
-/* Canvas zooms from / to the center (it can't leave the frame, so it fades). */
-@keyframes os-in-pop   { from { opacity: 0; transform: scale(.85); } }
-@keyframes os-exit-pop { to   { opacity: 0; transform: scale(.85); } }
+/* Logo + tagline: a full viewport up and out, and back down from above on return. */
+@keyframes os-up-out { to   { transform: translateY(-100vh); } }
+@keyframes os-up-in  { from { transform: translateY(-100vh); } }
+
+/* Regions travel fully OUTSIDE the frame (viewport units guarantee they clear it),
+   with no fade — they just slide off / in. */
+@keyframes os-in-left   { from { transform: translateX(-100vw); } }
+@keyframes os-in-right  { from { transform: translateX(100vw); } }
+@keyframes os-in-top    { from { transform: translateY(-100vh); } }
+@keyframes os-in-bottom { from { transform: translateY(100vh); } }
+@keyframes os-exit-left   { to { transform: translateX(-100vw); } }
+@keyframes os-exit-right  { to { transform: translateX(100vw); } }
+@keyframes os-exit-top    { to { transform: translateY(-100vh); } }
+@keyframes os-exit-bottom { to { transform: translateY(100vh); } }
+
+/* Canvas can't leave the frame, so it zooms from / to the center point (no fade). */
+@keyframes os-in-pop   { 0% { transform: scale(0); } 65% { transform: scale(1.05); } 100% { transform: scale(1); } }
+@keyframes os-exit-pop { to { transform: scale(0); } }
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(*),
