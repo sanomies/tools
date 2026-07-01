@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onu Sano · Ekspress editorial</title>
+<!-- Shared page transition (regions auto-choreographed by transition.js). -->
+<link rel="stylesheet" href="../assets/transition.css">
+<script src="../assets/transition.js"></script>
+<link rel="icon" type="image/png" href="assets/icon-1024x1024px.png">
+<meta name="description" content="Onu Sano · Ekspress editorial — frame a photo behind an Ekspress journalist cut-out and export a pixel-exact 1920×1080 thumbnail.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Onu Sano · Ekspress editorial">
+<meta property="og:description" content="Frame a photo behind an Ekspress journalist cut-out and export a pixel-exact 1920×1080 thumbnail.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Google Sans Flex — the shared Onu Sano UI typeface. -->
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:           #fbfbfc;   /* app base behind the soft texture */
+    --card:         #ffffff;   /* card / panel surface */
+    --border:       #dedfe0;   /* panel / card stroke */
+    --border-2:     #dedfe0;   /* floating toolbar hairline */
+    --ink:          #111317;   /* near-black: text + solid fills (tabs, buttons) */
+    --muted:        #708597;   /* delfi-darkgray: secondary text */
+    --track:        #edf2f4;   /* delfi-lightgray: slider track + active row fill */
+    --hover:        #f2f4f6;   /* subtle hover wash */
+    --accent:       #E20613;   /* Ekspress red: destructive action + selection chrome */
+    --focus:        #000000;   /* keyboard / active focus ring */
+    --guide:        #ff2bbd;   /* transient smart-guide snap lines */
+    --canvas:       #000000;   /* artboard background (matches the PNG export fill) */
+    --shadow-card:  0 4px 5px rgba(0,0,0,0.10);
+    --shadow-canvas:0 4px 10px rgba(0,0,0,0.10);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: "Google Sans Flex", "Google Sans", "Product Sans", "DM Sans",
+                 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+    user-select: none;
+    color-scheme: light;
+    background-color: #F6F9F9;
+  }
+
+  /* ───── App shell: centre column + 250px right sidebar ───── */
+  .app-shell {
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    padding: 0;
+  }
+
+  /* ───── Centre column (header · canvas · floating toolbar) ───── */
+  .main-column {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 40px;
+  }
+
+  .app-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 400;
+  }
+  .brand-face { height: 36px; width: auto; display: block; }
+  .brand-name { font-weight: 700; }
+  .brand-sub  { font-weight: 300; }
+
+  /* ───── Canvas area + framed card ───── */
+  .canvas-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .canvas-card {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: var(--shadow-canvas);
+    padding: 0;
+  }
+  .stage { position: relative; }
+  .artboard {
+    position: absolute;
+    left: 0; top: 0;
+    width: 1920px;
+    height: 1080px;
+    transform-origin: top left;
+    overflow: hidden;
+    background: var(--canvas);
+    /* No border-radius: a rounded overflow:hidden clip drops filtered children in iOS Safari. */
+    border-radius: 0;
+    touch-action: none;
+  }
+  .user-image {
+    position: absolute;
+    left: 0; top: 0;
+    transform-origin: top left;
+    -webkit-user-drag: none;
+    user-select: none;
+    display: block;
+    pointer-events: auto;
+    cursor: move;
+    touch-action: none;
+    will-change: filter;
+    -webkit-backface-visibility: hidden;
+  }
+  .user-image.empty { display: none; }
+
+  /* Journalist cut-out — bottom-anchored, horizontally draggable, drawn on top of the photo. */
+  .jr-image {
+    position: absolute;
+    display: block;
+    -webkit-user-drag: none;
+    user-select: none;
+    pointer-events: auto;
+    cursor: grab;
+    touch-action: none;
+    z-index: 2;
+  }
+  .jr-image:active { cursor: grabbing; }
+  .jr-image.empty { display: none; }
+
+  /* Empty-state prompt (doubles as a keyboard-reachable upload trigger) */
+  .empty-state {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    appearance: none;
+    border: none;
+    background: none;
+    font: inherit;
+    color: #fff;
+    cursor: pointer;
+    width: 100%;
+    z-index: 3;
+  }
+  .canvas-card.empty .empty-state { display: flex; }
+  .empty-state .ico { width: 24px; height: 24px; flex: 0 0 auto; }
+  .empty-state span { font-size: 16px; font-weight: 500; }
+
+  /* ───── Image selection chrome (move/resize) ───── */
+  .image-chrome {
+    position: absolute;
+    border: 2px solid var(--accent);
+    pointer-events: none;
+    z-index: 10;
+    box-sizing: border-box;
+  }
+  .image-chrome.hidden { display: none; }
+  .image-chrome .handle {
+    position: absolute;
+    width: 12px; height: 12px;
+    background: #fff;
+    border: 2px solid var(--accent);
+    border-radius: 2px;
+    pointer-events: auto;
+    touch-action: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  }
+  .image-chrome .handle[data-corner="nw"] { left: -7px; top: -7px;    cursor: nwse-resize; }
+  .image-chrome .handle[data-corner="ne"] { right: -7px; top: -7px;   cursor: nesw-resize; }
+  .image-chrome .handle[data-corner="sw"] { left: -7px; bottom: -7px; cursor: nesw-resize; }
+  .image-chrome .handle[data-corner="se"] { right: -7px; bottom: -7px; cursor: nwse-resize; }
+  .image-chrome .handle[data-corner="n"]  { top: -7px;    left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .image-chrome .handle[data-corner="s"]  { bottom: -7px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .image-chrome .handle[data-corner="w"]  { left: -7px;   top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+  .image-chrome .handle[data-corner="e"]  { right: -7px;  top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+
+  /* Smart guides */
+  .guide { position: absolute; background: var(--guide); pointer-events: none; z-index: 11; }
+  .guide-v { width: 1px; top: -24px; bottom: -24px; }
+  .guide-h { height: 1px; left: -24px; right: -24px; }
+  .guide.hidden { display: none; }
+
+  /* Drag-and-drop feedback (drawn over the card) */
+  .canvas-card.drop-target::after {
+    content: "Drop image here";
+    position: absolute;
+    inset: 6px;
+    border: 3px dashed var(--ink);
+    border-radius: 8px;
+    background: rgba(17,19,23,0.04);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .canvas-card.drop-target .empty-state { display: none; }
+
+  /* ───── Floating bottom toolbar ───── */
+  .bottom-toolbar {
+    flex: 0 0 auto;
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    box-shadow: var(--shadow-card);
+    padding: 6px;
+  }
+  .tool {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    border-radius: 100px;
+    padding: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+  }
+  .tool .ico { width: 18px; height: 18px; display: block; }
+  .tool:hover { background: var(--hover); }
+  .tool:disabled { opacity: 0.4; cursor: default; }
+  .tool:disabled:hover { background: transparent; }
+  .tool.tool-primary {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: var(--shadow-card);
+  }
+  .tool.tool-primary:hover { background: #2a2d33; }
+  .tool.tool-danger { color: var(--accent); }
+  .tool.tool-danger:hover { background: rgba(226,6,19,0.08); }
+  .tool.exporting { cursor: progress; }
+
+  /* ───── Left sidebar — one flat flush panel, sections divided by hairlines ───── */
+  .sidebar {
+    order: -1;                 /* left of the canvas */
+    position: relative;
+    flex: 0 0 auto;
+    width: 300px;              /* default; drag the handle to resize (240–400px) */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+  /* Drag handle on the sidebar's right edge. */
+  .sidebar-resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 50;
+    touch-action: none;
+  }
+  .sidebar-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: transparent;
+    transition: background-color 0.15s;
+  }
+  .sidebar-resizer:hover::after,
+  .sidebar-resizer.dragging::after { background: var(--ink); }
+
+  /* Flat section — no card, no float, just a divider. */
+  .panel {
+    position: relative;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .panel:last-child { border-bottom: none; }
+  .panel-tab {
+    position: static;
+    transform: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.7px;
+    line-height: 1.2;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 0 14px;
+    white-space: nowrap;
+  }
+
+  /* Journalist picker */
+  .panel-jr {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 26px 10px 12px;
+  }
+  .jr-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .jr-list::-webkit-scrollbar { width: 6px; }
+  .jr-list::-webkit-scrollbar-track { background: transparent; }
+  .jr-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 100px; }
+  .jr-list::-webkit-scrollbar-thumb:hover { background: #d6d6d6; }
+  .jr-row {
+    appearance: none;
+    border: none;
+    background: transparent;
+    font: inherit;
+    color: var(--muted);
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .jr-row:hover { background: var(--hover); }
+  .jr-row.active { background: var(--track); color: var(--ink); }
+  .jr-thumb {
+    flex: 0 0 auto;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: var(--track);
+  }
+  .jr-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .jr-row.active .jr-name { font-weight: 600; }
+  .panel-jr .reset-btn { margin-top: 12px; }
+
+  /* Edit (photo adjustments) */
+  .panel-edit {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 16px 16px;
+    transition: opacity 0.15s;
+  }
+  .panel-edit.disabled { opacity: 0.5; }
+  .adjust-list { display: flex; flex-direction: column; gap: 12px; }
+  .adjust-row { display: flex; flex-direction: column; gap: 8px; }
+  .adjust-head { display: flex; align-items: center; gap: 4px; }
+  .adjust-head .ico { width: 18px; height: 18px; flex: 0 0 auto; color: var(--ink); }
+  .adjust-name { flex: 1 1 auto; font-size: 12px; font-weight: 500; }
+  .adjust-val { font-size: 12px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .adjust-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--track);
+    border-radius: 100px;
+    outline: none;
+    cursor: pointer;
+    margin: 5px 0;
+  }
+  .adjust-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+  .adjust-slider::-moz-range-thumb {
+    box-sizing: border-box;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+  .adjust-slider:disabled { cursor: default; }
+
+  .reset-btn {
+    appearance: none;
+    border: none;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background-color 0.15s, opacity 0.15s;
+  }
+  .reset-btn .ico { width: 18px; height: 18px; flex: 0 0 auto; }
+  .reset-btn:hover { background: #2a2d33; }
+  .reset-btn:disabled { opacity: 0.5; cursor: default; }
+  .reset-btn:disabled:hover { background: var(--ink); }
+
+  /* Keyboard focus — visible on every surface */
+  .tool:focus-visible,
+  .jr-row:focus-visible,
+  .reset-btn:focus-visible,
+  .empty-state:focus-visible,
+  .adjust-slider:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  #file-input { display: none; }
+
+  /* ───── Mobile (≤ 860px): stack the sidebar below the canvas ───── */
+  @media (max-width: 860px) {
+    body { overflow: auto; }
+    .app-shell { flex-direction: column; height: auto; min-height: 100%; gap: 36px; padding: 24px 16px; }
+    .main-column { justify-content: space-between; gap: 16px; }
+    .canvas-area { flex: 0 0 auto; width: 100%; aspect-ratio: 16 / 9; min-height: 0; }
+    .bottom-toolbar { margin-top: 0; }
+    .sidebar { flex-direction: column; width: 100%; height: auto; gap: 36px; }
+    .panel-jr { padding: 24px 10px 12px; }
+    .jr-list { max-height: 320px; }
+    .tool { padding: 15px; }
+    .adjust-slider { height: 6px; }
+    .adjust-slider::-webkit-slider-thumb { width: 14px; height: 14px; }
+    .adjust-slider::-moz-range-thumb { width: 14px; height: 14px; }
+    .image-chrome .handle { width: 20px; height: 20px; }
+    .image-chrome .handle[data-corner="nw"] { left: -11px; top: -11px; }
+    .image-chrome .handle[data-corner="ne"] { right: -11px; top: -11px; }
+    .image-chrome .handle[data-corner="sw"] { left: -11px; bottom: -11px; }
+    .image-chrome .handle[data-corner="se"] { right: -11px; bottom: -11px; }
+    .image-chrome .handle[data-corner="n"]  { top: -11px; }
+    .image-chrome .handle[data-corner="s"]  { bottom: -11px; }
+    .image-chrome .handle[data-corner="w"]  { left: -11px; }
+    .image-chrome .handle[data-corner="e"]  { right: -11px; }
+  }
+
+  /* ───── Reduced motion ───── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <!-- Inline SVG filter for the Temperature slider — scales R/B channels for a subtle cast
+       (matrix updated live by updateTempMatrix). Referenced via url(#temp-filter) from CSS + export. -->
+  <svg width="0" height="0" style="position:absolute;" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="temp-filter" color-interpolation-filters="sRGB">
+        <feColorMatrix id="temp-matrix" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="app-shell">
+    <!-- ════════════════════════ CENTRE COLUMN ════════════════════════ -->
+    <main class="main-column">
+      <h1 class="app-header">
+        <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
+        <span class="brand-name">Onu Sano®</span>
+        <span class="brand-sub">Ekspress editorial</span>
+      </h1>
+
+      <div class="canvas-area" id="canvas-area">
+        <div class="canvas-card empty" id="canvas-card">
+          <div class="stage" id="stage">
+            <div class="artboard" id="artboard">
+              <img class="user-image empty" id="user-image" alt="">
+              <img class="jr-image empty" id="jr-image" alt="" draggable="false">
+            </div>
+            <button class="empty-state" id="empty-state" type="button" aria-label="Upload or drop an image here">
+              <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+              <span>Upload or drop an image here.</span>
+            </button>
+            <div class="image-chrome hidden" id="image-chrome">
+              <div class="handle" data-corner="nw"></div>
+              <div class="handle" data-corner="n"></div>
+              <div class="handle" data-corner="ne"></div>
+              <div class="handle" data-corner="e"></div>
+              <div class="handle" data-corner="se"></div>
+              <div class="handle" data-corner="s"></div>
+              <div class="handle" data-corner="sw"></div>
+              <div class="handle" data-corner="w"></div>
+            </div>
+            <div class="guide guide-v hidden" id="guide-v"></div>
+            <div class="guide guide-h hidden" id="guide-h"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating toolbar: upload · fill frame · remove · download -->
+      <div class="bottom-toolbar">
+        <button class="tool tool-primary" id="upload-btn" type="button" title="Upload image" aria-label="Upload image">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+        </button>
+        <button class="tool" id="fit-btn" type="button" title="Fill frame" aria-label="Fill frame">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+        <button class="tool tool-danger" id="delete-btn" type="button" title="Remove image" aria-label="Remove image">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </button>
+        <button class="tool" id="download-btn" type="button" title="Download PNG" aria-label="Download PNG">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+        </button>
+        <input type="file" id="file-input" accept="image/*">
+      </div>
+    </main>
+
+    <!-- ════════════════════════ RIGHT SIDEBAR ════════════════════════ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-resizer" id="sidebar-resizer" aria-hidden="true"></div>
+      <!-- Journalist picker -->
+      <section class="panel panel-jr" aria-label="Journalist">
+        <div class="panel-tab">Journalist</div>
+        <div class="jr-list" id="jr-list" role="listbox" aria-label="Choose journalist"></div>
+        <button class="reset-btn" id="jr-remove" type="button" title="Remove journalist" disabled>
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        Remove</button>
+      </section>
+
+      <!-- Photo adjustments -->
+      <section class="panel panel-edit disabled" id="edit-panel" aria-label="Edit image">
+        <div class="panel-tab">Edit image</div>
+        <div class="adjust-list">
+          <div class="adjust-row">
+            <div class="adjust-head">
+              <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+              <span class="adjust-name">Brightness</span>
+              <span class="adjust-val" id="val-brightness">100</span>
+            </div>
+            <input class="adjust-slider" id="adj-brightness" type="range" min="0" max="200" step="1" value="100" aria-label="Brightness" disabled>
+          </div>
+          <div class="adjust-row">
+            <div class="adjust-head">
+              <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z"/></svg>
+              <span class="adjust-name">Contrast</span>
+              <span class="adjust-val" id="val-contrast">100</span>
+            </div>
+            <input class="adjust-slider" id="adj-contrast" type="range" min="0" max="200" step="1" value="100" aria-label="Contrast" disabled>
+          </div>
+          <div class="adjust-row">
+            <div class="adjust-head">
+              <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+              <span class="adjust-name">Saturation</span>
+              <span class="adjust-val" id="val-saturation">100</span>
+            </div>
+            <input class="adjust-slider" id="adj-saturation" type="range" min="0" max="200" step="1" value="100" aria-label="Saturation" disabled>
+          </div>
+          <div class="adjust-row">
+            <div class="adjust-head">
+              <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>
+              <span class="adjust-name">Temperature</span>
+              <span class="adjust-val" id="val-temperature">0</span>
+            </div>
+            <input class="adjust-slider" id="adj-temperature" type="range" min="-100" max="100" step="1" value="0" aria-label="Temperature" disabled>
+          </div>
+        </div>
+        <button class="reset-btn" id="adj-reset" type="button" title="Reset adjustments" disabled>
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Reset</button>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+  'use strict';
+
+  // ════════════════════════ Config ════════════════════════
+  const OUT = { w: 1920, h: 1080 };
+  const MAX_VIEW_SCALE = 0.8;
+  const CARD_PAD = 0;         // .canvas-card padding (px)
+  const CARD_BORDER = 1;      // .canvas-card border (px)
+  const MARGIN = 16;          // breathing room around the canvas card
+
+  // Ekspress journalist cut-outs (hosted). Order = display order in the picker.
+  const JOURNALISTS = [
+    { id:'andrei_hvostov',      label:'Andrei Hvostov' },
+    { id:'anna_teele_orav',     label:'Anna-Teele Orav' },
+    { id:'cristopher_krutto',   label:'Cristopher Krutto' },
+    { id:'hans_h_luik',         label:'Hans H. Luik' },
+    { id:'heidit_kaio',         label:'Heidit Kaio' },
+    { id:'karoliina_hindre',    label:'Karoliina Hindre' },
+    { id:'kaur_maran',          label:'Kaur Maran' },
+    { id:'kerttu_janese',       label:'Kerttu Jänese' },
+    { id:'kristi_vainkyla',     label:'Kristi Vainküla' },
+    { id:'kulli_riin_tigasson', label:'Külli-Riin Tigasson' },
+    { id:'madis_hindre',        label:'Madis Hindre' },
+    { id:'matthias_kalev',      label:'Matthias Kalev' },
+    { id:'merili_nikkolo',      label:'Merili Nikkolo' },
+    { id:'pekka_erelt',         label:'Pekka Erelt' },
+    { id:'pille_ivask',         label:'Pille Ivask' },
+    { id:'siim_nestor',         label:'Siim Nestor' },
+    { id:'sulev_vedler',        label:'Sulev Vedler' },
+    { id:'tarmo_vahter',        label:'Tarmo Vahter' },
+    { id:'urmas_jaagant',       label:'Urmas Jaagant' },
+  ];
+  const jrById = Object.fromEntries(JOURNALISTS.map(j => [j.id, j]));
+  // Local cut-out assets, named by id (underscores → dashes).
+  const jrSlug  = (id) => id.replace(/_/g, '-');
+  const jrFull  = (id) => `assets/journalists/${jrSlug(id)}.webp`;
+  const jrThumb = (id) => `assets/journalists/${jrSlug(id)}-thumb.webp`;
+
+  // ════════════════════════ State ════════════════════════
+  const state = {
+    image: { url: null, naturalW: 0, naturalH: 0, imgEl: null },
+    transform: null,        // { x, y, w, h } bounding box in 1920×1080 output coords
+    imageSelected: false,
+    adjust: { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false },
+    journalist: null,       // { id, imgEl, w, h, x, y, aspect }
+  };
+  let selectedJrId = null;  // set immediately on pick (drives the list highlight)
+  let viewScale = 1;
+  let dragState = null;     // background photo move/resize
+  let jrDrag = null;        // journalist horizontal drag
+  const SNAP = 14;          // smart-guide snap distance (output px)
+  const MIN_SIZE = 80;      // minimum image box dimension (output px)
+
+  // ════════════════════════ DOM refs ════════════════════════
+  const canvasArea  = document.getElementById('canvas-area');
+  const canvasCard  = document.getElementById('canvas-card');
+  const stage       = document.getElementById('stage');
+  const artboard    = document.getElementById('artboard');
+  const userImg     = document.getElementById('user-image');
+  const jrImg       = document.getElementById('jr-image');
+  const emptyState  = document.getElementById('empty-state');
+  const fileInput   = document.getElementById('file-input');
+  const uploadBtn   = document.getElementById('upload-btn');
+  const fitBtn      = document.getElementById('fit-btn');
+  const deleteBtn   = document.getElementById('delete-btn');
+  const downloadBtn = document.getElementById('download-btn');
+  const resetBtn    = document.getElementById('adj-reset');
+  const editPanel   = document.getElementById('edit-panel');
+  const jrListEl    = document.getElementById('jr-list');
+  const jrRemoveBtn = document.getElementById('jr-remove');
+  const adjSliders  = {
+    brightness:  document.getElementById('adj-brightness'),
+    contrast:    document.getElementById('adj-contrast'),
+    saturation:  document.getElementById('adj-saturation'),
+    temperature: document.getElementById('adj-temperature'),
+  };
+  const adjVals     = {
+    brightness:  document.getElementById('val-brightness'),
+    contrast:    document.getElementById('val-contrast'),
+    saturation:  document.getElementById('val-saturation'),
+    temperature: document.getElementById('val-temperature'),
+  };
+  const imageChrome = document.getElementById('image-chrome');
+  const handles     = Array.from(imageChrome.querySelectorAll('.handle'));
+  const guideV      = document.getElementById('guide-v');
+  const guideH      = document.getElementById('guide-h');
+
+  // ════════════════════════ Journalist cut-out loader (local, cached) ════════════════════════
+  const jrImgCache = new Map();
+  function loadJrImage(url) {
+    if (jrImgCache.has(url)) return jrImgCache.get(url);
+    const p = new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = url;
+    });
+    jrImgCache.set(url, p);
+    return p;
+  }
+
+  // ════════════════════════ Journalist picker ════════════════════════
+  function buildJournalists() {
+    for (const j of JOURNALISTS) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'jr-row';
+      row.dataset.id = j.id;
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', 'false');
+      row.setAttribute('aria-label', j.label);
+
+      const th = document.createElement('img');
+      th.className = 'jr-thumb';
+      th.src = jrThumb(j.id);
+      th.alt = '';
+      th.draggable = false;
+
+      const nm = document.createElement('span');
+      nm.className = 'jr-name';
+      nm.lang = 'et';
+      nm.textContent = j.label;
+
+      row.appendChild(th);
+      row.appendChild(nm);
+      row.addEventListener('click', () => pickJournalist(j.id));
+      jrListEl.appendChild(row);
+    }
+  }
+  function updateJrList() {
+    jrListEl.querySelectorAll('.jr-row').forEach(el => {
+      const on = el.dataset.id === selectedJrId;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    jrRemoveBtn.disabled = !selectedJrId;
+  }
+  function pickJournalist(id) {
+    if (!jrById[id]) return;
+    if (id === selectedJrId) { removeJournalist(); return; }
+    selectedJrId = id;
+    updateJrList();
+    loadJrImage(jrFull(id)).then(img => {
+      if (selectedJrId !== id) return;   // superseded by a later pick
+      const aspect = img.naturalWidth / img.naturalHeight;
+      let h = Math.min(img.naturalHeight, OUT.h);
+      let w = h * aspect;
+      if (w > OUT.w) { w = OUT.w; h = w / aspect; }
+      const x = (OUT.w - w) / 2;
+      const y = OUT.h - h;   // bottom-anchored
+      state.journalist = { id, imgEl: img, url: jrFull(id), w, h, x, y, aspect };
+      applyJournalist();
+    }).catch(() => {});
+  }
+  function removeJournalist() {
+    selectedJrId = null;
+    state.journalist = null;
+    applyJournalist();
+    updateJrList();
+  }
+  function applyJournalist() {
+    const j = state.journalist;
+    if (!j) { jrImg.classList.add('empty'); jrImg.removeAttribute('src'); return; }
+    jrImg.classList.remove('empty');
+    if (jrImg.getAttribute('src') !== j.url) jrImg.src = j.url;
+    jrImg.style.left   = j.x + 'px';
+    jrImg.style.top    = j.y + 'px';
+    jrImg.style.width  = j.w + 'px';
+    jrImg.style.height = j.h + 'px';
+  }
+
+  // ════════════════════════ Scale to fit (same as Podcast framer) ════════════════════════
+  function computeScale() {
+    const chrome = 2 * (CARD_PAD + CARD_BORDER + MARGIN);
+    const availW = canvasArea.clientWidth - chrome;
+    const availH = canvasArea.clientHeight - chrome;
+    return Math.max(0.05, Math.min(availW / OUT.w, availH / OUT.h, MAX_VIEW_SCALE));
+  }
+  function applyScale() {
+    viewScale = computeScale();
+    stage.style.width  = (OUT.w * viewScale) + 'px';
+    stage.style.height = (OUT.h * viewScale) + 'px';
+    artboard.style.transform = `scale(${viewScale})`;
+    updateImageChrome();
+  }
+  window.addEventListener('resize', applyScale);
+
+  // ════════════════════════ Image transform ({x,y,w,h} box) ════════════════════════
+  function applyImageTransform() {
+    const t = state.transform;
+    if (!state.image.url || !t) { userImg.classList.add('empty'); return; }
+    userImg.classList.remove('empty');
+    userImg.style.width  = state.image.naturalW + 'px';
+    userImg.style.height = state.image.naturalH + 'px';
+    userImg.style.transform =
+      `translate(${t.x}px, ${t.y}px) scale(${t.w / state.image.naturalW}, ${t.h / state.image.naturalH})`;
+    userImg.style.filter = filterString();
+  }
+  function fitCover() {
+    if (!state.image.naturalW || !state.image.naturalH) { state.transform = null; return; }
+    const s = Math.max(OUT.w / state.image.naturalW, OUT.h / state.image.naturalH);
+    const w = state.image.naturalW * s;
+    const h = state.image.naturalH * s;
+    state.transform = { x: (OUT.w - w) / 2, y: (OUT.h - h) / 2, w, h };
+  }
+  function fitHeight() {
+    if (!state.image.naturalW || !state.image.naturalH) { state.transform = null; return; }
+    const s = OUT.h / state.image.naturalH;
+    const w = state.image.naturalW * s;
+    state.transform = { x: (OUT.w - w) / 2, y: 0, w, h: OUT.h };
+  }
+
+  // ════════════════════════ Selection chrome ════════════════════════
+  function selectImage() {
+    if (!state.image.url) return;
+    state.imageSelected = true;
+    updateImageChrome();
+  }
+  function deselectImage() {
+    state.imageSelected = false;
+    updateImageChrome();
+  }
+  function updateImageChrome() {
+    const t = state.transform;
+    if (!state.imageSelected || !state.image.url || !t) {
+      imageChrome.classList.add('hidden');
+      hideGuides();
+      return;
+    }
+    imageChrome.classList.remove('hidden');
+    imageChrome.style.left   = (t.x * viewScale) + 'px';
+    imageChrome.style.top    = (t.y * viewScale) + 'px';
+    imageChrome.style.width  = (t.w * viewScale) + 'px';
+    imageChrome.style.height = (t.h * viewScale) + 'px';
+  }
+
+  // ════════════════════════ Photo adjustments (CSS filter ≡ canvas ctx.filter) ════════════════════════
+  const tempMatrixEl = document.getElementById('temp-matrix');
+  function updateTempMatrix(temp) {
+    const t = temp / 500;            // ±100 slider → ±0.2 channel shift max
+    tempMatrixEl.setAttribute('values',
+      `${1 + t} 0 0 0 0  0 1 0 0 0  0 0 ${1 - t} 0 0  0 0 0 1 0`);
+  }
+  function filterString() {
+    const a = state.adjust;
+    const parts = [];
+    if (a.temperature !== 0) parts.push('url(#temp-filter)');
+    parts.push(`brightness(${a.brightness}%)`, `contrast(${a.contrast}%)`, `saturate(${a.saturation}%)`);
+    if (a.bw) parts.push('grayscale(1)');
+    return parts.join(' ');
+  }
+  function setAdjust(key, value) {
+    state.adjust[key] = value;
+    if (key !== 'bw') adjVals[key].textContent = value;
+    if (key === 'temperature') updateTempMatrix(value);
+    if (state.image.url && state.transform) userImg.style.filter = filterString();
+  }
+  function resetAdjust() {
+    state.adjust = { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false };
+    syncAdjustUI();
+    applyImageTransform();
+  }
+  function syncAdjustUI() {
+    const a = state.adjust;
+    for (const key of ['brightness', 'contrast', 'saturation', 'temperature']) {
+      adjSliders[key].value = a[key];
+      adjVals[key].textContent = a[key];
+    }
+    updateTempMatrix(a.temperature);
+  }
+
+  // ════════════════════════ Upload ════════════════════════
+  const MAX_DIM = 1920;
+  function makeScaledCanvas(img, nW, nH, max) {
+    const scale = Math.min(1, max / Math.max(nW, nH));
+    const w = Math.max(1, Math.round(nW * scale)), h = Math.max(1, Math.round(nH * scale));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+    cx.drawImage(img, 0, 0, w, h);
+    return c;
+  }
+  let currentObjectUrl = null;
+  function loadImageFromFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const srcUrl = URL.createObjectURL(file);
+    const probe = new Image();
+    probe.onerror = () => URL.revokeObjectURL(srcUrl);
+    probe.onload = () => {
+      const nW = probe.naturalWidth, nH = probe.naturalHeight;
+      const exportCanvas = makeScaledCanvas(probe, nW, nH, MAX_DIM);
+      const previewMax = matchMedia('(max-width: 860px)').matches ? 1024 : MAX_DIM;
+      const previewCanvas = makeScaledCanvas(probe, nW, nH, previewMax);
+      URL.revokeObjectURL(srcUrl);
+      previewCanvas.toBlob((blob) => {
+        const url = blob ? URL.createObjectURL(blob) : previewCanvas.toDataURL('image/png');
+        if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = blob ? url : null;
+        const pv = new Image();
+        pv.onload = () => {
+          state.image.url = url;
+          state.image.naturalW = previewCanvas.width;
+          state.image.naturalH = previewCanvas.height;
+          state.image.imgEl = exportCanvas;
+          state.adjust = { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false };
+          syncAdjustUI();
+          userImg.src = url;
+          fitHeight();
+          applyImageTransform();
+          setEnabled(true);
+          selectImage();
+        };
+        pv.src = url;
+      }, 'image/png');
+    };
+    probe.src = srcUrl;
+  }
+  function removeImage() {
+    if (!state.image.url) return;
+    if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; }
+    state.image = { url: null, naturalW: 0, naturalH: 0, imgEl: null };
+    state.transform = null;
+    state.adjust = { brightness: 100, contrast: 100, saturation: 100, temperature: 0, bw: false };
+    userImg.removeAttribute('src');
+    syncAdjustUI();
+    deselectImage();
+    applyImageTransform();
+    setEnabled(false);
+  }
+  function setEnabled(hasImage) {
+    fitBtn.disabled = !hasImage;
+    deleteBtn.disabled = !hasImage;
+    downloadBtn.disabled = !hasImage;
+    resetBtn.disabled = !hasImage;
+    adjSliders.brightness.disabled = !hasImage;
+    adjSliders.contrast.disabled = !hasImage;
+    adjSliders.saturation.disabled = !hasImage;
+    adjSliders.temperature.disabled = !hasImage;
+    editPanel.classList.toggle('disabled', !hasImage);
+    canvasCard.classList.toggle('empty', !hasImage);
+  }
+
+  // ════════════════════════ Background photo drag / resize ════════════════════════
+  userImg.addEventListener('pointerdown', (e) => {
+    if (!state.image.url) return;
+    e.preventDefault();
+    selectImage();
+    startDrag(e, { type: 'move' });
+  });
+  handles.forEach(h => {
+    h.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startDrag(e, { type: 'resize', corner: h.dataset.corner });
+    });
+  });
+  function startDrag(e, info) {
+    const t = state.transform;
+    if (!t) return;
+    dragState = {
+      ...info,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      snapshot: { x: t.x, y: t.y, w: t.w, h: t.h },
+      pointerId: e.pointerId,
+      target: e.currentTarget,
+    };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+
+  // ════════════════════════ Journalist drag (horizontal only) ════════════════════════
+  jrImg.addEventListener('pointerdown', (e) => {
+    if (!state.journalist) return;
+    e.preventDefault();
+    e.stopPropagation();
+    jrDrag = {
+      startClientX: e.clientX,
+      originX: state.journalist.x,
+      pointerId: e.pointerId,
+      target: e.currentTarget,
+    };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (jrDrag) {
+      const j = state.journalist;
+      if (!j) { jrDrag = null; return; }
+      const dx = (e.clientX - jrDrag.startClientX) / viewScale;
+      j.x = Math.max(0, Math.min(OUT.w - j.w, jrDrag.originX + dx));
+      applyJournalist();
+      return;
+    }
+    if (!dragState) return;
+    const t = state.transform;
+    const dx = (e.clientX - dragState.startClientX) / viewScale;
+    const dy = (e.clientY - dragState.startClientY) / viewScale;
+    const s = dragState.snapshot;
+
+    if (dragState.type === 'move') {
+      let mdx = dx, mdy = dy;
+      if (e.shiftKey) { if (Math.abs(mdx) > Math.abs(mdy)) mdy = 0; else mdx = 0; }
+      t.x = s.x + mdx;
+      t.y = s.y + mdy;
+      applySnapMove();
+    } else if (dragState.type === 'resize') {
+      const ratio = s.w / s.h;
+      const corner = dragState.corner;
+      const alt = e.altKey;
+      const k = alt ? 2 : 1;
+      const MIN = MIN_SIZE;
+      let newW, newH, newX, newY;
+
+      if (corner.length === 2) {
+        const dwUser = (corner.includes('w') ? -dx : dx) * k;
+        const dhUser = (corner.includes('n') ? -dy : dy) * k;
+        let dw;
+        if (Math.abs(dwUser) > Math.abs(dhUser) * ratio) dw = dwUser;
+        else dw = dhUser * ratio;
+        newW = Math.max(MIN, s.w + dw);
+        newH = newW / ratio;
+        if (alt) {
+          const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+          newX = cx - newW / 2; newY = cy - newH / 2;
+        } else {
+          const fixedX = corner.includes('w') ? s.x + s.w : s.x;
+          const fixedY = corner.includes('n') ? s.y + s.h : s.y;
+          newX = corner.includes('w') ? fixedX - newW : fixedX;
+          newY = corner.includes('n') ? fixedY - newH : fixedY;
+        }
+      } else if (corner === 'n' || corner === 's') {
+        const dh = (corner === 'n' ? -dy : dy) * k;
+        newH = Math.max(MIN / ratio, s.h + dh);
+        newW = newH * ratio;
+        const cx = s.x + s.w / 2;
+        newX = cx - newW / 2;
+        if (alt) { const cy = s.y + s.h / 2; newY = cy - newH / 2; }
+        else newY = corner === 'n' ? (s.y + s.h) - newH : s.y;
+      } else {
+        const dw = (corner === 'w' ? -dx : dx) * k;
+        newW = Math.max(MIN, s.w + dw);
+        newH = newW / ratio;
+        const cy = s.y + s.h / 2;
+        newY = cy - newH / 2;
+        if (alt) { const cx = s.x + s.w / 2; newX = cx - newW / 2; }
+        else newX = corner === 'w' ? (s.x + s.w) - newW : s.x;
+      }
+      t.x = newX; t.y = newY; t.w = newW; t.h = newH;
+      applySnapResize(corner, alt);
+    }
+    applyImageTransform();
+    updateImageChrome();
+  });
+
+  window.addEventListener('pointerup', () => {
+    if (jrDrag) {
+      try { jrDrag.target.releasePointerCapture(jrDrag.pointerId); } catch (err) {}
+      jrDrag = null;
+    }
+    if (!dragState) return;
+    try { dragState.target.releasePointerCapture(dragState.pointerId); } catch (err) {}
+    dragState = null;
+    hideGuides();
+  });
+
+  // ════════════════════════ Smart guides (snap to canvas edges/centre) ════════════════════════
+  function applySnapMove() {
+    const t = state.transform;
+    const cx = t.x + t.w / 2, cy = t.y + t.h / 2;
+    const xTargets = [
+      { v: OUT.w / 2, cur: cx },
+      { v: 0,         cur: t.x },
+      { v: OUT.w,     cur: t.x + t.w },
+    ];
+    const yTargets = [
+      { v: OUT.h / 2, cur: cy },
+      { v: 0,         cur: t.y },
+      { v: OUT.h,     cur: t.y + t.h },
+    ];
+    let bestX = null, bestXd = SNAP;
+    for (const tt of xTargets) { const d = Math.abs(tt.cur - tt.v); if (d < bestXd) { bestXd = d; bestX = tt; } }
+    let bestY = null, bestYd = SNAP;
+    for (const tt of yTargets) { const d = Math.abs(tt.cur - tt.v); if (d < bestYd) { bestYd = d; bestY = tt; } }
+    if (bestX) { t.x += (bestX.v - bestX.cur); showGuideV(bestX.v); } else hideGuideV();
+    if (bestY) { t.y += (bestY.v - bestY.cur); showGuideH(bestY.v); } else hideGuideH();
+  }
+  function applySnapResize(corner, alt) {
+    hideGuides();
+    const t = state.transform;
+    const ratio = t.w / t.h;
+    const MIN = MIN_SIZE;
+    const curLeft = t.x, curRight = t.x + t.w, curTop = t.y, curBottom = t.y + t.h;
+    const curCx = (curLeft + curRight) / 2, curCy = (curTop + curBottom) / 2;
+
+    let movX = null, movY = null;
+    if (corner.includes('w')) movX = 'left'; else if (corner.includes('e')) movX = 'right';
+    if (corner.includes('n')) movY = 'top';  else if (corner.includes('s')) movY = 'bottom';
+
+    const xTargets = [0, OUT.w / 2, OUT.w];
+    const yTargets = [0, OUT.h / 2, OUT.h];
+
+    let bestX = null, bestXd = SNAP;
+    if (movX) { const v = movX === 'left' ? curLeft : curRight; for (const tg of xTargets) { const d = Math.abs(v - tg); if (d < bestXd) { bestXd = d; bestX = tg; } } }
+    let bestY = null, bestYd = SNAP;
+    if (movY) { const v = movY === 'top' ? curTop : curBottom; for (const tg of yTargets) { const d = Math.abs(v - tg); if (d < bestYd) { bestYd = d; bestY = tg; } } }
+    let snapX = bestX, snapY = bestY;
+    if (corner.length === 2 && snapX !== null && snapY !== null) {
+      if (bestXd <= bestYd) snapY = null; else snapX = null;
+    }
+    if (snapX !== null) {
+      const newW = alt ? Math.max(MIN, Math.abs(curCx - snapX) * 2) : (movX === 'left' ? curRight - snapX : snapX - curLeft);
+      if (newW >= MIN) {
+        const newH = newW / ratio;
+        if (alt) t.x = curCx - newW / 2; else if (movX === 'left') t.x = snapX; else t.x = curLeft;
+        if (alt) t.y = curCy - newH / 2; else if (corner.length === 1) t.y = curCy - newH / 2; else t.y = movY === 'top' ? curBottom - newH : curTop;
+        t.w = newW; t.h = newH;
+        showGuideV(snapX);
+      }
+    }
+    if (snapY !== null) {
+      const newH = alt ? Math.max(MIN / ratio, Math.abs(curCy - snapY) * 2) : (movY === 'top' ? curBottom - snapY : snapY - curTop);
+      if (newH >= MIN / ratio) {
+        const newW = newH * ratio;
+        if (alt) t.y = curCy - newH / 2; else if (movY === 'top') t.y = snapY; else t.y = curTop;
+        if (alt) t.x = curCx - newW / 2; else if (corner.length === 1) t.x = curCx - newW / 2; else t.x = movX === 'left' ? curRight - newW : curLeft;
+        t.w = newW; t.h = newH;
+        showGuideH(snapY);
+      }
+    }
+  }
+  function showGuideV(canvasX) { guideV.style.left = (canvasX * viewScale) + 'px'; guideV.classList.remove('hidden'); }
+  function showGuideH(canvasY) { guideH.style.top  = (canvasY * viewScale) + 'px'; guideH.classList.remove('hidden'); }
+  function hideGuideV() { guideV.classList.add('hidden'); }
+  function hideGuideH() { guideH.classList.add('hidden'); }
+  function hideGuides() { hideGuideV(); hideGuideH(); }
+
+  // ════════════════════════ Download (2D canvas composite) ════════════════════════
+  async function download() {
+    const canvas = document.createElement('canvas');
+    canvas.width = OUT.w; canvas.height = OUT.h;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, OUT.w, OUT.h);
+
+    // Background photo (with the same filter chain as the live preview).
+    if (state.image.imgEl && state.transform) {
+      const tr = state.transform;
+      ctx.save();
+      ctx.filter = filterString();
+      ctx.drawImage(state.image.imgEl, tr.x, tr.y, tr.w, tr.h);
+      ctx.restore();
+    }
+    // Journalist cut-out on top (unfiltered).
+    if (state.journalist && state.journalist.imgEl) {
+      const j = state.journalist;
+      ctx.drawImage(j.imgEl, j.x, j.y, j.w, j.h);
+    }
+
+    const base = state.journalist ? `ekspress-${state.journalist.id.replace(/_/g, '-')}` : 'ekspress-editorial';
+    await new Promise(resolve => {
+      canvas.toBlob(blob => {
+        if (!blob) return resolve();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `onusano-${base}-1920x1080.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        resolve();
+      }, 'image/png');
+    });
+  }
+
+  // ════════════════════════ Wiring ════════════════════════
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  emptyState.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) loadImageFromFile(f);
+    fileInput.value = '';
+  });
+  fitBtn.addEventListener('click', () => { if (!state.image.url) return; fitCover(); applyImageTransform(); selectImage(); });
+  deleteBtn.addEventListener('click', () => removeImage());
+  resetBtn.addEventListener('click', () => { if (!state.image.url) return; resetAdjust(); });
+  jrRemoveBtn.addEventListener('click', () => removeJournalist());
+
+  // Sliders: pointer-drag snaps to each slider's neutral value.
+  let sliderPointerDown = false;
+  const SLIDER_NEUTRAL = { brightness: 100, contrast: 100, saturation: 100, temperature: 0 };
+  const SNAP_ZONE = 4;
+  for (const key of ['brightness', 'contrast', 'saturation', 'temperature']) {
+    const el = adjSliders[key];
+    const neutral = SLIDER_NEUTRAL[key];
+    el.addEventListener('pointerdown', () => { sliderPointerDown = true; });
+    el.addEventListener('input', () => {
+      if (!state.image.url) return;
+      let v = Number(el.value);
+      if (sliderPointerDown && Math.abs(v - neutral) <= SNAP_ZONE) { v = neutral; el.value = String(v); }
+      setAdjust(key, v);
+    });
+  }
+  window.addEventListener('pointerup', () => { sliderPointerDown = false; });
+
+  downloadBtn.addEventListener('click', async () => {
+    if (downloadBtn.disabled) return;
+    downloadBtn.disabled = true;
+    downloadBtn.classList.add('exporting');
+    try { await download(); }
+    catch (err) { console.error(err); alert('Download failed: ' + err.message); }
+    finally { downloadBtn.disabled = false; downloadBtn.classList.remove('exporting'); }
+  });
+
+  // Click-outside deselects the background image
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.bottom-toolbar, .image-chrome, #user-image, #jr-image, .sidebar, .app-header')) return;
+    deselectImage();
+  });
+
+  // Drag-and-drop upload (highlight the canvas card)
+  let dragDepth = 0;
+  const hasFileItem = (e) => !!(e.dataTransfer && Array.from(e.dataTransfer.items || []).some(i => i.kind === 'file'));
+  canvasArea.addEventListener('dragenter', (e) => {
+    if (!hasFileItem(e)) return;
+    e.preventDefault(); dragDepth++; canvasCard.classList.add('drop-target');
+  });
+  canvasArea.addEventListener('dragover', (e) => { if (hasFileItem(e)) e.preventDefault(); });
+  canvasArea.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; canvasCard.classList.remove('drop-target'); } });
+  canvasArea.addEventListener('drop', (e) => {
+    dragDepth = 0; canvasCard.classList.remove('drop-target');
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) { e.preventDefault(); loadImageFromFile(f); }
+  });
+
+  // ════════════════════════ Boot ════════════════════════
+  buildJournalists();
+  applyScale();
+  setEnabled(false);
+  </script>
+
+<!-- Sidebar resize (drag the right-edge handle; clamped 240–400px). -->
+<script>
+(function () {
+  var sb = document.getElementById('sidebar');
+  var rz = document.getElementById('sidebar-resizer');
+  if (!sb || !rz) return;
+  var MIN = 240, MAX = 400, dragging = false;
+  function apply(clientX) {
+    var w = Math.max(MIN, Math.min(MAX, clientX - sb.getBoundingClientRect().left));
+    sb.style.width = w + 'px';
+    window.dispatchEvent(new Event('resize')); // let the canvas re-fit live
+  }
+  rz.addEventListener('pointerdown', function (e) {
+    dragging = true;
+    rz.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    try { rz.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+  rz.addEventListener('pointermove', function (e) { if (dragging) apply(e.clientX); });
+  function end() { dragging = false; rz.classList.remove('dragging'); document.body.style.userSelect = ''; }
+  rz.addEventListener('pointerup', end);
+  rz.addEventListener('pointercancel', end);
+})();
+</script>
+</body>
+</html>
