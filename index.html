@@ -81,6 +81,12 @@
   .brand-name { font-weight: 700; }
   .brand-sub  { font-weight: 300; }
 
+  /* Page-transition names — launcher-scoped (see assets/transition.css). Kept here,
+     not in the shared file, so they don't collide with tools' reused class names. */
+  .app-header  { view-transition-name: vt-header; }
+  .lede        { view-transition-name: vt-lede; }
+  .page-footer { view-transition-name: vt-footer; }
+
   .lede {
     margin: 14px 0 0;
     max-width: 46ch;
@@ -329,6 +335,13 @@
     soonDesc.textContent = "Uued Onu Sano® tööriistad lisanduvad siia.";
     soon.append(soonIcon, soonTitle, soonDesc);
     grid.appendChild(soon);
+
+    /* Name each card so it animates independently in the page transition
+       (staggered down on exit, up on return). Capped to the delays defined
+       in assets/transition.css; any extra cards just ride the root animation. */
+    document.querySelectorAll(".tool-card").forEach((card, i) => {
+      if (i < 12) card.style.viewTransitionName = "vt-card-" + i;
+    });
 
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>

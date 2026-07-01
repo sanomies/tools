@@ -1,36 +1,82 @@
 /* ─────────────────────────────────────────────────────────────
    Onu Sano · Tööriistad — shared page transition
-   Include on the launcher AND every tool so the incoming page slides
-   in from the right (and reverses on Back). Cross-document View
-   Transitions API; browsers without it simply navigate, no animation.
-
-   Add to a tool's <head> (paired with transition.js):
+   Include on the launcher AND every tool (paired with transition.js):
      <link rel="stylesheet" href="../assets/transition.css">
      <script src="../assets/transition.js"></script>
+
+   Choreography (cross-document View Transitions API):
+     • Forward (choose a tool): the launcher's header + lede fly UP, the tool
+       cards drop DOWN (staggered), and the tool page rises in.
+     • Back: the tool slides out to the right and the launcher pieces rise
+       back into place.
+   The launcher assigns the vt-* names to its own elements (see its inline
+   <style> / script) so they don't collide with a tool's reused class names.
+   The animations below are keyed by those names, so on a tool page (which has
+   none of them) only the whole-page `root` animation runs — harmless.
    ───────────────────────────────────────────────────────────── */
 @view-transition { navigation: auto; }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: .45s;
+/* Base timing for every snapshot (longhands, so per-name rules add only a
+   name / delay without resetting these). */
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: .5s;
   animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+  animation-fill-mode: both;
   mix-blend-mode: normal;
 }
 
-/* Forward: new enters from the right, old leaves to the left. */
-::view-transition-old(root) { animation-name: os-slide-out-left; }
-::view-transition-new(root) { animation-name: os-slide-in-right; }
+/* ============ FORWARD — launcher flies apart, tool rises in ============ */
+::view-transition-old(root)      { animation-name: os-fade-out; }
+::view-transition-new(root)      { animation-name: os-rise-in; }
 
-/* Back: reversed (tool slides back out to the right). */
+::view-transition-old(vt-header) { animation-name: os-out-up; }
+::view-transition-old(vt-lede)   { animation-name: os-out-up;   animation-delay: .04s; }
+::view-transition-old(vt-footer) { animation-name: os-out-down; animation-delay: .04s; }
+
+::view-transition-old(vt-card-0)  { animation-name: os-out-down; animation-delay: .05s; }
+::view-transition-old(vt-card-1)  { animation-name: os-out-down; animation-delay: .09s; }
+::view-transition-old(vt-card-2)  { animation-name: os-out-down; animation-delay: .13s; }
+::view-transition-old(vt-card-3)  { animation-name: os-out-down; animation-delay: .17s; }
+::view-transition-old(vt-card-4)  { animation-name: os-out-down; animation-delay: .21s; }
+::view-transition-old(vt-card-5)  { animation-name: os-out-down; animation-delay: .25s; }
+::view-transition-old(vt-card-6)  { animation-name: os-out-down; animation-delay: .29s; }
+::view-transition-old(vt-card-7)  { animation-name: os-out-down; animation-delay: .33s; }
+::view-transition-old(vt-card-8)  { animation-name: os-out-down; animation-delay: .37s; }
+::view-transition-old(vt-card-9)  { animation-name: os-out-down; animation-delay: .41s; }
+::view-transition-old(vt-card-10) { animation-name: os-out-down; animation-delay: .45s; }
+::view-transition-old(vt-card-11) { animation-name: os-out-down; animation-delay: .49s; }
+
+/* ============ BACK — tool slides out right, launcher rises back in ============ */
 :root:active-view-transition-type(back)::view-transition-old(root) { animation-name: os-slide-out-right; }
-:root:active-view-transition-type(back)::view-transition-new(root) { animation-name: os-slide-in-left; }
+:root:active-view-transition-type(back)::view-transition-new(root) { animation-name: os-fade-in; }
 
-@keyframes os-slide-in-right  { from { transform: translateX(100%); } }
-@keyframes os-slide-out-left  { to   { transform: translateX(-100%); } }
-@keyframes os-slide-in-left   { from { transform: translateX(-100%); } }
-@keyframes os-slide-out-right { to   { transform: translateX(100%); } }
+:root:active-view-transition-type(back)::view-transition-new(vt-header),
+:root:active-view-transition-type(back)::view-transition-new(vt-lede),
+:root:active-view-transition-type(back)::view-transition-new(vt-footer) { animation-name: os-rise-in; }
+
+:root:active-view-transition-type(back)::view-transition-new(vt-card-0)  { animation-name: os-rise-in; animation-delay: .04s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-1)  { animation-name: os-rise-in; animation-delay: .08s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-2)  { animation-name: os-rise-in; animation-delay: .12s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-3)  { animation-name: os-rise-in; animation-delay: .16s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-4)  { animation-name: os-rise-in; animation-delay: .20s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-5)  { animation-name: os-rise-in; animation-delay: .24s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-6)  { animation-name: os-rise-in; animation-delay: .28s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-7)  { animation-name: os-rise-in; animation-delay: .32s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-8)  { animation-name: os-rise-in; animation-delay: .36s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-9)  { animation-name: os-rise-in; animation-delay: .40s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-10) { animation-name: os-rise-in; animation-delay: .44s; }
+:root:active-view-transition-type(back)::view-transition-new(vt-card-11) { animation-name: os-rise-in; animation-delay: .48s; }
+
+/* ============ keyframes ============ */
+@keyframes os-fade-out       { to   { opacity: 0; } }
+@keyframes os-fade-in        { from { opacity: 0; } }
+@keyframes os-rise-in        { from { opacity: 0; transform: translateY(28px); } }
+@keyframes os-out-up         { to   { opacity: 0; transform: translateY(-130%); } }
+@keyframes os-out-down       { to   { opacity: 0; transform: translateY(130%); } }
+@keyframes os-slide-out-right{ to   { transform: translateX(100%); } }
 
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) { animation: none !important; }
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
 }
