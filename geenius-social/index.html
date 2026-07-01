@@ -60,13 +60,7 @@
     overflow: hidden;
     user-select: none;
     color-scheme: light;
-    /* Soft near-white cloudy texture — the shared Onu Sano base. */
-    background-color: var(--bg);
-    background-image: url("assets/bg-texture.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    background-color: #F6F9F9;
   }
 
   /* ───── App shell: centre column + 250px right sidebar ───── */
@@ -74,8 +68,8 @@
     height: 100%;
     display: flex;
     flex-direction: row;
-    gap: 36px;
-    padding: 36px;
+    gap: 0;
+    padding: 0;
   }
 
   /* ───── Centre column (header · canvas · floating toolbar) ───── */
@@ -85,6 +79,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: 28px 40px;
   }
 
   /* Brand header — shared pattern: face · Onu Sano® · sub */
@@ -118,7 +113,7 @@
     position: relative;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 0;
     box-shadow: var(--shadow-canvas);
     padding: 0;
   }
@@ -128,7 +123,7 @@
     position: absolute;
     inset: 0;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 0;
     background: var(--canvas);
   }
   .template-host.hidden { display: none; }
@@ -193,36 +188,66 @@
   .tool.exporting { cursor: progress; }
   .tool-divider { width: 1px; height: 22px; background: var(--border-2); margin: 0 2px; }
 
-  /* ───── Right sidebar (Formats) ───── */
+  /* ───── Left sidebar — one flat flush panel, sections divided by hairlines ───── */
   .sidebar {
+    order: -1;                 /* left of the canvas */
+    position: relative;
     flex: 0 0 auto;
-    width: 250px;
+    width: 300px;              /* default; drag the handle to resize (240–400px) */
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 36px;
+    gap: 0;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
   }
+  /* Drag handle on the sidebar's right edge. */
+  .sidebar-resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 50;
+    touch-action: none;
+  }
+  .sidebar-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: transparent;
+    transition: background-color 0.15s;
+  }
+  .sidebar-resizer:hover::after,
+  .sidebar-resizer.dragging::after { background: var(--ink); }
 
-  /* Card shell with a protruding pill tab (shared with the Podcast framer) */
+  /* Flat section — no card, no float, just a divider. */
   .panel {
     position: relative;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: var(--shadow-card);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
   }
+  .panel:last-child { border-bottom: none; }
   .panel-tab {
-    position: absolute;
-    left: 50%;
-    top: -16px;
-    transform: translateX(-50%);
-    background: var(--ink);
-    color: #fff;
-    font-size: 12px;
+    position: static;
+    transform: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
     font-weight: 600;
+    letter-spacing: 0.7px;
     line-height: 1.2;
-    padding: 8px 12px;
-    border-radius: 100px;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 0 14px;
     white-space: nowrap;
   }
   .panel-formats {
@@ -820,6 +845,7 @@
 
       <!-- ════════════════════════ RIGHT SIDEBAR ════════════════════════ -->
       <aside class="sidebar" id="sidebar">
+        <div class="sidebar-resizer" id="sidebar-resizer" aria-hidden="true"></div>
         <!-- Format selector -->
         <section class="panel panel-formats" aria-label="Format">
           <div class="panel-tab">Format</div>
@@ -2087,5 +2113,31 @@
   refreshTextToolbar();
   updatePlusPatternColor();
   </script>
+
+<!-- Sidebar resize (drag the right-edge handle; clamped 240–400px). -->
+<script>
+(function () {
+  var sb = document.getElementById('sidebar');
+  var rz = document.getElementById('sidebar-resizer');
+  if (!sb || !rz) return;
+  var MIN = 240, MAX = 400, dragging = false;
+  function apply(clientX) {
+    var w = Math.max(MIN, Math.min(MAX, clientX - sb.getBoundingClientRect().left));
+    sb.style.width = w + 'px';
+    window.dispatchEvent(new Event('resize')); // let the canvas re-fit live
+  }
+  rz.addEventListener('pointerdown', function (e) {
+    dragging = true;
+    rz.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    try { rz.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+  rz.addEventListener('pointermove', function (e) { if (dragging) apply(e.clientX); });
+  function end() { dragging = false; rz.classList.remove('dragging'); document.body.style.userSelect = ''; }
+  rz.addEventListener('pointerup', end);
+  rz.addEventListener('pointercancel', end);
+})();
+</script>
 </body>
 </html>
