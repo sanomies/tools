@@ -40,24 +40,37 @@ function showApp() {
   requestAnimationFrame(() => appEl.classList.add('visible'));
 }
 
-splashFrame.src = 'assets/splash/onusano-html.html';
-(function waitForHype() {
-  if (splashDone) return;
-  try {
-    const hype = splashFrame.contentWindow.HYPE;
-    const doc  = hype && hype.documents && hype.documents['onusano-html'];
-    if (doc && typeof doc.startTimelineNamed === 'function') {
-      doc.startTimelineNamed('Main Timeline', 1);
-      requestAnimationFrame(() => {
-        splashFrame.style.visibility = 'visible';
-        setTimeout(showApp, 2200);
-      });
-      return;
-    }
-  } catch(e) {}
-  requestAnimationFrame(waitForHype);
-}());
-setTimeout(showApp, 10000); // hard fallback
+// Arriving from within the site (e.g. the launcher)? Skip the branded splash so
+// the shared page transition animates the app in like the other tools. The
+// splash still plays on a direct visit / first load.
+let cameFromSite = false;
+try { cameFromSite = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
+
+if (cameFromSite) {
+  splashDone = true;
+  splashEl.classList.add('done');   // hide the splash
+  appEl.classList.add('visible');   // show the app; its self-intro is suppressed
+  appEl.style.transition = 'none';  //   so the shared page transition does the anim
+} else {
+  splashFrame.src = 'assets/splash/onusano-html.html';
+  (function waitForHype() {
+    if (splashDone) return;
+    try {
+      const hype = splashFrame.contentWindow.HYPE;
+      const doc  = hype && hype.documents && hype.documents['onusano-html'];
+      if (doc && typeof doc.startTimelineNamed === 'function') {
+        doc.startTimelineNamed('Main Timeline', 1);
+        requestAnimationFrame(() => {
+          splashFrame.style.visibility = 'visible';
+          setTimeout(showApp, 2200);
+        });
+        return;
+      }
+    } catch(e) {}
+    requestAnimationFrame(waitForHype);
+  }());
+  setTimeout(showApp, 10000); // hard fallback
+}
 
 function scaleSplashFrame() {
   const scale = window.innerWidth < 600 ? (window.innerWidth * 0.9) / 500 : 1;
