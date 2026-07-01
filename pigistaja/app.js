@@ -10,14 +10,11 @@ let files        = [];
 let isProcessing = false;
 let stopWiggle   = null;
 let errorTimer   = null;
-let splashDone   = false;
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
 
 const $ = id => document.getElementById(id);
 
-const splashEl     = $('splash');
-const splashFrame  = $('splash-frame');
 const appEl        = $('app');
 const dropZone     = $('drop-zone');
 const dropBorder   = $('drop-border');
@@ -31,53 +28,11 @@ const fileInput    = $('file-input');
 const confettiCvs  = $('confetti-canvas');
 const confettiCtx  = confettiCvs.getContext('2d');
 
-// ── Splash ─────────────────────────────────────────────────────────────────────
-
-function showApp() {
-  if (splashDone) return;
-  splashDone = true;
-  splashEl.classList.add('done');
-  requestAnimationFrame(() => appEl.classList.add('visible'));
-}
-
-// Arriving from within the site (e.g. the launcher)? Skip the branded splash so
-// the shared page transition animates the app in like the other tools. The
-// splash still plays on a direct visit / first load.
-let cameFromSite = false;
-try { cameFromSite = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
-
-if (cameFromSite) {
-  splashDone = true;
-  splashEl.classList.add('done');   // hide the splash
-  appEl.classList.add('visible');   // show the app; its self-intro is suppressed
-  appEl.style.transition = 'none';  //   so the shared page transition does the anim
-} else {
-  splashFrame.src = 'assets/splash/onusano-html.html';
-  (function waitForHype() {
-    if (splashDone) return;
-    try {
-      const hype = splashFrame.contentWindow.HYPE;
-      const doc  = hype && hype.documents && hype.documents['onusano-html'];
-      if (doc && typeof doc.startTimelineNamed === 'function') {
-        doc.startTimelineNamed('Main Timeline', 1);
-        requestAnimationFrame(() => {
-          splashFrame.style.visibility = 'visible';
-          setTimeout(showApp, 2200);
-        });
-        return;
-      }
-    } catch(e) {}
-    requestAnimationFrame(waitForHype);
-  }());
-  setTimeout(showApp, 10000); // hard fallback
-}
-
-function scaleSplashFrame() {
-  const scale = window.innerWidth < 600 ? (window.innerWidth * 0.9) / 500 : 1;
-  splashFrame.style.transform = scale < 1 ? `scale(${scale})` : '';
-}
-scaleSplashFrame();
-window.addEventListener('resize', scaleSplashFrame);
+// ── Show app ─────────────────────────────────────────────────────────────────
+// No intro splash — show the app directly; the shared page transition animates
+// the entrance when arriving from the launcher.
+appEl.classList.add('visible');
+appEl.style.transition = 'none';
 
 // ── SVG dash rect ─────────────────────────────────────────────────────────────
 
