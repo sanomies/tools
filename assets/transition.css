@@ -31,11 +31,8 @@
 
 /* Backdrops cross-fade first (0–.4s) so the incoming page is ready underneath
    before its regions arrive. */
-::view-transition-old(root) { animation-name: os-fade-out; animation-duration: .4s; }
-::view-transition-new(root) { animation-name: os-fade-in;  animation-duration: .4s; }
-/* On Back, let the background return more gently. */
-:root:active-view-transition-type(back)::view-transition-old(root),
-:root:active-view-transition-type(back)::view-transition-new(root) { animation-duration: 1s; }
+::view-transition-old(root) { animation-name: os-fade-out; animation-duration: 2s; }
+::view-transition-new(root) { animation-name: os-fade-in;  animation-duration: 2s; }
 
 /* ===== Launcher pieces — zoom OUT when leaving (early), zoom IN when returning (delayed) ===== */
 /* The "Onu Sano® Tööriistad" logo + tagline move straight UP out of the frame
