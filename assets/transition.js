@@ -117,24 +117,38 @@
     } catch (_) { return false; }
   }
 
+  // Elements currently carrying an auto-* name. Tracked module-wide so we can
+  // always clear leftovers before the next transition — a stale name surviving
+  // (e.g. after a bfcache restore, when a previous cleanup never ran) can land on
+  // two elements at once, which makes the browser skip the whole transition.
+  var named = [];
+  function clearNames() {
+    for (var i = 0; i < named.length; i++) {
+      try { named[i].style.viewTransitionName = ""; } catch (_) {}
+    }
+    named = [];
+  }
+
   function handle(e) {
     if (!e.viewTransition) return;
     // Tag Back/Forward traversals so the backdrop can fade slower on the way back.
     if (isBack()) { try { e.viewTransition.types.add("back"); } catch (_) {} }
     if (!isTool()) return;
     try {
+      clearNames();                 // drop any leftover names before assigning fresh ones
       var regions = nameRegions();
-      var clear = function () {
-        regions.forEach(function (k) { k.el.style.viewTransitionName = ""; });
-      };
+      named = regions.map(function (k) { return k.el; });
       if (e.viewTransition.finished && e.viewTransition.finished.finally) {
-        e.viewTransition.finished.finally(clear);
+        e.viewTransition.finished.finally(clearNames);
       } else {
-        setTimeout(clear, 1600);
+        setTimeout(clearNames, 3000); // fallback > the longest transition (2s backdrop)
       }
     } catch (_) {}
   }
 
   window.addEventListener("pagereveal", handle); // entering a tool → regions assemble in
   window.addEventListener("pageswap", handle);   // leaving a tool  → regions disassemble out
+  // Belt-and-braces: if a page is restored from bfcache, wipe any names that were
+  // frozen onto it so the next transition starts clean.
+  window.addEventListener("pageshow", function (e) { if (e.persisted) clearNames(); });
 })();
