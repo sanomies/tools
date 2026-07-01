@@ -1,0 +1,36 @@
+/* ─────────────────────────────────────────────────────────────
+   Onu Sano · Tööriistad — shared page transition
+   Include on the launcher AND every tool so the incoming page slides
+   in from the right (and reverses on Back). Cross-document View
+   Transitions API; browsers without it simply navigate, no animation.
+
+   Add to a tool's <head> (paired with transition.js):
+     <link rel="stylesheet" href="../assets/transition.css">
+     <script src="../assets/transition.js"></script>
+   ───────────────────────────────────────────────────────────── */
+@view-transition { navigation: auto; }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: .45s;
+  animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+  mix-blend-mode: normal;
+}
+
+/* Forward: new enters from the right, old leaves to the left. */
+::view-transition-old(root) { animation-name: os-slide-out-left; }
+::view-transition-new(root) { animation-name: os-slide-in-right; }
+
+/* Back: reversed (tool slides back out to the right). */
+:root:active-view-transition-type(back)::view-transition-old(root) { animation-name: os-slide-out-right; }
+:root:active-view-transition-type(back)::view-transition-new(root) { animation-name: os-slide-in-left; }
+
+@keyframes os-slide-in-right  { from { transform: translateX(100%); } }
+@keyframes os-slide-out-left  { to   { transform: translateX(-100%); } }
+@keyframes os-slide-in-left   { from { transform: translateX(-100%); } }
+@keyframes os-slide-out-right { to   { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
+}

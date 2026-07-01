@@ -4,44 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Onu Sano · A&S Video editor</title>
-<!-- Page transition: incoming view slides in from the right (reversed on Back).
-     Cross-document View Transitions API; unsupported browsers just navigate. -->
-<style>
-  @view-transition { navigation: auto; }
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation-duration: .45s;
-    animation-timing-function: cubic-bezier(.4, 0, .2, 1);
-    mix-blend-mode: normal;
-  }
-  ::view-transition-old(root) { animation-name: os-slide-out-left; }
-  ::view-transition-new(root) { animation-name: os-slide-in-right; }
-  :root:active-view-transition-type(back)::view-transition-old(root) { animation-name: os-slide-out-right; }
-  :root:active-view-transition-type(back)::view-transition-new(root) { animation-name: os-slide-in-left; }
-  @keyframes os-slide-in-right  { from { transform: translateX(100%); } }
-  @keyframes os-slide-out-left  { to   { transform: translateX(-100%); } }
-  @keyframes os-slide-in-left   { from { transform: translateX(-100%); } }
-  @keyframes os-slide-out-right { to   { transform: translateX(100%); } }
-  @media (prefers-reduced-motion: reduce) {
-    ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
-  }
-</style>
-<script>
-  window.addEventListener("pagereveal", function (e) {
-    if (!e.viewTransition) return;
-    var back = false;
-    try {
-      var a = window.navigation && navigation.activation;
-      if (a && a.navigationType === "traverse") {
-        back = a.entry.index < (a.from ? a.from.index : -1);
-      } else {
-        var n = performance.getEntriesByType("navigation")[0];
-        back = !!(n && n.type === "back_forward");
-      }
-    } catch (_) {}
-    if (back) e.viewTransition.types.add("back");
-  });
-</script>
+<!-- Shared page transition — slides this tool in from the right (reversed on Back). -->
+<link rel="stylesheet" href="../assets/transition.css">
+<script src="../assets/transition.js"></script>
 <meta name="description" content="Onu Sano A&S Video editor — upload a video, add text overlays, export with text burned in. Instagram-ready sizes.">
 <style>
   /* ───── Local fonts (loaded from /assets/fonts) ───── */

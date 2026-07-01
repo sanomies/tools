@@ -11,6 +11,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Shared page transition — slides tools in from the right (reversed on Back). -->
+<link rel="stylesheet" href="assets/transition.css">
+<script src="assets/transition.js"></script>
 <style>
   /* ─────────────────────────────────────────────────────────────
      Onu Sano · Tööriistad — tool launcher
@@ -68,13 +71,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     margin: 0;
-    font-size: 26px;
+    font-size: 32.5px;
     line-height: 1.2;
     font-weight: 400;
   }
-  .brand-face { height: 40px; width: auto; display: block; }
+  .brand-face { height: 50px; width: auto; display: block; }
   .brand-name { font-weight: 700; }
   .brand-sub  { font-weight: 300; }
 
@@ -192,30 +195,11 @@
   .page-footer a { color: var(--muted); text-decoration: none; }
   .page-footer a:hover { color: var(--ink); text-decoration: underline; }
 
-  /* ───── Page transition — the incoming view slides in from the right, the
-     outgoing one leaves to the left (reversed on Back). Uses the cross-document
-     View Transitions API; browsers without it simply navigate, no animation. ───── */
-  @view-transition { navigation: auto; }
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation-duration: .45s;
-    animation-timing-function: cubic-bezier(.4, 0, .2, 1);
-    mix-blend-mode: normal;
-  }
-  ::view-transition-old(root) { animation-name: os-slide-out-left; }
-  ::view-transition-new(root) { animation-name: os-slide-in-right; }
-  :root:active-view-transition-type(back)::view-transition-old(root) { animation-name: os-slide-out-right; }
-  :root:active-view-transition-type(back)::view-transition-new(root) { animation-name: os-slide-in-left; }
-  @keyframes os-slide-in-right  { from { transform: translateX(100%); } }
-  @keyframes os-slide-out-left  { to   { transform: translateX(-100%); } }
-  @keyframes os-slide-in-left   { from { transform: translateX(-100%); } }
-  @keyframes os-slide-out-right { to   { transform: translateX(100%); } }
-
   /* ───── Responsive ───── */
   @media (max-width: 600px) {
     .page { padding: 40px 18px 32px; }
-    .app-header { font-size: 22px; }
-    .brand-face { height: 34px; }
+    .app-header { font-size: 27.5px; }
+    .brand-face { height: 42.5px; }
     .tool-grid { margin-top: 32px; gap: 14px; }
   }
 
@@ -223,7 +207,6 @@
     *, *::before, *::after { transition: none !important; }
     .tool-card:hover { transform: none; }
     .tool-card:hover .tool-cta svg { transform: none; }
-    ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
   }
 </style>
 </head>
@@ -348,24 +331,6 @@
     grid.appendChild(soon);
 
     document.getElementById("year").textContent = new Date().getFullYear();
-
-    /* Tag a Back traversal so the slide reverses (page slides back out to the right).
-       Uses the Navigation API — reliable even on bfcache restores, where the
-       performance navigation entry keeps its original (stale) type. */
-    window.addEventListener("pagereveal", (e) => {
-      if (!e.viewTransition) return;
-      let back = false;
-      try {
-        const a = window.navigation && navigation.activation;
-        if (a && a.navigationType === "traverse") {
-          back = a.entry.index < (a.from ? a.from.index : -1);
-        } else {
-          const n = performance.getEntriesByType("navigation")[0];
-          back = !!(n && n.type === "back_forward");
-        }
-      } catch (_) {}
-      if (back) e.viewTransition.types.add("back");
-    });
   </script>
 </body>
 </html>
