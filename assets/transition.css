@@ -69,12 +69,12 @@
 :root:active-view-transition-type(back)::view-transition-new(vt-card-11) { animation-name: os-rise-in; animation-delay: .48s; }
 
 /* ============ keyframes ============ */
-@keyframes os-fade-out       { to   { opacity: 0; } }
-@keyframes os-fade-in        { from { opacity: 0; } }
-@keyframes os-rise-in        { from { opacity: 0; transform: translateY(28px); } }
-@keyframes os-out-up         { to   { opacity: 0; transform: translateY(-130%); } }
-@keyframes os-out-down       { to   { opacity: 0; transform: translateY(130%); } }
-@keyframes os-slide-out-right{ to   { transform: translateX(100%); } }
+@keyframes os-fade-out        { to   { opacity: 0; } }
+@keyframes os-fade-in         { from { opacity: 0; } }
+@keyframes os-rise-in         { from { opacity: 0; transform: translateY(44px) scale(.985); } }
+@keyframes os-out-up          { to   { opacity: 0; transform: translateY(-135%) scale(.94); } }
+@keyframes os-out-down        { to   { opacity: 0; transform: translateY(135%) scale(.90); } }
+@keyframes os-slide-out-right { to   { transform: translateX(100%); } }
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(*),
