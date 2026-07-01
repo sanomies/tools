@@ -37,14 +37,14 @@ works both locally and under a project path like `…github.io/tools/`.
    > ⚠️ If a tool is re-exported/overwritten later, these two lines get wiped —
    > just add them back. Without them the tool won't animate.
 
-   That's all a tool needs: on entry, `transition.js` automatically finds the
-   tool's layout regions and animates each in from its nearest edge
-   (left/right/top/bottom, or a "pop" for centred ones), 0.1s apart — no
-   per-tool setup. Optional overrides:
+   That's all a tool needs: `transition.js` automatically finds the tool's
+   layout regions and animates each in from its nearest edge (left/right/top/
+   bottom, or a "pop"/zoom for centred ones like a canvas), 0.1s apart — and
+   leaving reverses it exactly. No per-tool setup. Optional overrides:
    - Put `data-vt="left|right|top|bottom|pop"` on a region to force its
      direction instead of the measured one.
-   - Put `data-vt-manual` on `<html>` to opt out of auto-choreography and drive
-     the entrance yourself (see `as-video-editor/index.html` for the pattern).
+   - Put `data-vt-manual` on `<html>` to opt a tool out of auto-choreography and
+     drive the entrance yourself.
 
 3. **List it on the launcher** — append one entry to the `TOOLS` array in the
    root `index.html`:

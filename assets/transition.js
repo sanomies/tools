@@ -1,38 +1,27 @@
 /* ─────────────────────────────────────────────────────────────
    Onu Sano · Tööriistad — shared page transition behaviour
-   Pairs with transition.css. Two jobs, both on `pagereveal`:
+   Pairs with transition.css.
 
-   1. Direction — tag Back/Forward traversals so the slide reverses.
-   2. Auto-choreography — on FORWARD entry into a tool, find the tool's
-      layout regions, measure where each sits, and let each animate in from
-      its nearest edge (left/right/top/bottom, or a pop for centred ones),
-      0.1s apart. This makes every tool — including ones added later — enter
-      the same way with zero per-tool setup.
+   On every tool page, both when ENTERING (pagereveal) and LEAVING (pageswap),
+   we find the tool's layout regions, measure where each sits, and name it
+   auto-<dir>-<i>. transition.css then animates each region from/to its nearest
+   edge (left/right/top/bottom, or a centred "pop"/zoom), 0.1s apart. Because
+   the same names are used both ways, leaving is the exact reverse of entering.
 
-   Opt-outs / overrides:
-     • The launcher (has #toolGrid) is skipped — it names its own pieces.
-     • A tool with `data-vt-manual` on <html> is skipped (it choreographs
-       itself; see as-video-editor).
-     • Put `data-vt="left|right|top|bottom|pop"` on a region to force its
-       direction instead of the measured one.
+   Forward vs. back needs no detection: a tool's regions are the NEW snapshot on
+   the way in and the OLD snapshot on the way out, and transition.css keys the
+   entrance off ::view-transition-new(...) and the exit off ::…-old(...).
+
+   Skips: the launcher (has #toolGrid — it names its own pieces) and any page
+   with `data-vt-manual` on <html>. Override a region with
+   `data-vt="left|right|top|bottom|pop"`.
    ───────────────────────────────────────────────────────────── */
 (function () {
   var MAX = 8; // regions animated individually; must match transition.css
 
-  function isBack() {
-    try {
-      var a = window.navigation && navigation.activation;
-      if (a && a.navigationType === "traverse") {
-        return a.entry.index < (a.from ? a.from.index : -1);
-      }
-      var n = performance.getEntriesByType("navigation")[0];
-      return !!(n && n.type === "back_forward");
-    } catch (_) { return false; }
-  }
-
-  function autoEligible() {
-    return !document.getElementById("toolGrid") &&                 // not the launcher
-           !document.documentElement.hasAttribute("data-vt-manual"); // not self-choreographed
+  function isTool() {
+    return !document.getElementById("toolGrid") &&
+           !document.documentElement.hasAttribute("data-vt-manual");
   }
 
   function regionsOf(el) {
@@ -44,19 +33,18 @@
       if (cs.display === "none" || cs.visibility === "hidden" || cs.opacity === "0") continue;
       var r = c.getBoundingClientRect();
       if (r.width < 28 || r.height < 28) continue;
-      out.push({ el: c, rect: r, children: null });
+      out.push({ el: c, rect: r });
     }
     return out;
   }
 
-  /* Walk the layout: descend into big multi-child containers so we reach the
-     real panels/regions rather than one page-filling wrapper. */
+  /* Descend into big multi-child containers so we reach the real panels/regions
+     rather than one page-filling wrapper. */
   function collect(el, depth, out) {
     var kids = regionsOf(el), vpArea = innerWidth * innerHeight;
     for (var i = 0; i < kids.length && out.length < MAX; i++) {
       var k = kids[i], area = k.rect.width * k.rect.height;
-      var grand = regionsOf(k.el);
-      if (depth < 2 && grand.length >= 2 && area > vpArea * 0.16) {
+      if (depth < 2 && regionsOf(k.el).length >= 2 && area > vpArea * 0.16) {
         collect(k.el, depth + 1, out);
       } else {
         out.push(k);
@@ -66,44 +54,44 @@
 
   function direction(rect) {
     var vw = innerWidth, vh = innerHeight;
-    var wide = rect.width > vw * 0.5, tall = rect.height > vh * 0.5;
-    var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-    if (wide && !tall) return cy < vh / 2 ? "top" : "bottom";     // horizontal strip
-    if (tall && !wide) return cx < vw / 2 ? "left" : "right";     // vertical column
+    var wide = rect.width > vw * 0.45, tall = rect.height > vh * 0.45;
+    if (wide && tall) return "pop";                              // dominant region (a canvas) → zoom
+    if (wide && !tall) return (rect.top + rect.height / 2) < vh / 2 ? "top" : "bottom"; // horizontal strip
+    if (tall && !wide) return (rect.left + rect.width / 2) < vw / 2 ? "left" : "right"; // vertical column
     var l = rect.left, r = vw - rect.right, t = rect.top, b = vh - rect.bottom;
     var m = Math.min(l, r, t, b);
-    if (m > Math.min(vw, vh) * 0.12) return "pop";                // clearly centred
+    if (m > Math.min(vw, vh) * 0.12) return "pop";               // small & central
     if (m === l) return "left";
     if (m === r) return "right";
     if (m === t) return "top";
     return "bottom";
   }
 
-  function choreograph(vt) {
+  function nameRegions() {
     var regions = [];
     collect(document.body, 0, regions);
-    if (!regions.length) return;
     regions.forEach(function (k, i) {
       var forced = k.el.getAttribute && k.el.getAttribute("data-vt");
-      var dir = forced || direction(k.rect);
-      k.el.style.viewTransitionName = "auto-" + dir + "-" + i;
+      k.el.style.viewTransitionName = "auto-" + (forced || direction(k.rect)) + "-" + i;
     });
-    // Clear the names once the transition is over, so return trips and repeat
-    // visits start clean (and never leave stale names on the live DOM).
-    var clear = function () {
-      regions.forEach(function (k) { k.el.style.viewTransitionName = ""; });
-    };
-    if (vt.finished && vt.finished.finally) vt.finished.finally(clear);
-    else setTimeout(clear, 1600);
+    return regions;
   }
 
-  window.addEventListener("pagereveal", function (e) {
-    if (!e.viewTransition) return;
-    if (isBack()) { e.viewTransition.types.add("back"); return; }
-    if (!autoEligible()) return;
+  function handle(e) {
+    if (!e.viewTransition || !isTool()) return;
     try {
-      e.viewTransition.types.add("tool-enter");
-      choreograph(e.viewTransition);
+      var regions = nameRegions();
+      var clear = function () {
+        regions.forEach(function (k) { k.el.style.viewTransitionName = ""; });
+      };
+      if (e.viewTransition.finished && e.viewTransition.finished.finally) {
+        e.viewTransition.finished.finally(clear);
+      } else {
+        setTimeout(clear, 1600);
+      }
     } catch (_) {}
-  });
+  }
+
+  window.addEventListener("pagereveal", handle); // entering a tool → regions assemble in
+  window.addEventListener("pageswap", handle);   // leaving a tool  → regions disassemble out
 })();
