@@ -24,6 +24,7 @@
   animation-duration: .45s;
   animation-fill-mode: both;
   mix-blend-mode: normal;
+  transform-origin: center; /* so scales (canvas / card zooms) grow from the center, not a corner */
 }
 ::view-transition-new(*) { animation-timing-function: cubic-bezier(.22, 1, .36, 1); } /* strong ease-out */
 ::view-transition-old(*) { animation-timing-function: cubic-bezier(.5, 0, .9, .3); }  /* ease-in — accelerate off */
@@ -118,10 +119,10 @@
 
 /* Regions travel fully OUTSIDE the frame (viewport units guarantee they clear it),
    with no fade — they just slide off / in. */
-@keyframes os-in-left   { from { transform: translateX(-100vw); } }
-@keyframes os-in-right  { from { transform: translateX(100vw); } }
-@keyframes os-in-top    { from { transform: translateY(-100vh); } }
-@keyframes os-in-bottom { from { transform: translateY(100vh); } }
+@keyframes os-in-left   { 0% { transform: translateX(-100vw); } 82% { transform: translateX(18px); }  100% { transform: translateX(0); } }
+@keyframes os-in-right  { 0% { transform: translateX(100vw); }  82% { transform: translateX(-18px); } 100% { transform: translateX(0); } }
+@keyframes os-in-top    { 0% { transform: translateY(-100vh); } 82% { transform: translateY(14px); }  100% { transform: translateY(0); } }
+@keyframes os-in-bottom { 0% { transform: translateY(100vh); }  82% { transform: translateY(-14px); } 100% { transform: translateY(0); } }
 @keyframes os-exit-left   { to { transform: translateX(-100vw); } }
 @keyframes os-exit-right  { to { transform: translateX(100vw); } }
 @keyframes os-exit-top    { to { transform: translateY(-100vh); } }
