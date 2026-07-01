@@ -19,9 +19,13 @@
    ───────────────────────────────────────────────────────────── */
 @view-transition { navigation: auto; }
 
+/* Let clicks pass through the transition overlay so the launcher/tools stay
+   clickable while the animation is still playing. */
+::view-transition { pointer-events: none; }
+
 ::view-transition-old(*),
 ::view-transition-new(*) {
-  animation-duration: .4s;
+  animation-duration: .5s;
   animation-fill-mode: both;
   mix-blend-mode: normal;
   transform-origin: center; /* so scales (canvas / card zooms) grow from the center, not a corner */
@@ -31,8 +35,8 @@
 
 /* Backdrops cross-fade first (0–.4s) so the incoming page is ready underneath
    before its regions arrive. */
-::view-transition-old(root) { animation-name: os-fade-out; animation-duration: .5s; }
-::view-transition-new(root) { animation-name: os-fade-in;  animation-duration: .5s; }
+::view-transition-old(root) { animation-name: os-fade-out; animation-duration: 1s; }
+::view-transition-new(root) { animation-name: os-fade-in;  animation-duration: 1s; }
 
 /* ===== Launcher pieces — zoom OUT when leaving (early), zoom IN when returning (delayed) ===== */
 /* The "Onu Sano® Tööriistad" logo + tagline move straight UP out of the frame
