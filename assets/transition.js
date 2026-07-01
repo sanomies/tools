@@ -70,9 +70,17 @@
   function nameRegions() {
     var regions = [];
     collect(document.body, 0, regions);
+    // The biggest region (the canvas / main stage) always zooms from the center,
+    // so it never sweeps across — and overlaps — the surrounding panels.
+    var maxArea = -1, canvasIdx = -1;
+    regions.forEach(function (k, i) {
+      var a = k.rect.width * k.rect.height;
+      if (a > maxArea) { maxArea = a; canvasIdx = i; }
+    });
     regions.forEach(function (k, i) {
       var forced = k.el.getAttribute && k.el.getAttribute("data-vt");
-      k.el.style.viewTransitionName = "auto-" + (forced || direction(k.rect)) + "-" + i;
+      var dir = forced || (i === canvasIdx ? "pop" : direction(k.rect));
+      k.el.style.viewTransitionName = "auto-" + dir + "-" + i;
     });
     return regions;
   }

@@ -23,10 +23,11 @@
 ::view-transition-old(*),
 ::view-transition-new(*) {
   animation-duration: .5s;
-  animation-timing-function: cubic-bezier(.4, 0, .2, 1);
   animation-fill-mode: both;
   mix-blend-mode: normal;
 }
+::view-transition-new(*) { animation-timing-function: cubic-bezier(.34, 1.45, .64, 1); } /* overshoot in */
+::view-transition-old(*) { animation-timing-function: cubic-bezier(.4, 0, .3, 1); }       /* ease out */
 
 /* Backdrops (the part of a page not lifted into a named region) just cross-fade. */
 ::view-transition-old(root) { animation-name: os-fade-out; }
@@ -95,19 +96,21 @@
 @keyframes os-out-up    { to   { opacity: 0; transform: translateY(-135%) scale(.94); } }
 @keyframes os-out-down  { to   { opacity: 0; transform: translateY(135%) scale(.90); } }
 
-/* Region entrances (from an edge / zoom in) */
-@keyframes os-in-left   { from { opacity: 0; transform: translateX(-100%); } }
-@keyframes os-in-right  { from { opacity: 0; transform: translateX(100%); } }
-@keyframes os-in-top    { from { opacity: 0; transform: translateY(-100%); } }
-@keyframes os-in-bottom { from { opacity: 0; transform: translateY(100%); } }
-@keyframes os-in-pop    { from { opacity: 0; transform: scale(.86); } }
+/* Region entrances (drift in from an edge / zoom in). Short travel so regions
+   stay near their own slots and don't sweep across — and overlap — neighbours;
+   the overshoot easing adds the bounce. */
+@keyframes os-in-left   { from { opacity: 0; transform: translateX(-48px); } }
+@keyframes os-in-right  { from { opacity: 0; transform: translateX(48px); } }
+@keyframes os-in-top    { from { opacity: 0; transform: translateY(-48px); } }
+@keyframes os-in-bottom { from { opacity: 0; transform: translateY(48px); } }
+@keyframes os-in-pop    { from { opacity: 0; transform: scale(.9); } }
 
 /* Region exits (reverse of the entrances) */
-@keyframes os-exit-left   { to { opacity: 0; transform: translateX(-100%); } }
-@keyframes os-exit-right  { to { opacity: 0; transform: translateX(100%); } }
-@keyframes os-exit-top    { to { opacity: 0; transform: translateY(-100%); } }
-@keyframes os-exit-bottom { to { opacity: 0; transform: translateY(100%); } }
-@keyframes os-exit-pop    { to { opacity: 0; transform: scale(.86); } }
+@keyframes os-exit-left   { to { opacity: 0; transform: translateX(-48px); } }
+@keyframes os-exit-right  { to { opacity: 0; transform: translateX(48px); } }
+@keyframes os-exit-top    { to { opacity: 0; transform: translateY(-48px); } }
+@keyframes os-exit-bottom { to { opacity: 0; transform: translateY(48px); } }
+@keyframes os-exit-pop    { to { opacity: 0; transform: scale(.9); } }
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(*),
