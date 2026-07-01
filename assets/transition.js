@@ -44,7 +44,9 @@
     var kids = regionsOf(el), vpArea = innerWidth * innerHeight;
     for (var i = 0; i < kids.length && out.length < MAX; i++) {
       var k = kids[i], area = k.rect.width * k.rect.height;
-      if (depth < 2 && regionsOf(k.el).length >= 2 && area > vpArea * 0.16) {
+      // Descend into big multi-child containers (incl. an outer .app-shell wrapper)
+      // so we reach individual panels rather than one grouped block.
+      if (depth < 3 && regionsOf(k.el).length >= 2 && area > vpArea * 0.16) {
         collect(k.el, depth + 1, out);
       } else {
         out.push(k);
