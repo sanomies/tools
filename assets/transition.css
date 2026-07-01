@@ -34,11 +34,13 @@
 ::view-transition-new(root) { animation-name: os-fade-in;  animation-duration: .4s; }
 
 /* ===== Launcher pieces — zoom OUT when leaving (early), zoom IN when returning (delayed) ===== */
-::view-transition-old(vt-header) { animation-name: os-zoom-out; animation-delay: 0s;   }
-::view-transition-old(vt-lede)   { animation-name: os-zoom-out; animation-delay: .05s; }
+/* The "Onu Sano® Tööriistad" logo + tagline move straight UP out of the frame
+   (not a zoom); they drop back down from the top on return. */
+::view-transition-old(vt-header) { animation-name: os-up-out; animation-delay: 0s;   }
+::view-transition-old(vt-lede)   { animation-name: os-up-out; animation-delay: .05s; }
 ::view-transition-old(vt-footer) { animation-name: os-zoom-out; animation-delay: .05s; }
-::view-transition-new(vt-header) { animation-name: os-zoom-in;  animation-delay: .45s; }
-::view-transition-new(vt-lede)   { animation-name: os-zoom-in;  animation-delay: .50s; }
+::view-transition-new(vt-header) { animation-name: os-up-in;  animation-delay: .45s; }
+::view-transition-new(vt-lede)   { animation-name: os-up-in;  animation-delay: .50s; }
 ::view-transition-new(vt-footer) { animation-name: os-zoom-in;  animation-delay: .50s; }
 
 ::view-transition-old(vt-card-0)  { animation-name: os-zoom-out; animation-delay: .10s; }
@@ -104,15 +106,21 @@
 @keyframes os-zoom-out { to   { opacity: 0; transform: scale(.4); } }
 @keyframes os-zoom-in  { from { opacity: 0; transform: scale(.4); } }
 
-/* Regions arrive from / leave to OUTSIDE the frame — no opacity fade. */
+/* Logo + tagline: move up and out of the frame (and back down on return). */
+@keyframes os-up-out { to   { opacity: 0; transform: translateY(-180%); } }
+@keyframes os-up-in  { from { opacity: 0; transform: translateY(-180%); } }
+
+/* Regions ARRIVE from outside the frame with no fade (just slide in); they LEAVE
+   sliding back out plus a fade at the end, so they always fully disappear even
+   if the translate alone wouldn't fully clear the viewport. */
 @keyframes os-in-left   { from { transform: translateX(-110%); } }
 @keyframes os-in-right  { from { transform: translateX(110%); } }
 @keyframes os-in-top    { from { transform: translateY(-110%); } }
 @keyframes os-in-bottom { from { transform: translateY(110%); } }
-@keyframes os-exit-left   { to { transform: translateX(-110%); } }
-@keyframes os-exit-right  { to { transform: translateX(110%); } }
-@keyframes os-exit-top    { to { transform: translateY(-110%); } }
-@keyframes os-exit-bottom { to { transform: translateY(110%); } }
+@keyframes os-exit-left   { to { opacity: 0; transform: translateX(-110%); } }
+@keyframes os-exit-right  { to { opacity: 0; transform: translateX(110%); } }
+@keyframes os-exit-top    { to { opacity: 0; transform: translateY(-110%); } }
+@keyframes os-exit-bottom { to { opacity: 0; transform: translateY(110%); } }
 /* Canvas zooms from / to the center (it can't leave the frame, so it fades). */
 @keyframes os-in-pop   { from { opacity: 0; transform: scale(.85); } }
 @keyframes os-exit-pop { to   { opacity: 0; transform: scale(.85); } }
