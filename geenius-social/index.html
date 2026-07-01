@@ -1,0 +1,1929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geenius template editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+  @font-face {
+    font-family: 'Financier Display';
+    src: url('assets/FinancierDisplay-Semibold.otf') format('opentype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Metric';
+    src: url('assets/Metric-Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: #1d1d20;
+    color: #e8e8ed;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    user-select: none;
+    color-scheme: dark;
+  }
+
+  /* ───── Left sidebar (formats) ───── */
+  .sidebar {
+    flex: 0 0 auto;
+    width: 184px;
+    background: #18181b;
+    border-right: 1px solid #2a2a2e;
+    padding: 22px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow-y: auto;
+  }
+  .sidebar-header {
+    font-size: 11px;
+    color: #86868b;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    text-align: center;
+  }
+  .thumb-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .thumb-label {
+    font-size: 11px;
+    color: #b8b8c0;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+  }
+  .thumb-group:has(.thumb.active) .thumb-label { color: #ffffff; }
+
+  /* Main column wraps canvas + bottom bar */
+  .main-column {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* ───── Main canvas area ───── */
+  .canvas-area {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 30%, #2a2a2e 0%, #1d1d20 70%);
+    position: relative;
+  }
+  .stage {
+    position: relative;
+  }
+  .template-host {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    background: #000;
+  }
+  .template-host.hidden { display: none; }
+
+  /* ───── Bottom bar ───── */
+  .bottom-bar {
+    flex: 0 0 auto;
+    position: relative;
+    padding: 14px 24px;
+    background: #18181b;
+    border-top: 1px solid #2a2a2e;
+    min-height: 72px;
+  }
+  /* All three regions are absolutely positioned. The center is aligned to
+     the active artboard's horizontal center via JS (`alignBottomCenter`). */
+  .bottom-left   { position: absolute; left: 24px;  top: 50%; transform: translateY(-50%); display: flex; align-items: center; }
+  .bottom-right  { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; }
+  .bottom-center { position: absolute; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 14px; left: 50%; }
+
+  .geenius-logo {
+    height: 26px;
+    /* viewBox is 385×90 → preserve ratio explicitly because the SVG ships with
+       preserveAspectRatio="none" which would otherwise stretch the img. */
+    width: 111px;
+    display: block;
+  }
+
+  /* drag-and-drop visual feedback */
+  .canvas-area.drop-target::after {
+    content: "Drop image here";
+    position: absolute;
+    inset: 24px;
+    border: 3px dashed #5767ff;
+    border-radius: 14px;
+    background: rgba(87, 103, 255, 0.07);
+    color: #5767ff;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* Thumbnails (now in sidebar) */
+  .thumb {
+    position: relative;
+    height: 96px;
+    overflow: hidden;
+    background: #000;
+    border: 2px solid #2f2f33;
+    border-radius: 6px;
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .thumb:hover { border-color: #5a5a62; transform: translateY(-1px); }
+  .thumb.active { border-color: #5767ff; }
+  .thumb .thumb-template {
+    position: absolute;
+    top: 0; left: 0;
+    transform-origin: top left;
+    pointer-events: none;
+  }
+
+  /* Tools sections */
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .tools .group {
+    display: flex; align-items: center; gap: 6px;
+    padding-right: 14px;
+    border-right: 1px solid #3a3a3e;
+  }
+  .tools .group:last-child { border-right: none; padding-right: 0; }
+  .tools .label { font-size: 11px; color: #86868b; margin-right: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tools.hidden { display: none; }
+
+  .text-tabs {
+    display: inline-flex;
+    border: 1px solid #4a4a4e;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #34343a;
+  }
+  .text-tab {
+    appearance: none;
+    border: none;
+    background: transparent;
+    padding: 5px 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #c0c0c8;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 500;
+    line-height: 1;
+  }
+  .text-tab:hover { background: #3d3d44; color: #fff; }
+  .text-tab.active { background: #5767ff; color: white; }
+  .text-tab .tab-swatch {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .tools.disabled { opacity: 0.55; }
+  .tools.disabled .btn, .tools.disabled .num-input, .tools.disabled .color-input { pointer-events: none; }
+
+  .btn {
+    appearance: none;
+    border: 1px solid #4a4a4e;
+    background: #34343a;
+    color: #e8e8ed;
+    border-radius: 0;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+  }
+  .btn:hover { background: #404048; }
+  .btn:active { background: #2c2c30; }
+  .btn.primary { background: #5767ff; border-color: #5767ff; color: white; }
+  .btn.primary:hover { background: #4555e0; }
+  .btn.icon { padding: 6px 10px; min-width: 32px; justify-content: center; font-weight: 700; }
+  .btn.icon.active { background: #5767ff; border-color: #5767ff; color: white; }
+
+  .num-input {
+    width: 64px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #4a4a4e;
+    background: #34343a;
+    color: #e8e8ed;
+    font-size: 13px;
+    font-family: inherit;
+    text-align: center;
+  }
+  .num-input:focus { outline: none; border-color: #5767ff; }
+  /* Always-visible spinner arrows (WebKit hides them until hover by default) */
+  .num-input::-webkit-inner-spin-button,
+  .num-input::-webkit-outer-spin-button {
+    opacity: 1;
+    margin: 0;
+  }
+
+  .color-input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 32px; height: 32px;
+    border: 1px solid #4a4a4e;
+    border-radius: 6px;
+    background: transparent;
+    padding: 2px;
+    cursor: pointer;
+  }
+  .color-input::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-input::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+  .toolbar-spacer { flex: 1; }
+  .hint { font-size: 12px; color: #86868b; }
+
+  #file-input { display: none; }
+
+  /* Top-right export buttons */
+  .top-actions {
+    position: fixed;
+    top: 16px;
+    right: 18px;
+    display: flex;
+    gap: 8px;
+    z-index: 200;
+  }
+  .top-actions .btn { box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+  .top-actions .btn:disabled { opacity: 0.5; cursor: progress; }
+
+  /* ─────────────────────────────────────────────
+     TEMPLATE — shared layers
+     ───────────────────────────────────────────── */
+  .template {
+    position: relative;
+    transform-origin: top left;
+    background: #000;
+  }
+  .template .bg-image-wrap {
+    position: absolute; inset: 0; overflow: hidden;
+    z-index: 0; background: #000;
+  }
+  .template .bg-image {
+    position: absolute;
+    left: 0; top: 0;
+    transform-origin: top left;
+    user-select: none;
+    -webkit-user-drag: none;
+    display: block;
+    touch-action: none;
+  }
+  .template .bg-image.empty { display: none; }
+  .template .layer { position: absolute; pointer-events: none; z-index: 2; }
+  .template .blue-square { background: #5767ff; }
+  .template .plus-pattern img,
+  .template .plus-pattern .plus-pattern-svg { width: 100%; height: 100%; display: block; }
+  .template .plus-pattern { color: #000; }
+  .template .plus-pattern.invert { color: #FFFFFF; }
+  .template .logo img,
+  .template .logo svg { width: 100%; height: 100%; display: block; }
+  .template .headline { z-index: 3; pointer-events: none; }
+  .template .headline p {
+    font-family: 'Financier Display', 'Times New Roman', Georgia, serif;
+    font-weight: 600;
+    line-height: 1.2;
+    color: white;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    word-break: break-word;
+    pointer-events: auto;
+    cursor: text;
+    outline: none;
+    min-height: 1em;
+  }
+  .template .headline .text-highlight { color: #3fdd88; }
+  /* hover/focus visuals only on the active editable instance */
+  .template-host.active .template .headline p[contenteditable="true"] {
+    cursor: grab;
+  }
+  .template-host.active .template .headline p[contenteditable="true"]:focus {
+    cursor: text;
+  }
+  .template-host.active .template .headline p[contenteditable="true"].dragging {
+    cursor: grabbing;
+  }
+  .template-host.active .template .headline p[contenteditable="true"]:hover {
+    outline: 2px dashed rgba(87,103,255,0.5); outline-offset: 4px;
+  }
+  .template-host.active .template .headline p[contenteditable="true"]:focus {
+    outline: 2px solid #5767ff; outline-offset: 4px;
+  }
+  .template .cta-arrow {
+    position: relative;
+  }
+  .template .cta-arrow .arrow-icon {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .template .cta-text {
+    font-family: 'Metric', 'Inter', system-ui, sans-serif;
+    color: white;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* ─────────────────────────────────────────────
+     TEMPLATE — 1080x1920 (vertical)
+     ───────────────────────────────────────────── */
+  .tmpl-1080 { width: 1080px; height: 1920px; }
+  /* Single overlay spanning the full canvas — solid black up to ~851.6px
+     then fades to transparent by ~1360.6px (matches the Figma layering
+     without a hairline seam where two layers would meet). */
+  .tmpl-1080 .overlay-black { display: none; }
+  .tmpl-1080 .overlay-gradient {
+    position: absolute; left: 0; top: 0; width: 1080px; height: 1920px;
+    background: linear-gradient(to bottom,
+      #000 0,
+      #000 44.354%,
+      rgba(0,0,0,0) 70.864%
+    );
+    z-index: 1; pointer-events: none;
+  }
+  .tmpl-1080 .blue-square { left: 0; top: 0; width: 120px; height: 120px; }
+  .tmpl-1080 .plus-pattern { left: 547px; top: 1581px; width: 453.25px; height: 259px; }
+  /* When the underlying image is dark, the .invert class flips the color to white
+     (the SVG paths use fill="currentColor", driven by .plus-pattern's color). */
+  .tmpl-1080 .content-logo {
+    position: absolute;
+    left: 100px; top: 180px;
+    width: 880px;
+    display: flex; justify-content: center;
+    z-index: 3; pointer-events: none;
+  }
+  .tmpl-1080 .content-flex {
+    position: absolute;
+    left: 100px; top: 360px;
+    width: 880px;
+    display: flex; flex-direction: column; gap: 90px; align-items: center;
+    z-index: 3; pointer-events: none;
+  }
+  .tmpl-1080 .logo { width: 385px; height: 90px; }
+  .tmpl-1080 .headline { width: 100%; }
+  .tmpl-1080 .headline p { font-size: 90px; }
+  .tmpl-1080 .cta { width: 377px; display: flex; flex-direction: column; gap: 9px; align-items: center; pointer-events: none; }
+  .tmpl-1080 .cta-arrow { width: 100px; height: 55.333px; }
+  .tmpl-1080 .cta-text { font-weight: 500; font-size: 50px; letter-spacing: 2px; }
+
+  /* ─────────────────────────────────────────────
+     TEMPLATE — 1200x1200 (square)
+     ───────────────────────────────────────────── */
+  .tmpl-1200 { width: 1200px; height: 1200px; }
+  .tmpl-1200 .overlay-gradient {
+    position: absolute; left: 0; top: 0; width: 1200px; height: 1200px;
+    background: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.4) 70%, rgba(0,0,0,0.2) 100%);
+    z-index: 1; pointer-events: none;
+  }
+  .tmpl-1200 .blue-square { left: 0; top: 0; width: 120px; height: 120px; }
+  .tmpl-1200 .plus-pattern { left: 881px; top: 978px; width: 258.999px; height: 161.875px; }
+  .tmpl-1200 .logo {
+    left: 407.5px; top: 110px; width: 385px; height: 90px;
+  }
+  .tmpl-1200 .content-flex {
+    position: absolute;
+    left: 50px; top: 410px;
+    width: 1100px;
+    display: flex; flex-direction: column; gap: 60px; align-items: center;
+    z-index: 3; pointer-events: none;
+  }
+  .tmpl-1200 .headline { width: 100%; }
+  .tmpl-1200 .headline p {
+    font-size: 105px;
+    text-shadow: 0px 0px 40px black, 0px 0px 30px black;
+  }
+  .tmpl-1200 .cta {
+    width: 350px;
+    display: flex; flex-direction: column; gap: 8.355px; align-items: center;
+    pointer-events: none;
+  }
+  .tmpl-1200 .cta-arrow { width: 92.838px; height: 51.37px; }
+  .tmpl-1200 .cta-text {
+    font-weight: 500;
+    font-size: 46.419px;
+    letter-spacing: 1.8568px;
+    text-shadow: 0px 0px 46.667px black;
+  }
+
+  /* ─────────────────────────────────────────────
+     Image chrome (selection)
+     ───────────────────────────────────────────── */
+  .image-chrome {
+    position: absolute;
+    border: 2px solid #5767ff;
+    pointer-events: none;
+    z-index: 10;
+    box-sizing: border-box;
+  }
+  .image-chrome.hidden { display: none; }
+  .image-chrome .handle {
+    position: absolute;
+    width: 14px; height: 14px;
+    background: white;
+    border: 2px solid #5767ff;
+    border-radius: 2px;
+    pointer-events: auto;
+    touch-action: none;
+  }
+  .image-chrome .handle[data-corner="nw"] { left: -8px; top: -8px; cursor: nwse-resize; }
+  .image-chrome .handle[data-corner="ne"] { right: -8px; top: -8px; cursor: nesw-resize; }
+  .image-chrome .handle[data-corner="sw"] { left: -8px; bottom: -8px; cursor: nesw-resize; }
+  .image-chrome .handle[data-corner="se"] { right: -8px; bottom: -8px; cursor: nwse-resize; }
+  .image-chrome .handle[data-corner="n"]  { top: -8px;    left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .image-chrome .handle[data-corner="s"]  { bottom: -8px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .image-chrome .handle[data-corner="w"]  { left: -8px;   top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+  .image-chrome .handle[data-corner="e"]  { right: -8px;  top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+
+  /* Floating text toolbar (Figma-style contextual) */
+  .float-toolbar {
+    position: fixed;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: #2a2a2e;
+    border: 1px solid #3a3a3e;
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+    pointer-events: auto;
+  }
+  .float-toolbar.hidden { display: none; }
+  .float-toolbar::after {
+    content: "";
+    position: absolute;
+    width: 0; height: 0;
+  }
+  .float-toolbar.right::after {  /* toolbar sits right of text → arrow points left */
+    top: 50%; margin-top: -7px; left: -7px;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-right: 7px solid #2a2a2e;
+  }
+  .float-toolbar.left::after {   /* toolbar sits left of text → arrow points right */
+    top: 50%; margin-top: -7px; right: -7px;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-left: 7px solid #2a2a2e;
+  }
+  .float-toolbar.below::after {  /* toolbar sits below text → arrow points up */
+    left: 50%; margin-left: -7px; top: -7px;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 7px solid #2a2a2e;
+  }
+  .float-toolbar.above::after {  /* toolbar sits above text → arrow points down */
+    left: 50%; margin-left: -7px; bottom: -7px;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 7px solid #2a2a2e;
+  }
+  .float-toolbar .label { font-size: 11px; color: #86868b; }
+  .float-divider { width: 1px; height: 22px; background: #3a3a3e; margin: 0 4px; }
+  .color-swatch {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 30px; height: 30px;
+    border-radius: 0;
+    border: 2px solid rgba(255,255,255,0.18);
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.1s, border-color 0.12s;
+  }
+  .color-swatch:hover { transform: scale(1.08); border-color: rgba(255,255,255,0.5); }
+  .color-swatch:active { transform: scale(0.94); }
+
+  /* ──────────────────────────────────────────
+     Mobile layout (≤ 768px)
+     ────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    body { flex-direction: column; }
+
+    /* Sidebar becomes a horizontal scroll strip at the top */
+    .sidebar {
+      width: 100%;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid #2a2a2e;
+      flex-direction: row;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 12px 14px;
+      gap: 14px;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+    .sidebar-header {
+      text-align: left;
+      margin-bottom: 0;
+      font-size: 10px;
+      flex: 0 0 auto;
+      letter-spacing: 1px;
+    }
+    .thumb-group { flex-direction: row; gap: 8px; align-items: center; }
+    .thumb { height: 56px; }
+    .thumb-label { font-size: 11px; }
+
+    /* Main column */
+    .main-column { flex: 1 1 auto; min-height: 0; }
+
+    /* Top-right export buttons stay floating, smaller */
+    .top-actions {
+      top: 8px;
+      right: 8px;
+      gap: 6px;
+    }
+    .top-actions .btn { padding: 7px 10px; font-size: 12px; }
+    /* Hide redundant "Export all" on phones to save space */
+    .top-actions #export-all-btn { display: none; }
+
+    /* Bottom bar — hide logo + hint, center the action buttons */
+    .bottom-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      min-height: 64px;
+    }
+    .bottom-left, .bottom-right { display: none; }
+    .bottom-center {
+      position: static !important;
+      transform: none !important;
+      left: auto !important;
+      top: auto !important;
+      gap: 8px;
+    }
+    .btn { padding: 10px 14px; font-size: 13px; }
+
+    /* Floating toolbar — anchors below (or above) the text */
+    .float-toolbar {
+      padding: 8px 10px;
+      gap: 6px;
+    }
+
+    /* Larger touch targets for image-chrome handles */
+    .image-chrome .handle { width: 22px; height: 22px; }
+    .image-chrome .handle[data-corner="nw"] { left: -12px; top: -12px; }
+    .image-chrome .handle[data-corner="ne"] { right: -12px; top: -12px; }
+    .image-chrome .handle[data-corner="sw"] { left: -12px; bottom: -12px; }
+    .image-chrome .handle[data-corner="se"] { right: -12px; bottom: -12px; }
+    .image-chrome .handle[data-corner="n"]  { top: -12px; }
+    .image-chrome .handle[data-corner="s"]  { bottom: -12px; }
+    .image-chrome .handle[data-corner="w"]  { left: -12px; }
+    .image-chrome .handle[data-corner="e"]  { right: -12px; }
+  }
+
+  /* Smart guides */
+  .guide {
+    position: absolute;
+    background: #ff2bbd;
+    pointer-events: none;
+    z-index: 11;
+  }
+  .guide-v { width: 1px; top: -24px; bottom: -24px; }
+  .guide-h { height: 1px; left: -24px; right: -24px; }
+  .guide.hidden { display: none; }
+</style>
+</head>
+<body>
+
+  <!-- ▼ Onu Sano page-in transition (stage 2). A black cover matching the launcher's
+       wipe is present on load, then sweeps off to the left to reveal this tool.
+       Self-contained; removes itself when done. Honors reduced-motion. -->
+  <div id="osIntro" aria-hidden="true" style="position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;will-change:transform;transition:transform .45s cubic-bezier(.4,0,.2,1);">
+    <img src="assets/onu-sano-face.svg" alt="" style="width:96px;height:auto;transition:opacity .3s ease;filter:drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(1.4px 1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff) drop-shadow(1.4px -1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff);">
+  </div>
+  <script>
+  (function () {
+    var el = document.getElementById('osIntro');
+    if (!el) return;
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var done = false;
+    function cleanup() { if (el && el.parentNode) el.parentNode.removeChild(el); }
+    function dismiss() {
+      if (done) return; done = true;
+      if (reduce) { cleanup(); return; }
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          el.style.transform = 'translateX(-100%)';
+          var img = el.querySelector('img'); if (img) img.style.opacity = '0';
+        });
+      });
+      el.addEventListener('transitionend', function (ev) {
+        if (ev.target === el && ev.propertyName === 'transform') cleanup();
+      });
+      setTimeout(cleanup, 800); // fallback
+    }
+    if (document.readyState === 'loading')
+      document.addEventListener('DOMContentLoaded', function () { setTimeout(dismiss, 150); });
+    else setTimeout(dismiss, 150);
+  })();
+  </script>
+
+  <!-- ════════════════════════ Top-right export ════════════════════════ -->
+  <div class="top-actions">
+    <button class="btn" id="export-btn" type="button">Export image</button>
+    <button class="btn primary" id="export-all-btn" type="button">Export all images</button>
+  </div>
+
+  <!-- ════════════════════════ SIDEBAR (formats) ════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">Formats</div>
+    <div class="thumb-group">
+      <div class="thumb active" data-template="1080" id="thumb-1080"></div>
+      <div class="thumb-label">1080×1920px</div>
+    </div>
+    <div class="thumb-group">
+      <div class="thumb" data-template="1200" id="thumb-1200"></div>
+      <div class="thumb-label">1200×1200px</div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════════ MAIN COLUMN (canvas + bottom bar) ════════════════════════ -->
+  <div class="main-column">
+  <!-- ════════════════════════ CANVAS ════════════════════════ -->
+  <div class="canvas-area" id="canvas-area">
+    <div class="stage" id="stage">
+      <!-- Both templates render here; only the active one is visible -->
+      <div class="template-host" data-template="1080" id="host-1080">
+        <div class="template tmpl-1080" data-template="1080">
+          <div class="bg-image-wrap"><img class="bg-image empty" alt=""></div>
+          <div class="overlay-black"></div>
+          <div class="overlay-gradient"></div>
+          <div class="layer blue-square"></div>
+          <div class="layer plus-pattern">
+            <svg class="plus-pattern-svg" viewBox="0 0 453.25 259" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+              <path d="M36.4219 28.3282H64.7501V36.4219H36.4219V64.7501H28.3282V36.4219H0V28.3282H28.3282V0H36.4219V28.3282Z"/>
+              <path d="M36.4219 125.453H64.7501V133.547H36.4219V161.875H28.3282V133.547H0V125.453H28.3282V97.125H36.4219V125.453Z"/>
+              <path d="M36.4219 222.578H64.7501V230.672H36.4219V259H28.3282V230.672H0V222.578H28.3282V194.25H36.4219V222.578Z"/>
+              <path d="M133.55 28.3282H161.879V36.4219H133.55V64.7501H125.457V36.4219H97.1285V28.3282H125.457V0H133.55V28.3282Z"/>
+              <path d="M133.55 125.453H161.879V133.547H133.55V161.875H125.457V133.547H97.1285V125.453H125.457V97.125H133.55V125.453Z"/>
+              <path d="M133.55 222.578H161.879V230.672H133.55V259H125.457V230.672H97.1285V222.578H125.457V194.25H133.55V222.578Z"/>
+              <path d="M230.671 28.3282H258.999V36.4219H230.671V64.7501H222.577V36.4219H194.249V28.3282H222.577V0H230.671V28.3282Z"/>
+              <path d="M230.671 125.453H258.999V133.547H230.671V161.875H222.577V133.547H194.249V125.453H222.577V97.125H230.671V125.453Z"/>
+              <path d="M327.799 125.453H356.127V133.547H327.799V161.875H319.705V133.547H291.377V125.453H319.705V97.125H327.799V125.453Z"/>
+              <path d="M424.922 125.453H453.25V133.547H424.922V161.875H416.828V133.547H388.5V125.453H416.828V97.125H424.922V125.453Z"/>
+            </svg>
+          </div>
+          <div class="content-logo">
+            <div class="logo" role="img" aria-label="Geenius">
+              <svg viewBox="0 0 385 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="white">
+                <path d="M368.539 21.3039C358.96 21.3039 350.278 27.0054 350.278 36.3029C350.278 42.3001 353.27 46.5053 358.358 49.2023L366.438 53.4015C370.634 55.5011 373.326 57.2991 373.326 60.901C373.326 64.7986 370.333 66.8982 366.143 66.8982C358.358 66.8982 352.668 61.8 352.072 52.7982H349.676V65.6975C352.969 68.0988 359.556 69.8968 365.842 69.8968C376.318 69.8968 385 63.2962 385 53.3955C385 46.7949 381.111 42.5957 375.12 39.5971L367.636 35.3979C364.644 33.8956 362.548 32.3993 362.548 29.3947C362.548 26.39 364.945 23.9948 368.533 23.9948C376.017 23.9948 379.015 29.3947 379.611 35.9952H382.008L382.309 24.2964C379.912 22.7941 374.223 21.2978 368.533 21.2978M326.327 69.0038H347.581V66.9042C343.39 66.9042 343.089 65.7036 343.089 60.6053V22.2029H321.83V24.3025C326.02 24.3025 326.321 25.5031 326.321 30.6013V58.5057C324.822 61.2087 323.028 62.4033 320.933 62.4033C317.043 62.4033 314.647 59.7064 314.647 52.5025V22.2029H293.394V24.3025C297.584 24.3025 297.885 25.5031 297.885 30.6013V54.6021C297.885 63.0006 302.973 69.9028 312.552 69.9028C318.837 69.9028 323.931 66.0052 326.321 61.5043V69.0038H326.327ZM272.736 30.6013V60.3037C272.736 65.4079 272.435 66.6025 268.245 66.6025V69.0038H294.291V66.9042C290.1 66.9042 289.799 65.7036 289.799 60.6053V22.2029H268.546V24.3025C272.435 24.6041 272.736 25.5031 272.736 30.6013ZM272.14 8.70014C272.14 13.4967 276.036 17.4003 281.123 17.4003C286.211 17.4003 290.106 13.4967 290.106 8.70014C290.106 3.60193 285.916 0 281.123 0C276.331 0 272.14 3.60193 272.14 8.70014ZM237.713 66.6025C233.523 66.6025 233.222 65.4019 233.222 60.3037V33.0026C234.42 30.004 236.816 28.8034 238.911 28.8034C242.801 28.8034 245.799 31.5003 245.799 38.7042V60.6053C245.799 65.7036 245.498 66.9042 241.308 66.9042V69.0038H267.354V66.9042C263.163 66.9042 262.862 65.7036 262.862 60.6053V36.6045C262.862 28.2061 257.473 21.3039 247.894 21.3039C241.308 21.3039 235.919 25.8048 233.523 30.3057V22.2029H212.263V24.3025C216.454 24.3025 216.755 25.5031 216.755 30.6013V60.3037C216.755 65.4079 216.46 66.6025 212.263 66.6025V69.0038H238.309V66.6025H237.713ZM211.366 57.6007L209.566 56.4001C206.574 60.2976 203.581 62.1016 199.09 62.1016C190.408 62.1016 183.52 53.4015 182.924 40.2004H210.469C210.469 31.1986 203.286 21.2978 191.01 21.2978C178.733 21.2978 167.059 32.3993 167.059 46.801C167.059 61.2027 177.836 69.9028 191.01 69.9028C199.391 69.9028 206.875 65.7036 211.366 57.6007ZM190.709 24.3025C195.2 24.3025 197.892 29.4007 197.892 37.2019H183.225C183.827 28.5017 186.518 24.3025 190.709 24.3025ZM166.457 57.6007L164.958 56.4001C161.966 60.2976 158.973 62.1016 154.482 62.1016C145.8 62.1016 138.912 53.4015 138.316 40.2004H165.861C165.861 31.1986 158.678 21.2978 146.402 21.2978C134.125 21.2978 122.451 32.3993 122.451 46.801C122.451 61.2027 133.228 69.9028 146.402 69.9028C154.783 69.9028 162.267 65.7036 166.463 57.6007M146.101 24.3025C150.592 24.3025 153.284 29.4007 153.284 37.2019H138.617C138.918 28.5017 141.609 24.3025 146.101 24.3025ZM107.176 75.3027C111.969 76.5033 113.763 77.704 113.763 80.7026C113.763 85.2035 107.176 87.3031 98.7953 87.3031C89.8123 87.3031 83.8276 84.0028 83.8276 77.704C83.8276 74.102 85.6218 71.7068 89.2162 71.1034L107.176 75.3027ZM124.841 72.6058C124.841 65.4079 119.754 61.5043 109.271 59.7064L94.6048 57.0034C93.1056 56.7078 91.9075 56.1044 91.9075 54.9038C91.9075 53.7032 92.5096 53.1059 94.8998 52.5025C96.098 52.5025 96.9951 52.7982 98.1932 52.7982C109.868 52.7982 119.152 46.1976 119.152 36.9002C119.152 33.3043 117.658 30.004 114.961 27.3011L124.245 27.6027L126.34 21.9012C120.952 22.5045 114.666 22.5045 106.279 22.5045C103.883 21.9012 100.891 21.3039 98.1932 21.3039C86.5189 21.3039 77.5359 27.9044 77.5359 36.9062C77.5359 44.4057 83.5205 50.4089 92.2025 52.2069C86.8139 53.7092 82.6234 57.3051 82.6234 62.4033C82.6234 66.0052 85.0197 69.0038 87.711 69.9028C79.9261 70.2045 73.9414 73.2031 73.9414 78.3013C73.9414 86.1024 86.2178 90 99.6864 90C111.963 90 124.835 83.1038 124.835 72.5997M104.184 36.9002C104.184 44.7013 101.487 50.1012 98.1932 50.1012C94.6048 50.1012 92.2085 44.7013 92.2085 36.9002C92.2085 29.099 94.6048 24.0008 98.1932 24.0008C101.487 24.0008 104.184 29.105 104.184 36.9002ZM0 56.7018C0 51.3019 3.88944 47.3983 9.27805 47.3983C14.6667 47.3983 18.5561 51.5975 18.5561 56.7018C18.5561 61.806 14.3656 65.9992 9.27805 65.9992C4.19048 65.9992 0 61.8 0 56.7018ZM4.49152 66.0052C4.49152 63.3083 6.58675 61.5043 8.98303 61.5043C11.3793 61.5043 13.4745 63.3083 13.4745 66.0052C13.4745 68.4065 11.3793 70.5061 8.98303 70.5061C6.58675 70.5061 4.49152 68.7022 4.49152 66.0052ZM23.0536 28.8034C23.0536 23.7052 27.2441 19.5059 32.3317 19.5059C37.7203 19.5059 41.6097 23.7052 41.6097 28.8034C41.6097 33.9016 37.4193 38.1008 32.3317 38.1008C27.2441 38.1008 23.0536 33.9016 23.0536 28.8034ZM27.5452 38.1008C27.5452 35.4039 29.6404 33.5999 32.0367 33.5999C34.433 33.5999 36.5282 35.3979 36.5282 38.1008C36.5282 40.5021 34.433 42.6017 32.0367 42.6017C29.6404 42.6017 27.5452 40.8038 27.5452 38.1008ZM23.0536 56.7018C23.0536 51.3019 27.2441 47.3983 32.3317 47.3983C37.7203 47.3983 41.6097 51.5975 41.6097 56.7018C41.6097 61.806 37.4193 65.9992 32.3317 65.9992C27.2441 65.9992 23.0536 61.8 23.0536 56.7018ZM27.5452 66.0052C27.5452 63.3083 29.6404 61.5043 32.0367 61.5043C34.433 61.5043 36.5282 63.3083 36.5282 66.0052C36.5282 68.4065 34.433 70.5061 32.0367 70.5061C29.6404 70.5061 27.5452 68.7022 27.5452 66.0052ZM46.1013 28.8034C46.1013 23.7052 50.2917 19.5059 55.3793 19.5059C60.7679 19.5059 64.6634 23.7052 64.6634 28.8034C64.6634 33.9016 60.4729 38.1008 55.3793 38.1008C50.2857 38.1008 46.1013 33.9016 46.1013 28.8034ZM50.5928 38.1008C50.5928 35.4039 52.688 33.3043 55.0843 33.5999C57.4806 33.5999 59.5758 35.3979 59.5758 38.1008C59.5758 40.5021 57.7756 42.6017 55.0843 42.6017C52.688 42.6017 50.5928 40.8038 50.5928 38.1008ZM0 28.8034C0 23.7052 3.88944 19.5059 9.27805 19.5059C14.6667 19.5059 18.5561 23.7052 18.5561 28.8034C18.5561 33.9016 14.3656 38.1008 9.27805 38.1008C4.19048 38.1008 0 33.9016 0 28.8034ZM4.49152 38.1008C4.49152 35.4039 6.58675 33.5999 8.98303 33.5999C11.3793 33.5999 13.4745 35.3979 13.4745 38.1008C13.4745 40.5021 11.3793 42.6017 8.98303 42.6017C6.58675 42.6017 4.49152 40.8038 4.49152 38.1008ZM46.1013 56.7018C46.1013 51.3019 50.2917 47.3983 55.3793 47.3983C60.7679 47.3983 64.6634 51.5975 64.6634 56.7018C64.6634 61.806 60.4729 65.9992 55.3793 65.9992C50.2857 65.9992 46.1013 61.8 46.1013 56.7018ZM50.5928 66.0052C50.5928 63.3083 52.688 61.2087 55.0843 61.5043C57.4806 61.5043 59.5758 63.3083 59.5758 66.0052C59.5758 68.4065 57.7756 70.5061 55.0843 70.5061C52.688 70.5061 50.5928 68.7022 50.5928 66.0052Z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="content-flex">
+            <div class="headline">
+              <p data-text="headline" spellcheck="false">Automaks kukkus läbi. Lahendus on veel kõrgem maks?</p>
+            </div>
+            <div class="cta">
+              <div class="cta-arrow">
+                <svg class="arrow-icon" viewBox="0 0 100 55.3333" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                  <g transform="translate(100 0) rotate(90)">
+                    <path d="M55.3333 44.6667H44.6667V55.3333H55.3333V100H44.6667V62.876L18.416 89.1266L10.8734 81.584L37.124 55.3333H0L0 44.6667H37.124L10.8734 18.416L18.4157 10.8734L44.6667 37.124V0L55.3333 0V44.6667Z" fill="#5767FF"/>
+                    <rect x="44.67" y="44.67" width="10.667" height="10.667" fill="#FFFFFF"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="cta-text">Loe Geeniusest</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="template-host hidden" data-template="1200" id="host-1200">
+        <div class="template tmpl-1200" data-template="1200">
+          <div class="bg-image-wrap"><img class="bg-image empty" alt=""></div>
+          <div class="overlay-gradient"></div>
+          <div class="layer blue-square"></div>
+          <div class="layer plus-pattern">
+            <svg class="plus-pattern-svg" viewBox="0 0 258.999 161.875" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+              <path d="M36.4219 28.3282H64.7501V36.4219H36.4219V64.7501H28.3282V36.4219H0V28.3282H28.3282V0H36.4219V28.3282Z"/>
+              <path d="M36.4219 125.453H64.7501V133.547H36.4219V161.875H28.3282V133.547H0V125.453H28.3282V97.125H36.4219V125.453Z"/>
+              <path d="M133.55 28.3282H161.879V36.4219H133.55V64.7501H125.457V36.4219H97.1285V28.3282H125.457V0H133.55V28.3282Z"/>
+              <path d="M133.55 125.453H161.879V133.547H133.55V161.875H125.457V133.547H97.1285V125.453H125.457V97.125H133.55V125.453Z"/>
+              <path d="M230.671 125.453H258.999V133.547H230.671V161.875H222.577V133.547H194.249V125.453H222.577V97.125H230.671V125.453Z"/>
+            </svg>
+          </div>
+          <div class="layer logo" role="img" aria-label="Geenius">
+            <svg viewBox="0 0 385 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="white">
+              <path d="M368.539 21.3039C358.96 21.3039 350.278 27.0054 350.278 36.3029C350.278 42.3001 353.27 46.5053 358.358 49.2023L366.438 53.4015C370.634 55.5011 373.326 57.2991 373.326 60.901C373.326 64.7986 370.333 66.8982 366.143 66.8982C358.358 66.8982 352.668 61.8 352.072 52.7982H349.676V65.6975C352.969 68.0988 359.556 69.8968 365.842 69.8968C376.318 69.8968 385 63.2962 385 53.3955C385 46.7949 381.111 42.5957 375.12 39.5971L367.636 35.3979C364.644 33.8956 362.548 32.3993 362.548 29.3947C362.548 26.39 364.945 23.9948 368.533 23.9948C376.017 23.9948 379.015 29.3947 379.611 35.9952H382.008L382.309 24.2964C379.912 22.7941 374.223 21.2978 368.533 21.2978M326.327 69.0038H347.581V66.9042C343.39 66.9042 343.089 65.7036 343.089 60.6053V22.2029H321.83V24.3025C326.02 24.3025 326.321 25.5031 326.321 30.6013V58.5057C324.822 61.2087 323.028 62.4033 320.933 62.4033C317.043 62.4033 314.647 59.7064 314.647 52.5025V22.2029H293.394V24.3025C297.584 24.3025 297.885 25.5031 297.885 30.6013V54.6021C297.885 63.0006 302.973 69.9028 312.552 69.9028C318.837 69.9028 323.931 66.0052 326.321 61.5043V69.0038H326.327ZM272.736 30.6013V60.3037C272.736 65.4079 272.435 66.6025 268.245 66.6025V69.0038H294.291V66.9042C290.1 66.9042 289.799 65.7036 289.799 60.6053V22.2029H268.546V24.3025C272.435 24.6041 272.736 25.5031 272.736 30.6013ZM272.14 8.70014C272.14 13.4967 276.036 17.4003 281.123 17.4003C286.211 17.4003 290.106 13.4967 290.106 8.70014C290.106 3.60193 285.916 0 281.123 0C276.331 0 272.14 3.60193 272.14 8.70014ZM237.713 66.6025C233.523 66.6025 233.222 65.4019 233.222 60.3037V33.0026C234.42 30.004 236.816 28.8034 238.911 28.8034C242.801 28.8034 245.799 31.5003 245.799 38.7042V60.6053C245.799 65.7036 245.498 66.9042 241.308 66.9042V69.0038H267.354V66.9042C263.163 66.9042 262.862 65.7036 262.862 60.6053V36.6045C262.862 28.2061 257.473 21.3039 247.894 21.3039C241.308 21.3039 235.919 25.8048 233.523 30.3057V22.2029H212.263V24.3025C216.454 24.3025 216.755 25.5031 216.755 30.6013V60.3037C216.755 65.4079 216.46 66.6025 212.263 66.6025V69.0038H238.309V66.6025H237.713ZM211.366 57.6007L209.566 56.4001C206.574 60.2976 203.581 62.1016 199.09 62.1016C190.408 62.1016 183.52 53.4015 182.924 40.2004H210.469C210.469 31.1986 203.286 21.2978 191.01 21.2978C178.733 21.2978 167.059 32.3993 167.059 46.801C167.059 61.2027 177.836 69.9028 191.01 69.9028C199.391 69.9028 206.875 65.7036 211.366 57.6007ZM190.709 24.3025C195.2 24.3025 197.892 29.4007 197.892 37.2019H183.225C183.827 28.5017 186.518 24.3025 190.709 24.3025ZM166.457 57.6007L164.958 56.4001C161.966 60.2976 158.973 62.1016 154.482 62.1016C145.8 62.1016 138.912 53.4015 138.316 40.2004H165.861C165.861 31.1986 158.678 21.2978 146.402 21.2978C134.125 21.2978 122.451 32.3993 122.451 46.801C122.451 61.2027 133.228 69.9028 146.402 69.9028C154.783 69.9028 162.267 65.7036 166.463 57.6007M146.101 24.3025C150.592 24.3025 153.284 29.4007 153.284 37.2019H138.617C138.918 28.5017 141.609 24.3025 146.101 24.3025ZM107.176 75.3027C111.969 76.5033 113.763 77.704 113.763 80.7026C113.763 85.2035 107.176 87.3031 98.7953 87.3031C89.8123 87.3031 83.8276 84.0028 83.8276 77.704C83.8276 74.102 85.6218 71.7068 89.2162 71.1034L107.176 75.3027ZM124.841 72.6058C124.841 65.4079 119.754 61.5043 109.271 59.7064L94.6048 57.0034C93.1056 56.7078 91.9075 56.1044 91.9075 54.9038C91.9075 53.7032 92.5096 53.1059 94.8998 52.5025C96.098 52.5025 96.9951 52.7982 98.1932 52.7982C109.868 52.7982 119.152 46.1976 119.152 36.9002C119.152 33.3043 117.658 30.004 114.961 27.3011L124.245 27.6027L126.34 21.9012C120.952 22.5045 114.666 22.5045 106.279 22.5045C103.883 21.9012 100.891 21.3039 98.1932 21.3039C86.5189 21.3039 77.5359 27.9044 77.5359 36.9062C77.5359 44.4057 83.5205 50.4089 92.2025 52.2069C86.8139 53.7092 82.6234 57.3051 82.6234 62.4033C82.6234 66.0052 85.0197 69.0038 87.711 69.9028C79.9261 70.2045 73.9414 73.2031 73.9414 78.3013C73.9414 86.1024 86.2178 90 99.6864 90C111.963 90 124.835 83.1038 124.835 72.5997M104.184 36.9002C104.184 44.7013 101.487 50.1012 98.1932 50.1012C94.6048 50.1012 92.2085 44.7013 92.2085 36.9002C92.2085 29.099 94.6048 24.0008 98.1932 24.0008C101.487 24.0008 104.184 29.105 104.184 36.9002ZM0 56.7018C0 51.3019 3.88944 47.3983 9.27805 47.3983C14.6667 47.3983 18.5561 51.5975 18.5561 56.7018C18.5561 61.806 14.3656 65.9992 9.27805 65.9992C4.19048 65.9992 0 61.8 0 56.7018ZM4.49152 66.0052C4.49152 63.3083 6.58675 61.5043 8.98303 61.5043C11.3793 61.5043 13.4745 63.3083 13.4745 66.0052C13.4745 68.4065 11.3793 70.5061 8.98303 70.5061C6.58675 70.5061 4.49152 68.7022 4.49152 66.0052ZM23.0536 28.8034C23.0536 23.7052 27.2441 19.5059 32.3317 19.5059C37.7203 19.5059 41.6097 23.7052 41.6097 28.8034C41.6097 33.9016 37.4193 38.1008 32.3317 38.1008C27.2441 38.1008 23.0536 33.9016 23.0536 28.8034ZM27.5452 38.1008C27.5452 35.4039 29.6404 33.5999 32.0367 33.5999C34.433 33.5999 36.5282 35.3979 36.5282 38.1008C36.5282 40.5021 34.433 42.6017 32.0367 42.6017C29.6404 42.6017 27.5452 40.8038 27.5452 38.1008ZM23.0536 56.7018C23.0536 51.3019 27.2441 47.3983 32.3317 47.3983C37.7203 47.3983 41.6097 51.5975 41.6097 56.7018C41.6097 61.806 37.4193 65.9992 32.3317 65.9992C27.2441 65.9992 23.0536 61.8 23.0536 56.7018ZM27.5452 66.0052C27.5452 63.3083 29.6404 61.5043 32.0367 61.5043C34.433 61.5043 36.5282 63.3083 36.5282 66.0052C36.5282 68.4065 34.433 70.5061 32.0367 70.5061C29.6404 70.5061 27.5452 68.7022 27.5452 66.0052ZM46.1013 28.8034C46.1013 23.7052 50.2917 19.5059 55.3793 19.5059C60.7679 19.5059 64.6634 23.7052 64.6634 28.8034C64.6634 33.9016 60.4729 38.1008 55.3793 38.1008C50.2857 38.1008 46.1013 33.9016 46.1013 28.8034ZM50.5928 38.1008C50.5928 35.4039 52.688 33.3043 55.0843 33.5999C57.4806 33.5999 59.5758 35.3979 59.5758 38.1008C59.5758 40.5021 57.7756 42.6017 55.0843 42.6017C52.688 42.6017 50.5928 40.8038 50.5928 38.1008ZM0 28.8034C0 23.7052 3.88944 19.5059 9.27805 19.5059C14.6667 19.5059 18.5561 23.7052 18.5561 28.8034C18.5561 33.9016 14.3656 38.1008 9.27805 38.1008C4.19048 38.1008 0 33.9016 0 28.8034ZM4.49152 38.1008C4.49152 35.4039 6.58675 33.5999 8.98303 33.5999C11.3793 33.5999 13.4745 35.3979 13.4745 38.1008C13.4745 40.5021 11.3793 42.6017 8.98303 42.6017C6.58675 42.6017 4.49152 40.8038 4.49152 38.1008ZM46.1013 56.7018C46.1013 51.3019 50.2917 47.3983 55.3793 47.3983C60.7679 47.3983 64.6634 51.5975 64.6634 56.7018C64.6634 61.806 60.4729 65.9992 55.3793 65.9992C50.2857 65.9992 46.1013 61.8 46.1013 56.7018ZM50.5928 66.0052C50.5928 63.3083 52.688 61.2087 55.0843 61.5043C57.4806 61.5043 59.5758 63.3083 59.5758 66.0052C59.5758 68.4065 57.7756 70.5061 55.0843 70.5061C52.688 70.5061 50.5928 68.7022 50.5928 66.0052Z"/>
+            </svg>
+          </div>
+          <div class="content-flex">
+            <div class="headline">
+              <p data-text="headline" spellcheck="false">Automaks kukkus läbi. Lahendus on veel kõrgem maks?</p>
+            </div>
+            <div class="cta">
+              <div class="cta-arrow">
+                <svg class="arrow-icon" viewBox="0 0 100 55.3333" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                  <g transform="translate(100 0) rotate(90)">
+                    <path d="M55.3333 44.6667H44.6667V55.3333H55.3333V100H44.6667V62.876L18.416 89.1266L10.8734 81.584L37.124 55.3333H0L0 44.6667H37.124L10.8734 18.416L18.4157 10.8734L44.6667 37.124V0L55.3333 0V44.6667Z" fill="#5767FF"/>
+                    <rect x="44.67" y="44.67" width="10.667" height="10.667" fill="#FFFFFF"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="cta-text">Loe Geeniusest</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selection chrome (positioned in screen coords relative to active host) -->
+      <div class="image-chrome hidden" id="image-chrome">
+        <div class="handle" data-corner="nw"></div>
+        <div class="handle" data-corner="ne"></div>
+        <div class="handle" data-corner="sw"></div>
+        <div class="handle" data-corner="se"></div>
+        <div class="handle" data-corner="n"></div>
+        <div class="handle" data-corner="s"></div>
+        <div class="handle" data-corner="w"></div>
+        <div class="handle" data-corner="e"></div>
+      </div>
+      <div class="guide guide-v hidden" id="guide-v"></div>
+      <div class="guide guide-h hidden" id="guide-h"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ BOTTOM BAR ════════════════════════ -->
+  <div class="bottom-bar">
+    <div class="bottom-left">
+      <img class="geenius-logo" src="assets/logo-geenius.svg" alt="Geenius">
+    </div>
+
+    <div class="bottom-center">
+      <!-- Image tools (always visible) -->
+      <div class="tools" id="image-tools">
+        <div class="group">
+          <button class="btn primary" id="upload-btn">Upload image</button>
+          <input type="file" id="file-input" accept="image/*">
+          <button class="btn" id="reset-image-btn">Fit</button>
+          <button class="btn" id="remove-image-btn">Remove</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="bottom-right">
+      <div class="hint" id="status-hint">Drag &amp; drop an image · or click <b>Upload</b></div>
+    </div>
+  </div>
+  </div><!-- /.main-column -->
+
+  <!-- ════════════════════════ Floating text toolbar (drop-up) ════════════════════════ -->
+  <div class="float-toolbar hidden right" id="float-toolbar">
+    <button class="color-swatch" data-color="#ffffff" style="background:#ffffff" title="White" type="button"></button>
+    <button class="color-swatch" data-color="#3FDD88" style="background:#3FDD88" title="Geenius green" type="button"></button>
+    <span class="float-divider"></span>
+    <span class="label">Size</span>
+    <input class="num-input" type="number" id="float-size" min="8" max="400" step="2">
+  </div>
+
+  <script>
+  'use strict';
+
+  // ════════════════════════ Config ════════════════════════
+  const TEMPLATES = {
+    '1080': { w: 1080, h: 1920 },
+    '1200': { w: 1200, h: 1200 },
+  };
+  const THUMB_HEIGHT = 96;
+  const SNAP = 14;
+
+  // ════════════════════════ State ════════════════════════
+  const state = {
+    activeTemplate: '1080',
+    text: {
+      headline: 'Automaks kukkus läbi. Lahendus on veel kõrgem maks?',
+    },
+    styles: {
+      headline: { fontSize: null, color: null, fontWeight: null },
+    },
+    image: { url: null, naturalW: 0, naturalH: 0, imgEl: null },
+    imageTransforms: {
+      '1080': null,
+      '1200': null,
+    },
+    contentOffsetY: {
+      '1080': 0,
+      '1200': 0,
+    },
+    imageSelected: false,
+  };
+  let focusedText = null;
+  const editingKey = 'headline';   // single text block; toolbar always acts on it
+  let dragState = null;
+  let scale = 1;
+  let currentObjectUrl = null;
+  let typingSession = false;
+  let sizeDebounceTimer = null;
+  let arrowKeyTimer = null;
+  const undoStack = [];
+  const MAX_UNDO = 60;
+
+  // ════════════════════════ Undo (Cmd/Ctrl+Z) ════════════════════════
+  function makeSnapshot() {
+    return {
+      text: { headline: state.text.headline },
+      styles: { headline: { ...state.styles.headline } },
+      imageTransforms: {
+        '1080': state.imageTransforms['1080'] ? { ...state.imageTransforms['1080'] } : null,
+        '1200': state.imageTransforms['1200'] ? { ...state.imageTransforms['1200'] } : null,
+      },
+      contentOffsetY: {
+        '1080': state.contentOffsetY['1080'],
+        '1200': state.contentOffsetY['1200'],
+      },
+      image: {
+        url: state.image.url,
+        naturalW: state.image.naturalW,
+        naturalH: state.image.naturalH,
+        imgEl: state.image.imgEl,
+      },
+    };
+  }
+  function pushUndo() {
+    undoStack.push(makeSnapshot());
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+  }
+  function restoreSnapshot(snap) {
+    state.text.headline = snap.text.headline;
+    state.styles.headline = { ...snap.styles.headline };
+    state.imageTransforms['1080'] = snap.imageTransforms['1080'] ? { ...snap.imageTransforms['1080'] } : null;
+    state.imageTransforms['1200'] = snap.imageTransforms['1200'] ? { ...snap.imageTransforms['1200'] } : null;
+    state.contentOffsetY['1080'] = snap.contentOffsetY ? snap.contentOffsetY['1080'] : 0;
+    state.contentOffsetY['1200'] = snap.contentOffsetY ? snap.contentOffsetY['1200'] : 0;
+    state.image.url = snap.image.url;
+    state.image.naturalW = snap.image.naturalW;
+    state.image.naturalH = snap.image.naturalH;
+    state.image.imgEl = snap.image.imgEl;
+
+    applyTextContent('headline', null);
+    applyTextStyles('headline');
+    applyImageSrc();
+    for (const k of Object.keys(TEMPLATES)) {
+      if (state.imageTransforms[k]) applyImageTransform(k);
+      applyContentOffset(k);
+    }
+    updatePlusPatternColor();
+    refreshTextToolbar();
+    deselectImage();
+    typingSession = false;
+    if (sizeDebounceTimer) { clearTimeout(sizeDebounceTimer); sizeDebounceTimer = null; }
+  }
+  function undo() {
+    if (undoStack.length === 0) return;
+    const prev = undoStack.pop();
+    restoreSnapshot(prev);
+  }
+
+  // ════════════════════════ DOM refs ════════════════════════
+  const canvasArea = document.getElementById('canvas-area');
+  const stage = document.getElementById('stage');
+  const hosts = {
+    '1080': document.getElementById('host-1080'),
+    '1200': document.getElementById('host-1200'),
+  };
+  const thumbs = {
+    '1080': document.getElementById('thumb-1080'),
+    '1200': document.getElementById('thumb-1200'),
+  };
+  const imageChrome = document.getElementById('image-chrome');
+  const handles = Array.from(imageChrome.querySelectorAll('.handle'));
+  const guideV = document.getElementById('guide-v');
+  const guideH = document.getElementById('guide-h');
+
+  const fileInput = document.getElementById('file-input');
+  const uploadBtn = document.getElementById('upload-btn');
+  const resetImageBtn = document.getElementById('reset-image-btn');
+  const removeImageBtn = document.getElementById('remove-image-btn');
+
+  const statusHint = document.getElementById('status-hint');
+
+  // Floating contextual toolbar (drop-up: 2 color swatches + size)
+  const floatToolbar = document.getElementById('float-toolbar');
+  const colorSwatches = Array.from(document.querySelectorAll('#float-toolbar .color-swatch'));
+  const floatSize = document.getElementById('float-size');
+
+  // ════════════════════════ Build thumbnails ════════════════════════
+  // Each thumbnail mirrors its template DOM (cloned, non-editable).
+  function buildThumbs() {
+    for (const key of Object.keys(TEMPLATES)) {
+      const cfg = TEMPLATES[key];
+      const sourceTemplate = hosts[key].querySelector('.template');
+      const clone = sourceTemplate.cloneNode(true);
+      clone.classList.add('thumb-template');
+      // strip ids from clone to avoid duplicate IDs
+      clone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+      // Thumbs are static — no editable text, no chrome interaction
+      thumbs[key].appendChild(clone);
+
+      const s = THUMB_HEIGHT / cfg.h;
+      clone.style.transform = `scale(${s})`;
+      thumbs[key].style.height = THUMB_HEIGHT + 'px';
+      thumbs[key].style.width = (cfg.w * s) + 'px';
+    }
+  }
+  buildThumbs();
+
+  // Cache text nodes per key across all instances (both mains + both thumbs)
+  function allTextEls(key) {
+    return Array.from(document.querySelectorAll(`[data-text="${key}"]`));
+  }
+  function allBgImages() {
+    return Array.from(document.querySelectorAll('.bg-image'));
+  }
+  // Editable elements live inside the active main host
+  function activeMainTextEls() {
+    return Array.from(hosts[state.activeTemplate].querySelectorAll('.template > .content-flex [data-text], .template > .layer.headline [data-text]'));
+  }
+  function activeMainBgImage() {
+    return hosts[state.activeTemplate].querySelector('.template > .bg-image-wrap > .bg-image');
+  }
+
+  // ════════════════════════ Scale to fit ════════════════════════
+  function computeScale() {
+    const cfg = TEMPLATES[state.activeTemplate];
+    const margin = 48;
+    const availW = canvasArea.clientWidth - margin * 2;
+    const availH = canvasArea.clientHeight - margin * 2;
+    return Math.max(0.05, Math.min(availW / cfg.w, availH / cfg.h, 0.7));
+  }
+  function applyScale() {
+    scale = computeScale();
+    const cfg = TEMPLATES[state.activeTemplate];
+    stage.style.width = (cfg.w * scale) + 'px';
+    stage.style.height = (cfg.h * scale) + 'px';
+    // The active host fills the stage; its template scales to fit
+    const activeHost = hosts[state.activeTemplate];
+    const tmpl = activeHost.querySelector('.template');
+    tmpl.style.transform = `scale(${scale})`;
+    updateImageChrome();
+    alignBottomCenter();
+  }
+
+  // Align the centered button group to the artboard's actual horizontal center.
+  function alignBottomCenter() {
+    const center = document.querySelector('.bottom-center');
+    const bar = document.querySelector('.bottom-bar');
+    if (!center || !bar) return;
+    const sr = stage.getBoundingClientRect();
+    const br = bar.getBoundingClientRect();
+    const stageCenterX = sr.left + sr.width / 2;
+    center.style.left = (stageCenterX - br.left) + 'px';
+  }
+  window.addEventListener('resize', applyScale);
+
+  // ════════════════════════ Text content & style sync ════════════════════════
+  function applyTextContent(key, exceptEl) {
+    const html = state.text[key];
+    for (const el of allTextEls(key)) {
+      if (el === exceptEl) continue;
+      if (el.innerHTML !== html) el.innerHTML = html;
+    }
+  }
+  function applyTextStyles(key) {
+    const s = state.styles[key];
+    for (const el of allTextEls(key)) {
+      el.style.fontSize  = s.fontSize  != null ? s.fontSize + 'px' : '';
+      el.style.color     = s.color     != null ? s.color     : '';
+      el.style.fontWeight = s.fontWeight != null ? s.fontWeight : '';
+    }
+  }
+
+  // Initial text/style application
+  applyTextContent('headline', null);
+  applyTextStyles('headline');
+
+  // ════════════════════════ Image (shared url) ════════════════════════
+  function applyImageSrc() {
+    for (const imgEl of allBgImages()) {
+      if (state.image.url) {
+        imgEl.src = state.image.url;
+        imgEl.classList.remove('empty');
+      } else {
+        imgEl.removeAttribute('src');
+        imgEl.classList.add('empty');
+      }
+    }
+  }
+  function applyImageTransform(key) {
+    const t = state.imageTransforms[key];
+    if (!t) return;
+    // Apply to both instances (main host + thumb)
+    const hostImg = hosts[key].querySelector('.bg-image');
+    const thumbImg = thumbs[key].querySelector('.bg-image');
+    for (const imgEl of [hostImg, thumbImg]) {
+      if (!imgEl) continue;
+      imgEl.style.width = state.image.naturalW + 'px';
+      imgEl.style.height = state.image.naturalH + 'px';
+      imgEl.style.transform =
+        `translate(${t.x}px, ${t.y}px) scale(${t.w / state.image.naturalW}, ${t.h / state.image.naturalH})`;
+    }
+  }
+  // ════════════════════════ Vertical text-box offset ════════════════════════
+  // Initial top of .content-flex per template (canvas px) — used for clamping
+  const CONTENT_TOP = { '1080': 360, '1200': 410 };
+  // Bottom edge of the plus pattern — the text box bottom can't go past this
+  const PLUS_BOTTOM = { '1080': 1840, '1200': 1139.875 };
+
+  function clampContentOffsetY(key, val) {
+    const top = CONTENT_TOP[key];
+    const hostEl = hosts[key].querySelector('.content-flex');
+    const contentH = hostEl ? hostEl.offsetHeight : 0;
+    const min = -top + 20;
+    const max = PLUS_BOTTOM[key] - top - contentH;
+    if (!Number.isFinite(val)) return 0;
+    return Math.max(min, Math.min(max, val));
+  }
+
+  function applyContentOffset(key) {
+    const offset = state.contentOffsetY[key] || 0;
+    const hostEl = hosts[key].querySelector('.content-flex');
+    const thumbEl = thumbs[key] && thumbs[key].querySelector('.content-flex');
+    for (const el of [hostEl, thumbEl]) {
+      if (!el) continue;
+      el.style.transform = offset ? `translateY(${offset}px)` : '';
+    }
+  }
+
+  function fitCover(key) {
+    if (!state.image.naturalW || !state.image.naturalH) return;
+    const cfg = TEMPLATES[key];
+    const s = Math.max(cfg.w / state.image.naturalW, cfg.h / state.image.naturalH);
+    const w = state.image.naturalW * s;
+    const h = state.image.naturalH * s;
+    state.imageTransforms[key] = {
+      x: (cfg.w - w) / 2,
+      y: (cfg.h - h) / 2,
+      w, h,
+    };
+  }
+  function loadImageFromFile(file) {
+    pushUndo();
+    // intentionally NOT revoking previous object URLs — undo may restore them
+    currentObjectUrl = URL.createObjectURL(file);
+    const probe = new Image();
+    probe.onload = () => {
+      state.image.url = currentObjectUrl;
+      state.image.naturalW = probe.naturalWidth;
+      state.image.naturalH = probe.naturalHeight;
+      state.image.imgEl = probe;
+      // Fit-cover for both templates
+      for (const k of Object.keys(TEMPLATES)) fitCover(k);
+      applyImageSrc();
+      for (const k of Object.keys(TEMPLATES)) applyImageTransform(k);
+      updatePlusPatternColor();
+      selectImage();
+    };
+    probe.src = currentObjectUrl;
+  }
+  function removeImage() {
+    pushUndo();
+    currentObjectUrl = null;
+    state.image.url = null;
+    state.image.naturalW = state.image.naturalH = 0;
+    state.image.imgEl = null;
+    for (const k of Object.keys(TEMPLATES)) state.imageTransforms[k] = null;
+    applyImageSrc();
+    updatePlusPatternColor();
+    deselectImage();
+    fileInput.value = '';
+  }
+
+  // ════════════════════════ Plus-pattern adaptive color ════════════════════════
+  // Samples the image region behind each template's plus pattern. If the average
+  // luminance is dark, we flip the pattern color from black → white (CSS invert).
+  const PLUS_AREAS = {
+    '1080': { x: 547, y: 1581, w: 453.25, h: 259 },
+    '1200': { x: 881, y: 978,  w: 258.999, h: 161.875 },
+  };
+  const _sampleCanvas = document.createElement('canvas');
+  const _sampleCtx = _sampleCanvas.getContext('2d', { willReadFrequently: true });
+
+  function plusAreaLuminance(key) {
+    const t = state.imageTransforms[key];
+    if (!state.image.imgEl || !t) return 0; // no image → template black bg → dark
+    const { x: PX, y: PY, w: PW, h: PH } = PLUS_AREAS[key];
+    const naturalW = state.image.naturalW;
+    const naturalH = state.image.naturalH;
+    // Image-source region under the plus area
+    const sx1 = (PX - t.x) * naturalW / t.w;
+    const sy1 = (PY - t.y) * naturalH / t.h;
+    const sx2 = (PX + PW - t.x) * naturalW / t.w;
+    const sy2 = (PY + PH - t.y) * naturalH / t.h;
+    const cx1 = Math.max(0, Math.min(naturalW, sx1));
+    const cy1 = Math.max(0, Math.min(naturalH, sy1));
+    const cx2 = Math.max(0, Math.min(naturalW, sx2));
+    const cy2 = Math.max(0, Math.min(naturalH, sy2));
+    const sw = cx2 - cx1, sh = cy2 - cy1;
+
+    let avgImage = 0;
+    if (sw > 0 && sh > 0) {
+      const W = 24, H = 24;
+      _sampleCanvas.width = W; _sampleCanvas.height = H;
+      _sampleCtx.clearRect(0, 0, W, H);
+      try { _sampleCtx.drawImage(state.image.imgEl, cx1, cy1, sw, sh, 0, 0, W, H); }
+      catch (e) { return 0; }
+      let data;
+      try { data = _sampleCtx.getImageData(0, 0, W, H).data; } catch (e) { return 128; }
+      let total = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        total += 0.2126*data[i] + 0.7152*data[i+1] + 0.0722*data[i+2];
+      }
+      avgImage = total / (W * H);
+    }
+
+    // Mix with the template's black background for the uncovered portion of the plus area
+    const fullArea = PW * PH;
+    const covW = Math.max(0, Math.min(PX + PW, t.x + t.w) - Math.max(PX, t.x));
+    const covH = Math.max(0, Math.min(PY + PH, t.y + t.h) - Math.max(PY, t.y));
+    const covered = covW * covH;
+    return (avgImage * covered + 0 * (fullArea - covered)) / fullArea;
+  }
+
+  function updatePlusPatternColor(key) {
+    const keys = key ? [key] : Object.keys(TEMPLATES);
+    for (const k of keys) {
+      const lum = plusAreaLuminance(k);
+      const dark = lum < 128;
+      const main = hosts[k].querySelector('.plus-pattern');
+      const thumb = thumbs[k].querySelector('.plus-pattern');
+      for (const el of [main, thumb]) {
+        if (el) el.classList.toggle('invert', dark);
+      }
+    }
+  }
+
+  // ════════════════════════ Selection (image) ════════════════════════
+  function selectImage() {
+    if (!state.image.url) return;
+    state.imageSelected = true;
+    updateImageChrome();
+    hideTextTools();
+    blurText();
+    setStatus('Image selected · drag to move (⇧ axis lock) · drag handles to resize (⌥ from center) · snaps to canvas');
+  }
+  function deselectImage() {
+    state.imageSelected = false;
+    updateImageChrome();
+  }
+  function updateImageChrome() {
+    const t = state.imageTransforms[state.activeTemplate];
+    if (!state.imageSelected || !state.image.url || !t) {
+      imageChrome.classList.add('hidden');
+      return;
+    }
+    imageChrome.classList.remove('hidden');
+    imageChrome.style.left = (t.x * scale) + 'px';
+    imageChrome.style.top = (t.y * scale) + 'px';
+    imageChrome.style.width = (t.w * scale) + 'px';
+    imageChrome.style.height = (t.h * scale) + 'px';
+  }
+
+  // ════════════════════════ Image drag/resize ════════════════════════
+  function bindImagePointer() {
+    // Bind pointerdown on the ACTIVE main template's bg-image
+    for (const key of Object.keys(TEMPLATES)) {
+      const imgEl = hosts[key].querySelector('.bg-image');
+      imgEl.addEventListener('pointerdown', (e) => {
+        if (state.activeTemplate !== key) return;
+        if (!state.image.url) return;
+        e.preventDefault();
+        selectImage();
+        startDrag(e, { type: 'move' });
+      });
+    }
+    handles.forEach(h => {
+      h.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startDrag(e, { type: 'resize', corner: h.dataset.corner });
+      });
+    });
+  }
+  function startDrag(e, info) {
+    const t = state.imageTransforms[state.activeTemplate];
+    dragState = {
+      ...info,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      snapshot: { x: t.x, y: t.y, w: t.w, h: t.h },
+      pointerId: e.pointerId,
+      target: e.currentTarget,
+      undoPushed: false,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  window.addEventListener('pointermove', (e) => {
+    if (!dragState) return;
+    if (!dragState.undoPushed) { pushUndo(); dragState.undoPushed = true; }
+    const cfg = TEMPLATES[state.activeTemplate];
+    const t = state.imageTransforms[state.activeTemplate];
+    const dx = (e.clientX - dragState.startClientX) / scale;
+    const dy = (e.clientY - dragState.startClientY) / scale;
+    const s = dragState.snapshot;
+
+    if (dragState.type === 'move') {
+      let mdx = dx, mdy = dy;
+      if (e.shiftKey) {
+        if (Math.abs(mdx) > Math.abs(mdy)) mdy = 0; else mdx = 0;
+      }
+      t.x = s.x + mdx;
+      t.y = s.y + mdy;
+      applySnapMove(cfg);
+    } else if (dragState.type === 'resize') {
+      const ratio = s.w / s.h;
+      const corner = dragState.corner;
+      const alt = e.altKey;
+      const k = alt ? 2 : 1;
+      const MIN = 80;
+      let newW, newH, newX, newY;
+
+      if (corner.length === 2) {
+        const dwUser = (corner.includes('w') ? -dx : dx) * k;
+        const dhUser = (corner.includes('n') ? -dy : dy) * k;
+        let dw;
+        if (Math.abs(dwUser) > Math.abs(dhUser) * ratio) dw = dwUser;
+        else dw = dhUser * ratio;
+        newW = Math.max(MIN, s.w + dw);
+        newH = newW / ratio;
+        if (alt) {
+          const cx = s.x + s.w / 2;
+          const cy = s.y + s.h / 2;
+          newX = cx - newW / 2;
+          newY = cy - newH / 2;
+        } else {
+          const fixedX = corner.includes('w') ? s.x + s.w : s.x;
+          const fixedY = corner.includes('n') ? s.y + s.h : s.y;
+          newX = corner.includes('w') ? fixedX - newW : fixedX;
+          newY = corner.includes('n') ? fixedY - newH : fixedY;
+        }
+      } else if (corner === 'n' || corner === 's') {
+        const dh = (corner === 'n' ? -dy : dy) * k;
+        newH = Math.max(MIN / ratio, s.h + dh);
+        newW = newH * ratio;
+        const cx = s.x + s.w / 2;
+        newX = cx - newW / 2;
+        if (alt) {
+          const cy = s.y + s.h / 2;
+          newY = cy - newH / 2;
+        } else {
+          newY = corner === 'n' ? (s.y + s.h) - newH : s.y;
+        }
+      } else {
+        const dw = (corner === 'w' ? -dx : dx) * k;
+        newW = Math.max(MIN, s.w + dw);
+        newH = newW / ratio;
+        const cy = s.y + s.h / 2;
+        newY = cy - newH / 2;
+        if (alt) {
+          const cx = s.x + s.w / 2;
+          newX = cx - newW / 2;
+        } else {
+          newX = corner === 'w' ? (s.x + s.w) - newW : s.x;
+        }
+      }
+      t.x = newX; t.y = newY; t.w = newW; t.h = newH;
+      applySnapResize(cfg, corner, alt);
+    }
+    applyImageTransform(state.activeTemplate);
+    updateImageChrome();
+    updatePlusPatternColor(state.activeTemplate);
+  });
+
+  window.addEventListener('pointerup', () => {
+    if (!dragState) return;
+    try { dragState.target.releasePointerCapture(dragState.pointerId); } catch {}
+    dragState = null;
+    hideGuides();
+  });
+
+  // ════════════════════════ Smart guides ════════════════════════
+  function applySnapMove(cfg) {
+    const t = state.imageTransforms[state.activeTemplate];
+    const cx = t.x + t.w / 2;
+    const cy = t.y + t.h / 2;
+    const xTargets = [
+      { v: cfg.w / 2, cur: cx },
+      { v: 0,         cur: t.x },
+      { v: cfg.w,     cur: t.x + t.w },
+    ];
+    const yTargets = [
+      { v: cfg.h / 2, cur: cy },
+      { v: 0,         cur: t.y },
+      { v: cfg.h,     cur: t.y + t.h },
+    ];
+    let bestX = null, bestXd = SNAP;
+    for (const tt of xTargets) {
+      const d = Math.abs(tt.cur - tt.v);
+      if (d < bestXd) { bestXd = d; bestX = tt; }
+    }
+    let bestY = null, bestYd = SNAP;
+    for (const tt of yTargets) {
+      const d = Math.abs(tt.cur - tt.v);
+      if (d < bestYd) { bestYd = d; bestY = tt; }
+    }
+    if (bestX) { t.x += (bestX.v - bestX.cur); showGuideV(bestX.v); } else hideGuideV();
+    if (bestY) { t.y += (bestY.v - bestY.cur); showGuideH(bestY.v); } else hideGuideH();
+  }
+  function applySnapResize(cfg, corner, alt) {
+    hideGuides();
+    const t = state.imageTransforms[state.activeTemplate];
+    const ratio = t.w / t.h;
+    const MIN = 80;
+    const curLeft = t.x;
+    const curRight = t.x + t.w;
+    const curTop = t.y;
+    const curBottom = t.y + t.h;
+    const curCx = (curLeft + curRight) / 2;
+    const curCy = (curTop + curBottom) / 2;
+
+    let movX = null, movY = null;
+    if (corner.includes('w')) movX = 'left';
+    else if (corner.includes('e')) movX = 'right';
+    if (corner.includes('n')) movY = 'top';
+    else if (corner.includes('s')) movY = 'bottom';
+
+    const xTargets = [0, cfg.w / 2, cfg.w];
+    const yTargets = [0, cfg.h / 2, cfg.h];
+
+    let bestX = null, bestXd = SNAP;
+    if (movX) {
+      const v = movX === 'left' ? curLeft : curRight;
+      for (const tg of xTargets) {
+        const d = Math.abs(v - tg);
+        if (d < bestXd) { bestXd = d; bestX = tg; }
+      }
+    }
+    let bestY = null, bestYd = SNAP;
+    if (movY) {
+      const v = movY === 'top' ? curTop : curBottom;
+      for (const tg of yTargets) {
+        const d = Math.abs(v - tg);
+        if (d < bestYd) { bestYd = d; bestY = tg; }
+      }
+    }
+    let snapX = bestX, snapY = bestY;
+    if (corner.length === 2 && snapX !== null && snapY !== null) {
+      if (bestXd <= bestYd) snapY = null; else snapX = null;
+    }
+    if (snapX !== null) {
+      const newW = alt
+        ? Math.max(MIN, Math.abs(curCx - snapX) * 2)
+        : (movX === 'left' ? curRight - snapX : snapX - curLeft);
+      if (newW >= MIN) {
+        const newH = newW / ratio;
+        if (alt)            t.x = curCx - newW / 2;
+        else if (movX === 'left') t.x = snapX;
+        else                t.x = curLeft;
+        if (alt)                      t.y = curCy - newH / 2;
+        else if (corner.length === 1) t.y = curCy - newH / 2;
+        else                          t.y = movY === 'top' ? curBottom - newH : curTop;
+        t.w = newW; t.h = newH;
+        showGuideV(snapX);
+      }
+    }
+    if (snapY !== null) {
+      const newH = alt
+        ? Math.max(MIN / ratio, Math.abs(curCy - snapY) * 2)
+        : (movY === 'top' ? curBottom - snapY : snapY - curTop);
+      if (newH >= MIN / ratio) {
+        const newW = newH * ratio;
+        if (alt)            t.y = curCy - newH / 2;
+        else if (movY === 'top') t.y = snapY;
+        else                t.y = curTop;
+        if (alt)                      t.x = curCx - newW / 2;
+        else if (corner.length === 1) t.x = curCx - newW / 2;
+        else                          t.x = movX === 'left' ? curRight - newW : curLeft;
+        t.w = newW; t.h = newH;
+        showGuideH(snapY);
+      }
+    }
+  }
+  function showGuideV(canvasX) {
+    guideV.style.left = (canvasX * scale) + 'px';
+    guideV.classList.remove('hidden');
+  }
+  function showGuideH(canvasY) {
+    guideH.style.top = (canvasY * scale) + 'px';
+    guideH.classList.remove('hidden');
+  }
+  function hideGuideV() { guideV.classList.add('hidden'); }
+  function hideGuideH() { guideH.classList.add('hidden'); }
+  function hideGuides() { hideGuideV(); hideGuideH(); }
+
+  // ════════════════════════ Buttons ════════════════════════
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) loadImageFromFile(f);
+  });
+  resetImageBtn.addEventListener('click', () => {
+    if (!state.image.url) return;
+    pushUndo();
+    fitCover(state.activeTemplate);
+    applyImageTransform(state.activeTemplate);
+    updatePlusPatternColor(state.activeTemplate);
+    selectImage();
+  });
+  removeImageBtn.addEventListener('click', removeImage);
+
+  // Drag-and-drop image onto canvas (with visual feedback)
+  let dragDepth = 0;
+  function hasFileItem(e) {
+    return !!(e.dataTransfer && Array.from(e.dataTransfer.items || []).some(i => i.kind === 'file'));
+  }
+  canvasArea.addEventListener('dragenter', (e) => {
+    if (!hasFileItem(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    canvasArea.classList.add('drop-target');
+  });
+  canvasArea.addEventListener('dragover', (e) => {
+    if (hasFileItem(e)) e.preventDefault();
+  });
+  canvasArea.addEventListener('dragleave', () => {
+    dragDepth--;
+    if (dragDepth <= 0) { dragDepth = 0; canvasArea.classList.remove('drop-target'); }
+  });
+  canvasArea.addEventListener('drop', (e) => {
+    dragDepth = 0;
+    canvasArea.classList.remove('drop-target');
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) { e.preventDefault(); loadImageFromFile(f); }
+  });
+
+  // ════════════════════════ Text editing ════════════════════════
+  function templateTextEl(key) {
+    return hosts[state.activeTemplate].querySelector(`[data-text="${key}"]`);
+  }
+  function refreshTextToolbar() {
+    const el = templateTextEl(editingKey);
+    if (!el) return;
+    const cs = window.getComputedStyle(el);
+    floatSize.value = Math.round(parseFloat(cs.fontSize));
+  }
+  function hideTextTools() { /* tools now always visible; kept as no-op */ }
+  function blurText() {
+    if (focusedText) { focusedText.blur(); focusedText = null; }
+    hideFloatToolbar();
+    // contenteditable doesn't auto-clear its visible selection on blur
+    const sel = window.getSelection && window.getSelection();
+    if (sel) sel.removeAllRanges();
+  }
+
+  // Floating toolbar positioning. Desktop: right of text (falls back to left).
+  // Mobile: below the text (falls back to above if there's no room below).
+  function positionFloatToolbar(textEl) {
+    floatToolbar.classList.remove('hidden');
+    const tb = floatToolbar.getBoundingClientRect();
+    const rect = textEl.getBoundingClientRect();
+    const GAP = 14;
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    floatToolbar.classList.remove('right', 'left', 'below', 'above');
+
+    if (isMobile) {
+      let top, placement;
+      if (rect.bottom + GAP + tb.height <= window.innerHeight - 8) {
+        top = rect.bottom + GAP; placement = 'below';
+      } else {
+        top = Math.max(8, rect.top - tb.height - GAP); placement = 'above';
+      }
+      let left = rect.left + (rect.width - tb.width) / 2;
+      left = Math.max(8, Math.min(window.innerWidth - tb.width - 8, left));
+      floatToolbar.style.top = top + 'px';
+      floatToolbar.style.left = left + 'px';
+      floatToolbar.classList.add(placement);
+      return;
+    }
+
+    let left, placement;
+    if (rect.right + GAP + tb.width <= window.innerWidth - 8) {
+      left = rect.right + GAP; placement = 'right';
+    } else {
+      left = rect.left - tb.width - GAP; placement = 'left';
+    }
+    let top = rect.top + (rect.height - tb.height) / 2;
+    top = Math.max(8, Math.min(window.innerHeight - tb.height - 8, top));
+    floatToolbar.style.top = top + 'px';
+    floatToolbar.style.left = left + 'px';
+    floatToolbar.classList.add(placement);
+  }
+  function showFloatToolbar(el) {
+    floatToolbar.classList.remove('hidden');
+    // wait one frame so getBoundingClientRect has correct dimensions
+    requestAnimationFrame(() => positionFloatToolbar(el));
+  }
+  function hideFloatToolbar() { floatToolbar.classList.add('hidden'); }
+  function setStatus(msg) { statusHint.textContent = msg; }
+  function rgbToHex(rgb) {
+    const m = rgb && rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (!m) return null;
+    const h = n => parseInt(n, 10).toString(16).padStart(2, '0');
+    return '#' + h(m[1]) + h(m[2]) + h(m[3]);
+  }
+
+  function bindTextEditing() {
+    // Only the active main host has contenteditable; others are static
+    for (const key of Object.keys(TEMPLATES)) {
+      const editables = hosts[key].querySelectorAll('[data-text]');
+      editables.forEach(el => {
+        // Set up event handlers (will only "matter" when active)
+        el.addEventListener('focus', () => {
+          if (state.activeTemplate !== key) return;
+          focusedText = el;
+          typingSession = false;
+          refreshTextToolbar();
+          deselectImage();
+          showFloatToolbar(el);
+          setStatus('Editing text · changes apply to all formats');
+        });
+        el.addEventListener('blur', () => {
+          setTimeout(() => {
+            const ae = document.activeElement;
+            if (ae && ae.hasAttribute && ae.hasAttribute('data-text')) return;
+            if (ae === floatSize) return;
+            if (floatToolbar.contains(ae)) return;
+            if (focusedText === el) {
+              focusedText = null;
+              hideFloatToolbar();
+              setStatus('Drag & drop an image · or click Upload');
+            }
+          }, 120);
+        });
+        el.addEventListener('input', () => {
+          if (!typingSession) { pushUndo(); typingSession = true; }
+          const k = el.dataset.text;
+          state.text[k] = el.innerHTML;
+          applyTextContent(k, el);
+        });
+        el.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+          document.execCommand('insertText', false, text);
+        });
+      });
+    }
+  }
+  bindTextEditing();
+
+  // ════════════════════════ Text-box vertical drag ════════════════════════
+  // Click+drag on the headline moves the text box (headline + CTA) up/down.
+  // Click without drag focuses the text for editing.
+  let textDragState = null;
+  const TEXT_DRAG_THRESHOLD = 5;
+
+  function bindTextDrag() {
+    for (const key of Object.keys(TEMPLATES)) {
+      const el = hosts[key].querySelector('.headline [data-text="headline"]');
+      if (!el) continue;
+      el.addEventListener('pointerdown', (e) => {
+        if (state.activeTemplate !== key) return;
+        if (e.button !== 0) return;
+        // While the element is already focused, let native text editing work
+        if (document.activeElement === el) return;
+        e.preventDefault();
+        textDragState = {
+          startX: e.clientX,
+          startY: e.clientY,
+          pointerId: e.pointerId,
+          el,
+          key,
+          initialOffset: state.contentOffsetY[key] || 0,
+          moved: false,
+        };
+        try { el.setPointerCapture(e.pointerId); } catch {}
+      });
+    }
+  }
+
+  window.addEventListener('pointermove', (e) => {
+    if (!textDragState || textDragState.pointerId !== e.pointerId) return;
+    const dx = e.clientX - textDragState.startX;
+    const dy = e.clientY - textDragState.startY;
+    if (!textDragState.moved && (Math.abs(dx) > TEXT_DRAG_THRESHOLD || Math.abs(dy) > TEXT_DRAG_THRESHOLD)) {
+      textDragState.moved = true;
+      pushUndo();
+      textDragState.el.classList.add('dragging');
+      deselectImage();
+    }
+    if (textDragState.moved) {
+      const next = clampContentOffsetY(textDragState.key, textDragState.initialOffset + dy / scale);
+      state.contentOffsetY[textDragState.key] = next;
+      applyContentOffset(textDragState.key);
+    }
+  });
+
+  window.addEventListener('pointerup', (e) => {
+    if (!textDragState || textDragState.pointerId !== e.pointerId) return;
+    const wasDrag = textDragState.moved;
+    const el = textDragState.el;
+    const clickX = textDragState.startX;
+    const clickY = textDragState.startY;
+    try { el.releasePointerCapture(e.pointerId); } catch {}
+    el.classList.remove('dragging');
+    textDragState = null;
+
+    // No drag → treat as click: focus for editing, place caret at click point
+    if (!wasDrag) {
+      el.focus();
+      const caret = document.caretRangeFromPoint
+        ? document.caretRangeFromPoint(clickX, clickY)
+        : null;
+      if (caret) {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(caret);
+      }
+    }
+  });
+
+  bindTextDrag();
+
+  function setActiveContentEditable() {
+    for (const key of Object.keys(TEMPLATES)) {
+      const editables = hosts[key].querySelectorAll('[data-text]');
+      editables.forEach(el => {
+        if (key === state.activeTemplate) el.setAttribute('contenteditable', 'true');
+        else el.removeAttribute('contenteditable');
+      });
+    }
+  }
+
+  function doSetSize(v) {
+    if (!Number.isFinite(v) || v <= 0) return;
+    if (!sizeDebounceTimer) pushUndo();
+    clearTimeout(sizeDebounceTimer);
+    sizeDebounceTimer = setTimeout(() => { sizeDebounceTimer = null; }, 600);
+    state.styles[editingKey].fontSize = v;
+    applyTextStyles(editingKey);
+    floatSize.value = v;
+    if (focusedText) requestAnimationFrame(() => positionFloatToolbar(focusedText));
+  }
+
+  floatSize.addEventListener('input', () => doSetSize(parseFloat(floatSize.value)));
+
+  // Shift + ArrowUp / ArrowDown on size inputs steps by 10
+  function makeShiftStep(input) {
+    return (e) => {
+      if (!e.shiftKey) return;
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      const min = parseFloat(input.min) || 1;
+      const max = parseFloat(input.max) || 9999;
+      const cur = parseFloat(input.value) || min;
+      const delta = e.key === 'ArrowUp' ? 10 : -10;
+      input.value = Math.max(min, Math.min(max, cur + delta));
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+  }
+  floatSize.addEventListener('keydown', makeShiftStep(floatSize));
+
+  // Floating color swatches — apply to selection (or whole text if none)
+  function applyHeadlineColor(hex) {
+    const target = focusedText || templateTextEl('headline');
+    if (!target) return;
+    pushUndo();
+    const sel = window.getSelection();
+    const hasRange = sel && sel.rangeCount > 0 && !sel.isCollapsed && target.contains(sel.anchorNode);
+    if (hasRange) {
+      const range = sel.getRangeAt(0);
+      const span = document.createElement('span');
+      span.style.color = hex;
+      try {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+      } catch (e) {
+        target.style.color = hex;
+      }
+      sel.removeAllRanges();
+      const r = document.createRange();
+      r.selectNodeContents(span);
+      sel.addRange(r);
+    } else {
+      state.styles.headline.color = hex;
+      applyTextStyles('headline');
+    }
+    state.text.headline = target.innerHTML;
+    applyTextContent('headline', target);
+  }
+  colorSwatches.forEach(btn => {
+    // mousedown preventDefault keeps the text selection alive across the click
+    btn.addEventListener('mousedown', e => e.preventDefault());
+    btn.addEventListener('click', () => applyHeadlineColor(btn.dataset.color));
+  });
+
+  // ════════════════════════ Active template switching ════════════════════════
+  function setActiveTemplate(key) {
+    if (!TEMPLATES[key] || state.activeTemplate === key) return;
+    blurText();
+    deselectImage();
+    state.activeTemplate = key;
+    for (const k of Object.keys(TEMPLATES)) {
+      hosts[k].classList.toggle('hidden', k !== key);
+      hosts[k].classList.toggle('active', k === key);
+      thumbs[k].classList.toggle('active', k === key);
+    }
+    setActiveContentEditable();
+    applyScale();
+    refreshTextToolbar();
+  }
+  for (const key of Object.keys(TEMPLATES)) {
+    thumbs[key].addEventListener('click', () => setActiveTemplate(key));
+  }
+
+  // ════════════════════════ Export ════════════════════════
+  const exportBtn = document.getElementById('export-btn');
+  const exportAllBtn = document.getElementById('export-all-btn');
+
+  async function exportTemplate(key) {
+    if (typeof html2canvas !== 'function') {
+      alert('Exporter not loaded yet — please retry in a moment.');
+      return;
+    }
+    const cfg = TEMPLATES[key];
+    const source = hosts[key].querySelector('.template');
+    // Clone the template into a hidden full-size container so the export
+    // renders at 1080×1920 / 1200×1200 regardless of the on-screen scale.
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `position: fixed; left: -99999px; top: 0; width: ${cfg.w}px; height: ${cfg.h}px; overflow: hidden; pointer-events: none;`;
+    const clone = source.cloneNode(true);
+    clone.style.transform = 'none';
+    clone.style.width = cfg.w + 'px';
+    clone.style.height = cfg.h + 'px';
+    // Strip any contenteditable so the clone is purely static
+    clone.querySelectorAll('[contenteditable]').forEach(n => n.removeAttribute('contenteditable'));
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      // Supersample at 2× so SVGs and text rasterize crisply, then downscale
+      // the final canvas to the exact target dimensions.
+      const SUPERSAMPLE = 2;
+      const hires = await html2canvas(clone, {
+        width: cfg.w,
+        height: cfg.h,
+        backgroundColor: '#000',
+        useCORS: true,
+        scale: SUPERSAMPLE,
+        logging: false,
+      });
+      const out = document.createElement('canvas');
+      out.width = cfg.w;
+      out.height = cfg.h;
+      const ctx = out.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(hires, 0, 0, cfg.w, cfg.h);
+      await new Promise(resolve => {
+        out.toBlob(blob => {
+          if (!blob) return resolve();
+          const a = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          a.href = url;
+          a.download = `geenius-${cfg.w}x${cfg.h}.png`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          resolve();
+        }, 'image/png');
+      });
+    } finally {
+      wrapper.remove();
+    }
+  }
+
+  async function exportAll() {
+    for (const key of Object.keys(TEMPLATES)) {
+      await exportTemplate(key);
+    }
+  }
+
+  function withBusy(btn, fn) {
+    return async () => {
+      const others = [exportBtn, exportAllBtn];
+      others.forEach(b => b.disabled = true);
+      const label = btn.textContent;
+      btn.textContent = 'Exporting…';
+      try { await fn(); }
+      catch (e) { console.error(e); alert('Export failed: ' + e.message); }
+      finally {
+        btn.textContent = label;
+        others.forEach(b => b.disabled = false);
+      }
+    };
+  }
+
+  exportBtn.addEventListener('click', withBusy(exportBtn, () => exportTemplate(state.activeTemplate)));
+  exportAllBtn.addEventListener('click', withBusy(exportAllBtn, exportAll));
+
+  // ════════════════════════ Cmd/Ctrl+Z = Undo ════════════════════════
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      undo();
+    }
+  });
+
+  // ════════════════════════ Arrow-key nudge for selected image ════════════════════════
+  document.addEventListener('keydown', (e) => {
+    if (!state.imageSelected) return;
+    const t = state.imageTransforms[state.activeTemplate];
+    if (!t) return;
+    // Don't hijack arrows in an input or while typing in text
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+
+    const step = e.shiftKey ? 10 : 1;
+    let dx = 0, dy = 0;
+    switch (e.key) {
+      case 'ArrowLeft':  dx = -step; break;
+      case 'ArrowRight': dx =  step; break;
+      case 'ArrowUp':    dy = -step; break;
+      case 'ArrowDown':  dy =  step; break;
+      default: return;
+    }
+    e.preventDefault();
+
+    // Debounced undo: one snapshot per burst of arrow presses
+    if (!arrowKeyTimer) pushUndo();
+    clearTimeout(arrowKeyTimer);
+    arrowKeyTimer = setTimeout(() => { arrowKeyTimer = null; }, 600);
+
+    t.x += dx;
+    t.y += dy;
+    applyImageTransform(state.activeTemplate);
+    updateImageChrome();
+    updatePlusPatternColor(state.activeTemplate);
+  });
+
+  // ════════════════════════ Click-outside deselect ════════════════════════
+  document.addEventListener('mousedown', (e) => {
+    const inside = e.target.closest('[data-text], .bottom-bar, .image-chrome, .bg-image, .thumb, .float-toolbar');
+    if (!inside) {
+      deselectImage();
+      blurText();
+    }
+  });
+
+  // Keep floating toolbar pinned to text when window resizes / scale changes
+  window.addEventListener('resize', () => {
+    if (focusedText && !floatToolbar.classList.contains('hidden')) {
+      requestAnimationFrame(() => positionFloatToolbar(focusedText));
+    }
+  });
+
+  // ════════════════════════ Boot ════════════════════════
+  setActiveContentEditable();
+  hosts['1080'].classList.add('active');
+  applyScale();
+  bindImagePointer();
+  refreshTextToolbar();
+  updatePlusPatternColor();
+  </script>
+</body>
+</html>
