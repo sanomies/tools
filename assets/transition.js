@@ -40,13 +40,32 @@
 
   /* Descend into big multi-child containers so we reach the real panels/regions
      rather than one page-filling wrapper. */
+  function rectsOverlap(a, b) {
+    return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  }
+
+  /* A container whose children are stacked LAYERS (2+ each covering most of it and
+     overlapping — e.g. a <canvas> with an empty-state/overlay on top) is a single
+     visual unit. Splitting it would leave its background frame behind in the
+     backdrop (which just fades), so treat the whole container as one region. */
+  function layered(rect, kids) {
+    var half = rect.width * rect.height * 0.5, big = [];
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i].rect.width * kids[i].rect.height > half) big.push(kids[i].rect);
+    }
+    for (var i = 0; i < big.length; i++)
+      for (var j = i + 1; j < big.length; j++)
+        if (rectsOverlap(big[i], big[j])) return true;
+    return false;
+  }
+
   function collect(el, depth, out) {
     var kids = regionsOf(el), vpArea = innerWidth * innerHeight;
     for (var i = 0; i < kids.length && out.length < MAX; i++) {
-      var k = kids[i], area = k.rect.width * k.rect.height;
+      var k = kids[i], area = k.rect.width * k.rect.height, grand = regionsOf(k.el);
       // Descend into big multi-child containers (incl. an outer .app-shell wrapper)
-      // so we reach individual panels rather than one grouped block.
-      if (depth < 3 && regionsOf(k.el).length >= 2 && area > vpArea * 0.16) {
+      // to reach individual panels — but not into stacked-layer units (see above).
+      if (depth < 3 && grand.length >= 2 && area > vpArea * 0.16 && !layered(k.rect, grand)) {
         collect(k.el, depth + 1, out);
       } else {
         out.push(k);
