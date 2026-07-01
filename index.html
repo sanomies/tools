@@ -287,6 +287,7 @@
         desc: "Laadi bännerid üles, meie pigistame need parajaks.",
         href: "pigistaja/index.html",
         icon: "assets/icons/pigistaja.svg",
+        delay: 200,   // ms to wait after click before navigating
       },
     ];
 
@@ -312,6 +313,16 @@
       const card = document.createElement("a");
       card.className = "tool-card";
       card.href = encodeURI(tool.href);
+
+      // Optional short pause before navigating (a plain left-click only; modified
+      // clicks / new-tab still behave normally).
+      if (tool.delay) {
+        card.addEventListener("click", (e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+          e.preventDefault();
+          setTimeout(() => { window.location.href = card.href; }, tool.delay);
+        });
+      }
 
       const icon = document.createElement("div");
       icon.className = "tool-icon";
