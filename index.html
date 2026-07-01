@@ -360,11 +360,22 @@
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    /* When navigating Back/Forward, tag the transition so the slide reverses. */
+    /* Tag a Back traversal so the slide reverses (page slides back out to the right).
+       Uses the Navigation API — reliable even on bfcache restores, where the
+       performance navigation entry keeps its original (stale) type. */
     window.addEventListener("pagereveal", (e) => {
       if (!e.viewTransition) return;
-      const nav = performance.getEntriesByType("navigation")[0];
-      if (nav && nav.type === "back_forward") e.viewTransition.types.add("back");
+      let back = false;
+      try {
+        const a = window.navigation && navigation.activation;
+        if (a && a.navigationType === "traverse") {
+          back = a.entry.index < (a.from ? a.from.index : -1);
+        } else {
+          const n = performance.getEntriesByType("navigation")[0];
+          back = !!(n && n.type === "back_forward");
+        }
+      } catch (_) {}
+      if (back) e.viewTransition.types.add("back");
     });
   </script>
 </body>

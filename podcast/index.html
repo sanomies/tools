@@ -29,10 +29,17 @@
 <script>
   window.addEventListener("pagereveal", function (e) {
     if (!e.viewTransition) return;
+    var back = false;
     try {
-      var n = performance.getEntriesByType("navigation")[0];
-      if (n && n.type === "back_forward") e.viewTransition.types.add("back");
+      var a = window.navigation && navigation.activation;
+      if (a && a.navigationType === "traverse") {
+        back = a.entry.index < (a.from ? a.from.index : -1);
+      } else {
+        var n = performance.getEntriesByType("navigation")[0];
+        back = !!(n && n.type === "back_forward");
+      }
     } catch (_) {}
+    if (back) e.viewTransition.types.add("back");
   });
 </script>
 <link rel="icon" type="image/png" href="assets/icon-1024x1024px.png">
