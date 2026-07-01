@@ -21,7 +21,7 @@
 
 ::view-transition-old(*),
 ::view-transition-new(*) {
-  animation-duration: .45s;
+  animation-duration: .4s;
   animation-fill-mode: both;
   mix-blend-mode: normal;
   transform-origin: center; /* so scales (canvas / card zooms) grow from the center, not a corner */
@@ -31,43 +31,43 @@
 
 /* Backdrops cross-fade first (0–.4s) so the incoming page is ready underneath
    before its regions arrive. */
-::view-transition-old(root) { animation-name: os-fade-out; animation-duration: 2s; }
-::view-transition-new(root) { animation-name: os-fade-in;  animation-duration: 2s; }
+::view-transition-old(root) { animation-name: os-fade-out; animation-duration: .5s; }
+::view-transition-new(root) { animation-name: os-fade-in;  animation-duration: .5s; }
 
 /* ===== Launcher pieces — zoom OUT when leaving (early), zoom IN when returning (delayed) ===== */
 /* The "Onu Sano® Tööriistad" logo + tagline move straight UP out of the frame
    (not a zoom); they drop back down from the top on return. */
 ::view-transition-old(vt-header) { animation-name: os-up-out; animation-delay: 0s;   }
-::view-transition-old(vt-lede)   { animation-name: os-up-out; animation-delay: .05s; }
-::view-transition-old(vt-footer) { animation-name: os-zoom-out; animation-delay: .05s; }
-::view-transition-new(vt-header) { animation-name: os-up-in;  animation-delay: .45s; }
-::view-transition-new(vt-lede)   { animation-name: os-up-in;  animation-delay: .50s; }
-::view-transition-new(vt-footer) { animation-name: os-zoom-in;  animation-delay: .50s; }
+::view-transition-old(vt-lede)   { animation-name: os-up-out; animation-delay: .04s; }
+::view-transition-old(vt-footer) { animation-name: os-zoom-out; animation-delay: .04s; }
+::view-transition-new(vt-header) { animation-name: os-up-in;  animation-delay: .10s; }
+::view-transition-new(vt-lede)   { animation-name: os-up-in;  animation-delay: .14s; }
+::view-transition-new(vt-footer) { animation-name: os-zoom-in;  animation-delay: .14s; }
 
-::view-transition-old(vt-card-0)  { animation-name: os-zoom-out; animation-delay: .10s; }
-::view-transition-old(vt-card-1)  { animation-name: os-zoom-out; animation-delay: .15s; }
-::view-transition-old(vt-card-2)  { animation-name: os-zoom-out; animation-delay: .20s; }
-::view-transition-old(vt-card-3)  { animation-name: os-zoom-out; animation-delay: .25s; }
-::view-transition-old(vt-card-4)  { animation-name: os-zoom-out; animation-delay: .30s; }
-::view-transition-old(vt-card-5)  { animation-name: os-zoom-out; animation-delay: .35s; }
-::view-transition-old(vt-card-6)  { animation-name: os-zoom-out; animation-delay: .40s; }
-::view-transition-old(vt-card-7)  { animation-name: os-zoom-out; animation-delay: .45s; }
-::view-transition-old(vt-card-8)  { animation-name: os-zoom-out; animation-delay: .50s; }
-::view-transition-old(vt-card-9)  { animation-name: os-zoom-out; animation-delay: .55s; }
-::view-transition-old(vt-card-10) { animation-name: os-zoom-out; animation-delay: .60s; }
-::view-transition-old(vt-card-11) { animation-name: os-zoom-out; animation-delay: .65s; }
-::view-transition-new(vt-card-0)  { animation-name: os-zoom-in;  animation-delay: .55s; }
-::view-transition-new(vt-card-1)  { animation-name: os-zoom-in;  animation-delay: .60s; }
-::view-transition-new(vt-card-2)  { animation-name: os-zoom-in;  animation-delay: .65s; }
-::view-transition-new(vt-card-3)  { animation-name: os-zoom-in;  animation-delay: .70s; }
-::view-transition-new(vt-card-4)  { animation-name: os-zoom-in;  animation-delay: .75s; }
-::view-transition-new(vt-card-5)  { animation-name: os-zoom-in;  animation-delay: .80s; }
-::view-transition-new(vt-card-6)  { animation-name: os-zoom-in;  animation-delay: .85s; }
-::view-transition-new(vt-card-7)  { animation-name: os-zoom-in;  animation-delay: .90s; }
-::view-transition-new(vt-card-8)  { animation-name: os-zoom-in;  animation-delay: .95s; }
-::view-transition-new(vt-card-9)  { animation-name: os-zoom-in;  animation-delay: 1.0s; }
-::view-transition-new(vt-card-10) { animation-name: os-zoom-in;  animation-delay: 1.05s; }
-::view-transition-new(vt-card-11) { animation-name: os-zoom-in;  animation-delay: 1.1s; }
+::view-transition-old(vt-card-0)  { animation-name: os-zoom-out; animation-delay: .05s; }
+::view-transition-old(vt-card-1)  { animation-name: os-zoom-out; animation-delay: .09s; }
+::view-transition-old(vt-card-2)  { animation-name: os-zoom-out; animation-delay: .13s; }
+::view-transition-old(vt-card-3)  { animation-name: os-zoom-out; animation-delay: .17s; }
+::view-transition-old(vt-card-4)  { animation-name: os-zoom-out; animation-delay: .21s; }
+::view-transition-old(vt-card-5)  { animation-name: os-zoom-out; animation-delay: .25s; }
+::view-transition-old(vt-card-6)  { animation-name: os-zoom-out; animation-delay: .29s; }
+::view-transition-old(vt-card-7)  { animation-name: os-zoom-out; animation-delay: .33s; }
+::view-transition-old(vt-card-8)  { animation-name: os-zoom-out; animation-delay: .37s; }
+::view-transition-old(vt-card-9)  { animation-name: os-zoom-out; animation-delay: .41s; }
+::view-transition-old(vt-card-10) { animation-name: os-zoom-out; animation-delay: .45s; }
+::view-transition-old(vt-card-11) { animation-name: os-zoom-out; animation-delay: .49s; }
+::view-transition-new(vt-card-0)  { animation-name: os-zoom-in;  animation-delay: .15s; }
+::view-transition-new(vt-card-1)  { animation-name: os-zoom-in;  animation-delay: .19s; }
+::view-transition-new(vt-card-2)  { animation-name: os-zoom-in;  animation-delay: .23s; }
+::view-transition-new(vt-card-3)  { animation-name: os-zoom-in;  animation-delay: .27s; }
+::view-transition-new(vt-card-4)  { animation-name: os-zoom-in;  animation-delay: .31s; }
+::view-transition-new(vt-card-5)  { animation-name: os-zoom-in;  animation-delay: .35s; }
+::view-transition-new(vt-card-6)  { animation-name: os-zoom-in;  animation-delay: .39s; }
+::view-transition-new(vt-card-7)  { animation-name: os-zoom-in;  animation-delay: .43s; }
+::view-transition-new(vt-card-8)  { animation-name: os-zoom-in;  animation-delay: .47s; }
+::view-transition-new(vt-card-9)  { animation-name: os-zoom-in;  animation-delay: .51s; }
+::view-transition-new(vt-card-10) { animation-name: os-zoom-in;  animation-delay: .55s; }
+::view-transition-new(vt-card-11) { animation-name: os-zoom-in;  animation-delay: .59s; }
 
 /* ===== Tool regions (auto-assigned) — NEW arrive from outside (delayed), OLD leave (early) ===== */
 ::view-transition-new(auto-left-0),::view-transition-new(auto-left-1),::view-transition-new(auto-left-2),::view-transition-new(auto-left-3),::view-transition-new(auto-left-4),::view-transition-new(auto-left-5),::view-transition-new(auto-left-6),::view-transition-new(auto-left-7) { animation-name: os-in-left; }
@@ -81,25 +81,25 @@
 ::view-transition-old(auto-bottom-0),::view-transition-old(auto-bottom-1),::view-transition-old(auto-bottom-2),::view-transition-old(auto-bottom-3),::view-transition-old(auto-bottom-4),::view-transition-old(auto-bottom-5),::view-transition-old(auto-bottom-6),::view-transition-old(auto-bottom-7) { animation-name: os-exit-bottom; }
 ::view-transition-old(auto-pop-0),::view-transition-old(auto-pop-1),::view-transition-old(auto-pop-2),::view-transition-old(auto-pop-3),::view-transition-old(auto-pop-4),::view-transition-old(auto-pop-5),::view-transition-old(auto-pop-6),::view-transition-old(auto-pop-7) { animation-name: os-exit-pop; }
 
-/* Tool exit (old) starts immediately, staggered 0.1s. */
-::view-transition-old(auto-left-0),::view-transition-old(auto-right-0),::view-transition-old(auto-top-0),::view-transition-old(auto-bottom-0),::view-transition-old(auto-pop-0) { animation-delay: 0s;  }
-::view-transition-old(auto-left-1),::view-transition-old(auto-right-1),::view-transition-old(auto-top-1),::view-transition-old(auto-bottom-1),::view-transition-old(auto-pop-1) { animation-delay: .1s; }
-::view-transition-old(auto-left-2),::view-transition-old(auto-right-2),::view-transition-old(auto-top-2),::view-transition-old(auto-bottom-2),::view-transition-old(auto-pop-2) { animation-delay: .2s; }
-::view-transition-old(auto-left-3),::view-transition-old(auto-right-3),::view-transition-old(auto-top-3),::view-transition-old(auto-bottom-3),::view-transition-old(auto-pop-3) { animation-delay: .3s; }
-::view-transition-old(auto-left-4),::view-transition-old(auto-right-4),::view-transition-old(auto-top-4),::view-transition-old(auto-bottom-4),::view-transition-old(auto-pop-4) { animation-delay: .4s; }
-::view-transition-old(auto-left-5),::view-transition-old(auto-right-5),::view-transition-old(auto-top-5),::view-transition-old(auto-bottom-5),::view-transition-old(auto-pop-5) { animation-delay: .5s; }
-::view-transition-old(auto-left-6),::view-transition-old(auto-right-6),::view-transition-old(auto-top-6),::view-transition-old(auto-bottom-6),::view-transition-old(auto-pop-6) { animation-delay: .6s; }
-::view-transition-old(auto-left-7),::view-transition-old(auto-right-7),::view-transition-old(auto-top-7),::view-transition-old(auto-bottom-7),::view-transition-old(auto-pop-7) { animation-delay: .7s; }
+/* Tool exit (old) starts immediately, staggered 0.04s. */
+::view-transition-old(auto-left-0),::view-transition-old(auto-right-0),::view-transition-old(auto-top-0),::view-transition-old(auto-bottom-0),::view-transition-old(auto-pop-0) { animation-delay: 0s;   }
+::view-transition-old(auto-left-1),::view-transition-old(auto-right-1),::view-transition-old(auto-top-1),::view-transition-old(auto-bottom-1),::view-transition-old(auto-pop-1) { animation-delay: .04s; }
+::view-transition-old(auto-left-2),::view-transition-old(auto-right-2),::view-transition-old(auto-top-2),::view-transition-old(auto-bottom-2),::view-transition-old(auto-pop-2) { animation-delay: .08s; }
+::view-transition-old(auto-left-3),::view-transition-old(auto-right-3),::view-transition-old(auto-top-3),::view-transition-old(auto-bottom-3),::view-transition-old(auto-pop-3) { animation-delay: .12s; }
+::view-transition-old(auto-left-4),::view-transition-old(auto-right-4),::view-transition-old(auto-top-4),::view-transition-old(auto-bottom-4),::view-transition-old(auto-pop-4) { animation-delay: .16s; }
+::view-transition-old(auto-left-5),::view-transition-old(auto-right-5),::view-transition-old(auto-top-5),::view-transition-old(auto-bottom-5),::view-transition-old(auto-pop-5) { animation-delay: .20s; }
+::view-transition-old(auto-left-6),::view-transition-old(auto-right-6),::view-transition-old(auto-top-6),::view-transition-old(auto-bottom-6),::view-transition-old(auto-pop-6) { animation-delay: .24s; }
+::view-transition-old(auto-left-7),::view-transition-old(auto-right-7),::view-transition-old(auto-top-7),::view-transition-old(auto-bottom-7),::view-transition-old(auto-pop-7) { animation-delay: .28s; }
 
-/* Tool entrance (new) waits for the launcher to clear (.45s base), then 0.1s apart. */
-::view-transition-new(auto-left-0),::view-transition-new(auto-right-0),::view-transition-new(auto-top-0),::view-transition-new(auto-bottom-0),::view-transition-new(auto-pop-0) { animation-delay: .45s;  }
-::view-transition-new(auto-left-1),::view-transition-new(auto-right-1),::view-transition-new(auto-top-1),::view-transition-new(auto-bottom-1),::view-transition-new(auto-pop-1) { animation-delay: .55s; }
-::view-transition-new(auto-left-2),::view-transition-new(auto-right-2),::view-transition-new(auto-top-2),::view-transition-new(auto-bottom-2),::view-transition-new(auto-pop-2) { animation-delay: .65s; }
-::view-transition-new(auto-left-3),::view-transition-new(auto-right-3),::view-transition-new(auto-top-3),::view-transition-new(auto-bottom-3),::view-transition-new(auto-pop-3) { animation-delay: .75s; }
-::view-transition-new(auto-left-4),::view-transition-new(auto-right-4),::view-transition-new(auto-top-4),::view-transition-new(auto-bottom-4),::view-transition-new(auto-pop-4) { animation-delay: .85s; }
-::view-transition-new(auto-left-5),::view-transition-new(auto-right-5),::view-transition-new(auto-top-5),::view-transition-new(auto-bottom-5),::view-transition-new(auto-pop-5) { animation-delay: .95s; }
-::view-transition-new(auto-left-6),::view-transition-new(auto-right-6),::view-transition-new(auto-top-6),::view-transition-new(auto-bottom-6),::view-transition-new(auto-pop-6) { animation-delay: 1.05s; }
-::view-transition-new(auto-left-7),::view-transition-new(auto-right-7),::view-transition-new(auto-top-7),::view-transition-new(auto-bottom-7),::view-transition-new(auto-pop-7) { animation-delay: 1.15s; }
+/* Tool entrance (new) — small lead so the leaving side clears, then 0.05s apart. */
+::view-transition-new(auto-left-0),::view-transition-new(auto-right-0),::view-transition-new(auto-top-0),::view-transition-new(auto-bottom-0),::view-transition-new(auto-pop-0) { animation-delay: .10s; }
+::view-transition-new(auto-left-1),::view-transition-new(auto-right-1),::view-transition-new(auto-top-1),::view-transition-new(auto-bottom-1),::view-transition-new(auto-pop-1) { animation-delay: .15s; }
+::view-transition-new(auto-left-2),::view-transition-new(auto-right-2),::view-transition-new(auto-top-2),::view-transition-new(auto-bottom-2),::view-transition-new(auto-pop-2) { animation-delay: .20s; }
+::view-transition-new(auto-left-3),::view-transition-new(auto-right-3),::view-transition-new(auto-top-3),::view-transition-new(auto-bottom-3),::view-transition-new(auto-pop-3) { animation-delay: .25s; }
+::view-transition-new(auto-left-4),::view-transition-new(auto-right-4),::view-transition-new(auto-top-4),::view-transition-new(auto-bottom-4),::view-transition-new(auto-pop-4) { animation-delay: .30s; }
+::view-transition-new(auto-left-5),::view-transition-new(auto-right-5),::view-transition-new(auto-top-5),::view-transition-new(auto-bottom-5),::view-transition-new(auto-pop-5) { animation-delay: .35s; }
+::view-transition-new(auto-left-6),::view-transition-new(auto-right-6),::view-transition-new(auto-top-6),::view-transition-new(auto-bottom-6),::view-transition-new(auto-pop-6) { animation-delay: .40s; }
+::view-transition-new(auto-left-7),::view-transition-new(auto-right-7),::view-transition-new(auto-top-7),::view-transition-new(auto-bottom-7),::view-transition-new(auto-pop-7) { animation-delay: .45s; }
 
 /* ============ keyframes ============ */
 /* Only the backdrop cross-fades (it can't leave the frame). Every named element
