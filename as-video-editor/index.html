@@ -124,12 +124,7 @@
     overflow: hidden;
     user-select: none;
     color-scheme: light;
-    background-color: var(--bg);
-    background-image: url("assets/bg-texture.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    background-color: #edf2f4;
   }
 
   /* ───── Main column (header · canvas · transport), left side ───── */
@@ -694,8 +689,9 @@
   /* ───── Left sidebar — one flat flush panel, sections divided by hairlines ───── */
   .sidebar {
     order: -1;                 /* left of the canvas */
+    position: relative;
     flex: 0 0 auto;
-    width: 300px;
+    width: 300px;              /* default; drag the handle to resize (240–400px) */
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -704,6 +700,29 @@
     border-right: 1px solid var(--border);
     overflow: hidden;
   }
+  /* Drag handle on the sidebar's right edge. */
+  .sidebar-resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 50;
+    touch-action: none;
+  }
+  .sidebar-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: transparent;
+    transition: background-color 0.15s;
+  }
+  .sidebar-resizer:hover::after,
+  .sidebar-resizer.dragging::after { background: var(--ink); }
 
   /* Flat section (Format / Layers / Style) — no card, no float, just a divider. */
   .panel {
@@ -1326,6 +1345,7 @@
 
   <!-- ════════════════════════ SIDEBAR (right) ════════════════════════ -->
   <aside class="sidebar" id="sidebar">
+    <div class="sidebar-resizer" id="sidebar-resizer" aria-hidden="true"></div>
 
     <!-- Format -->
     <section class="panel panel-format" aria-label="Output format">
@@ -5099,6 +5119,32 @@ async function preloadFonts() {
   draw();  // re-render now that the OTF files are decoded
 }
 init();
+</script>
+
+<!-- Sidebar resize (drag the right-edge handle; clamped 240–400px). -->
+<script>
+(function () {
+  var sb = document.getElementById('sidebar');
+  var rz = document.getElementById('sidebar-resizer');
+  if (!sb || !rz) return;
+  var MIN = 240, MAX = 400, dragging = false;
+  function apply(clientX) {
+    var w = Math.max(MIN, Math.min(MAX, clientX - sb.getBoundingClientRect().left));
+    sb.style.width = w + 'px';
+    window.dispatchEvent(new Event('resize')); // let the canvas re-fit live
+  }
+  rz.addEventListener('pointerdown', function (e) {
+    dragging = true;
+    rz.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    try { rz.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+  rz.addEventListener('pointermove', function (e) { if (dragging) apply(e.clientX); });
+  function end() { dragging = false; rz.classList.remove('dragging'); document.body.style.userSelect = ''; }
+  rz.addEventListener('pointerup', end);
+  rz.addEventListener('pointercancel', end);
+})();
 </script>
 </body>
 </html>
