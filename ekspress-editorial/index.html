@@ -1283,11 +1283,12 @@
   var sb = document.getElementById('sidebar');
   var rz = document.getElementById('sidebar-resizer');
   if (!sb || !rz) return;
-  var MIN = 240, MAX = 400, dragging = false;
-  function apply(clientX) {
-    var w = Math.max(MIN, Math.min(MAX, clientX - sb.getBoundingClientRect().left));
+  var MIN = 240, MAX = 400, dragging = false, pendingX = 0, rafId = 0;
+  function flush() {
+    rafId = 0;
+    var w = Math.max(MIN, Math.min(MAX, pendingX - sb.getBoundingClientRect().left));
     sb.style.width = w + 'px';
-    window.dispatchEvent(new Event('resize')); // let the canvas re-fit live
+    window.dispatchEvent(new Event('resize')); // let the canvas re-fit live (coalesced to 1/frame)
   }
   rz.addEventListener('pointerdown', function (e) {
     dragging = true;
@@ -1296,7 +1297,11 @@
     try { rz.setPointerCapture(e.pointerId); } catch (_) {}
     e.preventDefault();
   });
-  rz.addEventListener('pointermove', function (e) { if (dragging) apply(e.clientX); });
+  rz.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    pendingX = e.clientX;
+    if (!rafId) rafId = requestAnimationFrame(flush);
+  });
   function end() { dragging = false; rz.classList.remove('dragging'); document.body.style.userSelect = ''; }
   rz.addEventListener('pointerup', end);
   rz.addEventListener('pointercancel', end);
