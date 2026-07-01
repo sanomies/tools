@@ -11,28 +11,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script>
-  /* If we arrived via the browser Back/Forward button, cover the page from the very
-     first paint (mark <html> before <body> parses) so the reverse can slide out as
-     smoothly as it slid in — no late "pop". Pairs with the .nav-back styles below. */
-  (function () {
-    var t = "";
-    try {
-      var e = performance.getEntriesByType("navigation")[0];
-      t = e ? e.type
-            : (performance.navigation && performance.navigation.type === 2 ? "back_forward" : "");
-    } catch (_) {}
-    if (t === "back_forward" &&
-        !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      document.documentElement.classList.add("nav-back");
-    }
-  })();
-</script>
 <style>
   /* ─────────────────────────────────────────────────────────────
      Onu Sano · Tööriistad — tool launcher
      House style borrowed from the Podcast framer (Delfi light theme):
-     near-white textured base, white cards, near-black ink, Delfi-red
+     near-white textured base, white cards, near-black ink, black
      accent reserved for hover/selection. One family: Google Sans Flex.
      ───────────────────────────────────────────────────────────── */
   :root {
@@ -44,7 +27,7 @@
     --muted:        #708597;   /* delfi-darkgray: secondary text */
     --track:        #edf2f4;   /* delfi-lightgray: icon plate fill */
     --hover:        #f2f4f6;   /* subtle hover wash */
-    --accent:       #000000;   /* hover + selection chrome + transition panel */
+    --accent:       #000000;   /* hover + selection chrome */
     --focus:        #000000;   /* keyboard focus ring */
     --shadow-card:  0 4px 5px rgba(0,0,0,0.10);
     --shadow-hover: 0 10px 28px rgba(17,19,23,0.14);
@@ -209,69 +192,42 @@
   .page-footer a { color: var(--muted); text-decoration: none; }
   .page-footer a:hover { color: var(--ink); text-decoration: underline; }
 
-  /* ───── Responsive ───── */
-  /* ───── Page-open wipe — a branded panel slides in to cover the page,
-     then the chosen tool loads behind it. Driven by JS (.is-active). ───── */
-  .page-wipe {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    background: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transform: translateX(100%);
-    pointer-events: none;
-    transition: transform .45s cubic-bezier(.4, 0, .2, 1);
-    will-change: transform;
+  /* ───── Page transition — the incoming view slides in from the right, the
+     outgoing one leaves to the left (reversed on Back). Uses the cross-document
+     View Transitions API; browsers without it simply navigate, no animation. ───── */
+  @view-transition { navigation: auto; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: .45s;
+    animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+    mix-blend-mode: normal;
   }
-  .page-wipe.is-active { transform: translateX(0); }
-  /* Back/Forward boot: the panel is fully covering on the very first paint (initial
-     render, so no slide-in fires). The exit logic removes .nav-back, letting the
-     panel fall back to its off-screen base value and slide out on the same
-     transition as the enter — a true, smooth mirror (no reflow "pop"). */
-  html.nav-back { background: #000; }
-  html.nav-back .page-wipe { transform: translateX(0); }
-  html.nav-back .page-wipe .page-wipe-face { opacity: 1; transform: scale(1); }
-  .page-wipe-face {
-    width: 96px;
-    height: auto;
-    /* Original face colors, lifted off the dark panel by a 2px white outline. */
-    filter:
-      drop-shadow( 2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
-      drop-shadow( 0 2px 0 #fff) drop-shadow( 0 -2px 0 #fff)
-      drop-shadow( 1.4px 1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff)
-      drop-shadow( 1.4px -1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff);
-    opacity: 0;
-    transform: scale(.94);
-    transition: opacity .25s ease .12s, transform .25s ease .12s;
-  }
-  .page-wipe.is-active .page-wipe-face { opacity: 1; transform: scale(1); }
+  ::view-transition-old(root) { animation-name: os-slide-out-left; }
+  ::view-transition-new(root) { animation-name: os-slide-in-right; }
+  :root:active-view-transition-type(back)::view-transition-old(root) { animation-name: os-slide-out-right; }
+  :root:active-view-transition-type(back)::view-transition-new(root) { animation-name: os-slide-in-left; }
+  @keyframes os-slide-in-right  { from { transform: translateX(100%); } }
+  @keyframes os-slide-out-left  { to   { transform: translateX(-100%); } }
+  @keyframes os-slide-in-left   { from { transform: translateX(-100%); } }
+  @keyframes os-slide-out-right { to   { transform: translateX(100%); } }
 
+  /* ───── Responsive ───── */
   @media (max-width: 600px) {
     .page { padding: 40px 18px 32px; }
     .app-header { font-size: 22px; }
     .brand-face { height: 34px; }
     .tool-grid { margin-top: 32px; gap: 14px; }
-    .page-wipe-face { width: 76px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; }
     .tool-card:hover { transform: none; }
     .tool-card:hover .tool-cta svg { transform: none; }
-    .page-wipe { transition: none; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
   }
 </style>
 </head>
 <body>
-  <!-- Branded transition panel — first body child so it covers from the first paint
-       (needed for a smooth Back/Forward reverse). Fixed + high z-index, so DOM order
-       does not affect the enter animation. -->
-  <div class="page-wipe" id="pageWipe" aria-hidden="true">
-    <img class="page-wipe-face" src="assets/onu-sano-face.svg" alt="">
-  </div>
-
   <main class="page">
     <h1 class="app-header">
       <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
@@ -342,30 +298,6 @@
 
     const grid = document.getElementById("toolGrid");
     const svgNS = "http://www.w3.org/2000/svg";
-    const wipe = document.getElementById("pageWipe");
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    /* Play the branded wipe, then navigate. Falls back to plain navigation when the
-       user wants a new tab/window, on non-left clicks, or under reduced-motion. */
-    function openTool(e, href) {
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-      if (prefersReduced.matches) return;
-      e.preventDefault();
-      let navigated = false;
-      const go = () => {
-        if (navigated) return;
-        navigated = true;
-        wipe.removeEventListener("transitionend", onEnd);
-        window.location.href = href;
-      };
-      // Wait for the panel's own slide to finish — ignore the bubbling face fade.
-      const onEnd = (ev) => {
-        if (ev.target === wipe && ev.propertyName === "transform") go();
-      };
-      wipe.addEventListener("transitionend", onEnd);
-      setTimeout(go, 600); // fallback if transitionend never fires
-      wipe.classList.add("is-active");
-    }
 
     function lineSvg(symbolId) {
       const svg = document.createElementNS(svgNS, "svg");
@@ -386,7 +318,6 @@
       const card = document.createElement("a");
       card.className = "tool-card";
       card.href = encodeURI(tool.href);
-      card.addEventListener("click", (e) => openTool(e, card.href));
 
       const icon = document.createElement("div");
       icon.className = "tool-icon";
@@ -429,24 +360,11 @@
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    /* Smooth reverse on return to the launcher — let the covering state paint for a
-       frame, then drop the class so the panel slides out on the SAME transition as
-       the enter. Two restore paths, both start already covered (no reflow "pop"):
-         · fresh Back/Forward — the <head> script set .nav-back, so the panel covers
-           from first paint. Remove it here to slide out.
-         · bfcache restore — the page returns frozen with .is-active (set when we
-           left) and scripts don't re-run, so pageshow drives it. */
-    function slideOut(el, cls) {
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => el.classList.remove(cls)));
-    }
-    if (document.documentElement.classList.contains("nav-back")) {
-      slideOut(document.documentElement, "nav-back");
-    }
-    window.addEventListener("pageshow", (e) => {
-      if (!e.persisted) return;                 // fresh loads handled above
-      if (prefersReduced.matches) wipe.classList.remove("is-active");
-      else slideOut(wipe, "is-active");
+    /* When navigating Back/Forward, tag the transition so the slide reverses. */
+    window.addEventListener("pagereveal", (e) => {
+      if (!e.viewTransition) return;
+      const nav = performance.getEntriesByType("navigation")[0];
+      if (nav && nav.type === "back_forward") e.viewTransition.types.add("back");
     });
   </script>
 </body>

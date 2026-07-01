@@ -4,6 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Geenius template editor</title>
+<!-- Page transition: incoming view slides in from the right (reversed on Back).
+     Cross-document View Transitions API; unsupported browsers just navigate. -->
+<style>
+  @view-transition { navigation: auto; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: .45s;
+    animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+    mix-blend-mode: normal;
+  }
+  ::view-transition-old(root) { animation-name: os-slide-out-left; }
+  ::view-transition-new(root) { animation-name: os-slide-in-right; }
+  :root:active-view-transition-type(back)::view-transition-old(root) { animation-name: os-slide-out-right; }
+  :root:active-view-transition-type(back)::view-transition-new(root) { animation-name: os-slide-in-left; }
+  @keyframes os-slide-in-right  { from { transform: translateX(100%); } }
+  @keyframes os-slide-out-left  { to   { transform: translateX(-100%); } }
+  @keyframes os-slide-in-left   { from { transform: translateX(-100%); } }
+  @keyframes os-slide-out-right { to   { transform: translateX(100%); } }
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+  }
+</style>
+<script>
+  window.addEventListener("pagereveal", function (e) {
+    if (!e.viewTransition) return;
+    try {
+      var n = performance.getEntriesByType("navigation")[0];
+      if (n && n.type === "back_forward") e.viewTransition.types.add("back");
+    } catch (_) {}
+  });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -626,39 +657,6 @@
 </style>
 </head>
 <body>
-
-  <!-- ▼ Onu Sano page-in transition (stage 2). A black cover matching the launcher's
-       wipe is present on load, then sweeps off to the left to reveal this tool.
-       Self-contained; removes itself when done. Honors reduced-motion. -->
-  <div id="osIntro" aria-hidden="true" style="position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;will-change:transform;transition:transform .45s cubic-bezier(.4,0,.2,1);">
-    <img src="assets/onu-sano-face.svg" alt="" style="width:96px;height:auto;transition:opacity .3s ease;filter:drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(1.4px 1.4px 0 #fff) drop-shadow(-1.4px 1.4px 0 #fff) drop-shadow(1.4px -1.4px 0 #fff) drop-shadow(-1.4px -1.4px 0 #fff);">
-  </div>
-  <script>
-  (function () {
-    var el = document.getElementById('osIntro');
-    if (!el) return;
-    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var done = false;
-    function cleanup() { if (el && el.parentNode) el.parentNode.removeChild(el); }
-    function dismiss() {
-      if (done) return; done = true;
-      if (reduce) { cleanup(); return; }
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          el.style.transform = 'translateX(-100%)';
-          var img = el.querySelector('img'); if (img) img.style.opacity = '0';
-        });
-      });
-      el.addEventListener('transitionend', function (ev) {
-        if (ev.target === el && ev.propertyName === 'transform') cleanup();
-      });
-      setTimeout(cleanup, 800); // fallback
-    }
-    if (document.readyState === 'loading')
-      document.addEventListener('DOMContentLoaded', function () { setTimeout(dismiss, 150); });
-    else setTimeout(dismiss, 150);
-  })();
-  </script>
 
   <!-- ════════════════════════ Top-right export ════════════════════════ -->
   <div class="top-actions">
