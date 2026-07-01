@@ -82,6 +82,17 @@
   .brand-face { height: 36px; width: auto; display: block; }
   .brand-name { font-weight: 700; }
   .brand-sub  { font-weight: 300; }
+  .app-header { user-select: none; -webkit-user-select: none; }
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+  }
+  .brand-face { transform-origin: right center; transition: transform .2s ease; }
+  .app-header:hover .brand-face { transform: rotate(-4deg); }
 
   /* ───── Canvas area + framed white card ───── */
   .canvas-area {
@@ -578,9 +589,11 @@
     <!-- ════════════════════════ CENTRE COLUMN ════════════════════════ -->
     <main class="main-column">
       <h1 class="app-header">
-        <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
-        <span class="brand-name">Onu Sano®</span>
-        <span class="brand-sub">Podcast framer</span>
+        <a class="brand-link" href="../index.html" aria-label="Tagasi Onu Sano tööriistadesse">
+          <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
+          <span class="brand-name">Onu Sano®</span>
+          <span class="brand-sub">Podcast framer</span>
+        </a>
       </h1>
 
       <div class="canvas-area" id="canvas-area">
