@@ -26,8 +26,8 @@
   mix-blend-mode: normal;
   transform-origin: center; /* so scales (canvas / card zooms) grow from the center, not a corner */
 }
-::view-transition-new(*) { animation-timing-function: cubic-bezier(.22, 1, .36, 1); } /* strong ease-out */
-::view-transition-old(*) { animation-timing-function: cubic-bezier(.5, 0, .9, .3); }  /* ease-in — accelerate off */
+::view-transition-new(*) { animation-timing-function: cubic-bezier(.33, 1, .68, 1); } /* smooth ease-out, no overshoot */
+::view-transition-old(*) { animation-timing-function: cubic-bezier(.32, 0, .67, 0); } /* smooth ease-in */
 
 /* Backdrops cross-fade first (0–.4s) so the incoming page is ready underneath
    before its regions arrive. */
@@ -111,7 +111,7 @@
 /* Launcher cards/footer zoom to a point on the way out, and pop back with a small
    bounce on return. No fade — scale(0) makes them vanish. */
 @keyframes os-zoom-out { to { transform: scale(0); } }
-@keyframes os-zoom-in  { 0% { transform: scale(0); } 65% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes os-zoom-in  { from { transform: scale(0); } }
 
 /* Logo + tagline: a full viewport up and out, and back down from above on return. */
 @keyframes os-up-out { to   { transform: translateY(-100vh); } }
@@ -119,17 +119,17 @@
 
 /* Regions travel fully OUTSIDE the frame (viewport units guarantee they clear it),
    with no fade — they just slide off / in. */
-@keyframes os-in-left   { 0% { transform: translateX(-100vw); } 82% { transform: translateX(18px); }  100% { transform: translateX(0); } }
-@keyframes os-in-right  { 0% { transform: translateX(100vw); }  82% { transform: translateX(-18px); } 100% { transform: translateX(0); } }
-@keyframes os-in-top    { 0% { transform: translateY(-100vh); } 82% { transform: translateY(14px); }  100% { transform: translateY(0); } }
-@keyframes os-in-bottom { 0% { transform: translateY(100vh); }  82% { transform: translateY(-14px); } 100% { transform: translateY(0); } }
+@keyframes os-in-left   { from { transform: translateX(-100vw); } }
+@keyframes os-in-right  { from { transform: translateX(100vw); } }
+@keyframes os-in-top    { from { transform: translateY(-100vh); } }
+@keyframes os-in-bottom { from { transform: translateY(100vh); } }
 @keyframes os-exit-left   { to { transform: translateX(-100vw); } }
 @keyframes os-exit-right  { to { transform: translateX(100vw); } }
 @keyframes os-exit-top    { to { transform: translateY(-100vh); } }
 @keyframes os-exit-bottom { to { transform: translateY(100vh); } }
 
 /* Canvas can't leave the frame, so it zooms from / to the center point (no fade). */
-@keyframes os-in-pop   { 0% { transform: scale(0); } 65% { transform: scale(1.05); } 100% { transform: scale(1); } }
+@keyframes os-in-pop   { from { transform: scale(0); } }
 @keyframes os-exit-pop { to { transform: scale(0); } }
 
 @media (prefers-reduced-motion: reduce) {
