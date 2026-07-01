@@ -11,6 +11,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+  /* If we arrived via the browser Back/Forward button, cover the page from the very
+     first paint (mark <html> before <body> parses) so the reverse can slide out as
+     smoothly as it slid in — no late "pop". Pairs with the .nav-back styles below. */
+  (function () {
+    var t = "";
+    try {
+      var e = performance.getEntriesByType("navigation")[0];
+      t = e ? e.type
+            : (performance.navigation && performance.navigation.type === 2 ? "back_forward" : "");
+    } catch (_) {}
+    if (t === "back_forward" &&
+        !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.documentElement.classList.add("nav-back");
+    }
+  })();
+</script>
 <style>
   /* ─────────────────────────────────────────────────────────────
      Onu Sano · Tööriistad — tool launcher
@@ -206,11 +223,16 @@
     transform: translateX(100%);
     pointer-events: none;
     transition: transform .45s cubic-bezier(.4, 0, .2, 1);
+    will-change: transform;
   }
   .page-wipe.is-active { transform: translateX(0); }
-  /* Used to jump the panel to its covering state without animating, so the
-     Back-button reverse can start from "covered" and only animate sliding out. */
-  .page-wipe.no-anim, .page-wipe.no-anim .page-wipe-face { transition: none !important; }
+  /* Back/Forward boot: the panel is fully covering on the very first paint (initial
+     render, so no slide-in fires). The exit logic removes .nav-back, letting the
+     panel fall back to its off-screen base value and slide out on the same
+     transition as the enter — a true, smooth mirror (no reflow "pop"). */
+  html.nav-back { background: #000; }
+  html.nav-back .page-wipe { transform: translateX(0); }
+  html.nav-back .page-wipe .page-wipe-face { opacity: 1; transform: scale(1); }
   .page-wipe-face {
     width: 96px;
     height: auto;
@@ -243,6 +265,13 @@
 </style>
 </head>
 <body>
+  <!-- Branded transition panel — first body child so it covers from the first paint
+       (needed for a smooth Back/Forward reverse). Fixed + high z-index, so DOM order
+       does not affect the enter animation. -->
+  <div class="page-wipe" id="pageWipe" aria-hidden="true">
+    <img class="page-wipe-face" src="assets/onu-sano-face.svg" alt="">
+  </div>
+
   <main class="page">
     <h1 class="app-header">
       <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
@@ -257,11 +286,6 @@
   <footer class="page-footer">
     © <span id="year"></span> Onu Sano® · Delfi Meedia
   </footer>
-
-  <!-- Branded transition panel; slides in over the page when a tool is opened. -->
-  <div class="page-wipe" id="pageWipe" aria-hidden="true">
-    <img class="page-wipe-face" src="assets/onu-sano-face.svg" alt="">
-  </div>
 
   <!-- Lucide-style line icons, referenced by id from the TOOLS data below -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -405,20 +429,24 @@
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    /* When the user returns via Back/Forward (incl. bfcache restore), play the
-       transition in reverse: start covered, then slide the panel back out. */
-    function reverseWipeOut() {
-      wipe.classList.add("no-anim", "is-active"); // jump to covered, no animation
-      void wipe.offsetWidth;                      // commit that state
-      wipe.classList.remove("no-anim");           // re-enable transitions
+    /* Smooth reverse on return to the launcher — let the covering state paint for a
+       frame, then drop the class so the panel slides out on the SAME transition as
+       the enter. Two restore paths, both start already covered (no reflow "pop"):
+         · fresh Back/Forward — the <head> script set .nav-back, so the panel covers
+           from first paint. Remove it here to slide out.
+         · bfcache restore — the page returns frozen with .is-active (set when we
+           left) and scripts don't re-run, so pageshow drives it. */
+    function slideOut(el, cls) {
       requestAnimationFrame(() =>
-        requestAnimationFrame(() => wipe.classList.remove("is-active"))); // slide out
+        requestAnimationFrame(() => el.classList.remove(cls)));
+    }
+    if (document.documentElement.classList.contains("nav-back")) {
+      slideOut(document.documentElement, "nav-back");
     }
     window.addEventListener("pageshow", (e) => {
-      const nav = performance.getEntriesByType("navigation")[0];
-      const isBack = e.persisted || (nav && nav.type === "back_forward");
-      if (isBack && !prefersReduced.matches) reverseWipeOut();
-      else wipe.classList.remove("is-active"); // fresh load: ensure panel is hidden
+      if (!e.persisted) return;                 // fresh loads handled above
+      if (prefersReduced.matches) wipe.classList.remove("is-active");
+      else slideOut(wipe, "is-active");
     });
   </script>
 </body>
