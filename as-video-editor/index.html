@@ -4,9 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Onu Sano · A&S Video editor</title>
-<!-- Shared page transition — slides this tool in from the right (reversed on Back). -->
+<!-- Shared page transition + this tool's page-in choreography. -->
 <link rel="stylesheet" href="../assets/transition.css">
 <script src="../assets/transition.js"></script>
+<style>
+  /* A&S Video editor — each region assembles in from its own edge, 0.1s apart.
+     Names are scoped to this tool; the os-in-* keyframes live in transition.css. */
+  .app-header   { view-transition-name: as-header; }
+  .tool-rail    { view-transition-name: as-rail; }
+  .stage        { view-transition-name: as-stage; }
+  .bottom-bar   { view-transition-name: as-transport; }
+  .panel-format { view-transition-name: as-format; }
+  .panel-layers { view-transition-name: as-layers; }
+  .panel-edit   { view-transition-name: as-style; }
+
+  ::view-transition-new(root)         { animation-name: os-fade-in; }   /* backdrop just fades in */
+  ::view-transition-new(as-header)    { animation-name: os-in-top;    animation-delay: 0s;  }
+  ::view-transition-new(as-rail)      { animation-name: os-in-left;   animation-delay: .1s; }
+  ::view-transition-new(as-stage)     { animation-name: os-in-pop;    animation-delay: .2s; }
+  ::view-transition-new(as-transport) { animation-name: os-in-bottom; animation-delay: .3s; }
+  ::view-transition-new(as-format)    { animation-name: os-in-right;  animation-delay: .4s; }
+  ::view-transition-new(as-layers)    { animation-name: os-in-right;  animation-delay: .5s; }
+  ::view-transition-new(as-style)     { animation-name: os-in-right;  animation-delay: .6s; }
+</style>
 <meta name="description" content="Onu Sano A&S Video editor — upload a video, add text overlays, export with text burned in. Instagram-ready sizes.">
 <style>
   /* ───── Local fonts (loaded from /assets/fonts) ───── */
