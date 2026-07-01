@@ -106,8 +106,22 @@
     return regions;
   }
 
+  function isBack() {
+    try {
+      var a = window.navigation && navigation.activation;
+      if (a && a.navigationType === "traverse") {
+        return a.entry.index < (a.from ? a.from.index : -1);
+      }
+      var n = performance.getEntriesByType("navigation")[0];
+      return !!(n && n.type === "back_forward");
+    } catch (_) { return false; }
+  }
+
   function handle(e) {
-    if (!e.viewTransition || !isTool()) return;
+    if (!e.viewTransition) return;
+    // Tag Back/Forward traversals so the backdrop can fade slower on the way back.
+    if (isBack()) { try { e.viewTransition.types.add("back"); } catch (_) {} }
+    if (!isTool()) return;
     try {
       var regions = nameRegions();
       var clear = function () {
