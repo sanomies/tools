@@ -26,8 +26,8 @@
   mix-blend-mode: normal;
   transform-origin: center; /* so scales (canvas / card zooms) grow from the center, not a corner */
 }
-::view-transition-new(*) { animation-timing-function: cubic-bezier(.33, 1, .68, 1); } /* smooth ease-out, no overshoot */
-::view-transition-old(*) { animation-timing-function: cubic-bezier(.32, 0, .67, 0); } /* smooth ease-in */
+::view-transition-new(*) { animation-timing-function: cubic-bezier(.16, 1, .3, 1); } /* ease-out-expo — long, glassy glide in (same duration) */
+::view-transition-old(*) { animation-timing-function: cubic-bezier(.5, 0, .75, 0); } /* smooth ease-in out */
 
 /* Backdrops cross-fade first (0–.4s) so the incoming page is ready underneath
    before its regions arrive. */
