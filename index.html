@@ -212,6 +212,7 @@
      navigation animates via the shared page transition, so .intro is only added
      when there's no view transition — see the script below.) ───── */
   @keyframes os-intro { from { opacity: 0; transform: translateY(18px); } }
+  html.intro { overflow: hidden; }   /* contain the rise-in transforms so no transient scrollbar shows */
   html.intro .app-header    { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) both; }
   html.intro .lede          { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) .06s both; }
   html.intro .tool-grid > * { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) both; }
@@ -401,7 +402,11 @@
     /* First entry (a direct load / reload, not a Back/Forward page transition):
        animate the elements in. Added before first paint so there's no flash. */
     addEventListener("pagereveal", (e) => {
-      if (!e.viewTransition) document.documentElement.classList.add("intro");
+      if (e.viewTransition) return;
+      const root = document.documentElement;
+      root.classList.add("intro");
+      // Release the overflow lock once the intro is done so the page can scroll if needed.
+      setTimeout(() => root.classList.remove("intro"), 1300);
     });
   </script>
 </body>
