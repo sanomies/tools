@@ -803,40 +803,79 @@
   TEMPLATES.forEach(t => t.layers.forEach(l => { if (l !== IMG) loadImg(l); }));
 
   // ════════════════════════ Template gallery ════════════════════════
-  function buildTemplates() {
-    for (const t of TEMPLATES) {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'tpl' + (t.id === state.activeId ? ' active' : '');
-      item.dataset.id = t.id;
-      item.dataset.name = norm(t.name);
-      item.setAttribute('role', 'option');
-      item.setAttribute('aria-label', t.name);
-      item.setAttribute('aria-selected', t.id === state.activeId ? 'true' : 'false');
+  function templateItem(t) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'tpl' + (t.id === state.activeId ? ' active' : '');
+    item.dataset.id = t.id;
+    item.dataset.name = norm(t.name);
+    item.setAttribute('role', 'option');
+    item.setAttribute('aria-label', t.name);
+    item.setAttribute('aria-selected', t.id === state.activeId ? 'true' : 'false');
 
-      const thumb = document.createElement('div');
-      thumb.className = 'tpl-thumb';
-      // Preview = the template's overlay layers stacked (the same PNGs used on the artboard).
-      for (const layer of t.layers) {
-        if (layer === IMG) continue;
-        const im = document.createElement('img');
-        im.className = 'ov-layer';
-        im.src = ASSET + layer;
-        im.draggable = false;
-        im.alt = '';
-        thumb.appendChild(im);
-      }
-
-      const label = document.createElement('span');
-      label.className = 'tpl-label';
-      label.lang = 'et';                 // Estonian show names — pronounced correctly by AT
-      label.textContent = t.name;
-
-      item.appendChild(thumb);
-      item.appendChild(label);
-      item.addEventListener('click', () => setActiveTemplate(t.id));
-      templateList.appendChild(item);
+    const thumb = document.createElement('div');
+    thumb.className = 'tpl-thumb';
+    // Preview = the template's overlay layers stacked (the same PNGs used on the artboard).
+    for (const layer of t.layers) {
+      if (layer === IMG) continue;
+      const im = document.createElement('img');
+      im.className = 'ov-layer';
+      im.src = ASSET + layer;
+      im.draggable = false;
+      im.alt = '';
+      thumb.appendChild(im);
     }
+
+    const label = document.createElement('span');
+    label.className = 'tpl-label';
+    label.lang = 'et';                 // Estonian show names — pronounced correctly by AT
+    label.textContent = t.name;
+
+    item.appendChild(thumb);
+    item.appendChild(label);
+    item.addEventListener('click', () => setActiveTemplate(t.id));
+    return item;
+  }
+  function buildTemplates() {
+    for (const t of TEMPLATES) templateList.appendChild(templateItem(t));
+  }
+
+  // ════════════════════════ Auto-discover overlays from GitHub ════════════════════════
+  // A new podcast = just drop its overlay PNG into podcast/assets/overlays/ in the repo.
+  // On load we list that folder via the GitHub API and append any overlay that isn't already
+  // part of a curated template above; the display name is derived from the filename. Silent
+  // no-op if the API is unreachable / rate-limited (the curated list still works).
+  async function discoverOverlays() {
+    const API = 'https://api.github.com/repos/sanomies/tools/contents/podcast/assets/overlays';
+    let files;
+    try {
+      const res = await fetch(API, { headers: { Accept: 'application/vnd.github+json' } });
+      if (!res.ok) return;
+      files = await res.json();
+    } catch (e) { return; }
+    if (!Array.isArray(files)) return;
+
+    const IMG_RE = /\.(png|webp|jpe?g|gif|svg)$/i;
+    const used = new Set();
+    TEMPLATES.forEach(t => t.layers.forEach(l => { if (l !== IMG) used.add(l.toLowerCase()); }));
+    const pretty = n => n.replace(IMG_RE, '').replace(/[-_]+/g, ' ').trim()
+      .replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    files
+      .filter(f => f.type === 'file' && IMG_RE.test(f.name)
+                   && !used.has(('overlays/' + f.name).toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach(f => {
+        const layer = 'overlays/' + f.name;
+        const id = 'auto-' + f.name.replace(IMG_RE, '');
+        if (tmplById[id]) return;
+        const t = { id, name: pretty(f.name), layers: [IMG, layer] };
+        TEMPLATES.push(t);
+        tmplById[id] = t;
+        loadImg(layer);
+        templateList.appendChild(templateItem(t));
+      });
+    updateTemplateFade();
   }
 
   // Filter the gallery by name (the one new feature).
@@ -1434,6 +1473,7 @@
   const activeTpl = templateList.querySelector('.tpl.active');
   if (activeTpl) activeTpl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   updateTemplateFade();
+  discoverOverlays();   // append any newly-added overlays from the repo
   </script>
 
 <!-- Sidebar resize (drag the right-edge handle; clamped 240–400px). -->
