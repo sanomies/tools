@@ -4874,7 +4874,9 @@ function rafLoop() {
 
 // ═════════════════════════════════════ Export ═════════════════════════════════════
 // MediaRecorder approach (real-time):
-//   • canvas.captureStream(fps) emits frames as we draw them
+//   • canvas.captureStream(0) + requestFrame(): we push one composited frame
+//     per source frame (requestVideoFrameCallback), so the export matches the
+//     source's native frame rate. Fallback: captureStream(30).
 //   • videoEl.captureStream() gives us the AUDIO track (we drop its video)
 //   • MediaRecorder mixes them, we collect chunks, and offer a download.
 // Real-time means: a 30s clip records in ~30s. This is a documented limitation.
@@ -4960,24 +4962,24 @@ async function startExport() {
   exportRec.start(250); // chunk every 250ms for smoother progress
   await videoEl.play().catch(() => {});
 
-  // Frame pump: redraw + push a freshly-composited frame on a steady 30fps clock
-  // (rAF, throttled). Pushing only fresh draws at an even cadence is what keeps
-  // playback smooth — unlike captureStream(fps), which samples the canvas on its
-  // own clock and stutters under main-thread load or with variable-fps sources.
+  // Frame pump: requestVideoFrameCallback fires exactly once per frame the
+  // video element presents, so we composite + push one canvas frame per source
+  // frame. The recording inherits the source's native frame rate and timing —
+  // no cadence mismatch. (A fixed 30fps clock against a 24/25fps source
+  // duplicates frames at irregular intervals, which reads as judder.)
   if (usePump) {
     exportPumpActive = true;
-    const interval = 1000 / fps;
-    let lastT = -1;
-    const pump = (t) => {
-      if (!state.exporting) { exportPumpActive = false; return; }
-      if (lastT < 0 || (t - lastT) >= interval - 1.5) {
-        draw();
-        try { captureTrack.requestFrame(); } catch (e) {}
-        lastT = t;
-      }
-      requestAnimationFrame(pump);
+    const pump = () => {
+      if (!state.exporting || !exportPumpActive) { exportPumpActive = false; return; }
+      draw();
+      try { captureTrack.requestFrame(); } catch (e) {}
+      videoEl.requestVideoFrameCallback(pump);
     };
-    requestAnimationFrame(pump);
+    // Push the first frame immediately so the recording doesn't open on a
+    // stale/black frame, then follow the video's own presentation clock.
+    draw();
+    try { captureTrack.requestFrame(); } catch (e) {}
+    videoEl.requestVideoFrameCallback(pump);
   }
 
   // Stop at trim-out + drive progress bar off the trimmed range.
