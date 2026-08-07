@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onu Sano · Kollaažer</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="description" content="Kollaažer — build 1920×1080 photo collages from grid templates.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Onu Sano · Kollaažer">
+<meta property="og:description" content="Kollaažer — build 1920×1080 photo collages from grid templates.">
+<meta property="og:image" content="assets/onusano-og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="assets/onusano-og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Google Sans Flex — the exact family used in the Figma (now served by Google Fonts). DM Sans stays in the stack as a fallback. -->
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:           #f6f9fa;   /* app base: delfi-lightgray at 50% over white */
+    --card:         #ffffff;   /* card / panel surface */
+    --border:       #ebebeb;   /* canvas card hairline */
+    --border-2:     #dedfe0;   /* sidebar + floating toolbar hairline */
+    --ink:          #111317;   /* near-black: text + solid fills (buttons, selected format) */
+    --muted:        #708597;   /* delfi-darkgray: secondary text + idle format outline */
+    --track:        #edf2f4;   /* delfi-lightgray: selected-chip fill + empty-cell slot */
+    --hover:        #f2f4f6;   /* subtle hover wash on light controls */
+    --accent:       #fa044f;   /* delfi-red: destructive action + selection chrome */
+    --focus:        #000000;   /* keyboard / active focus ring */
+    --shadow-card:  0 4px 5px rgba(0,0,0,0.10);
+    --shadow-canvas:0 4px 10px rgba(0,0,0,0.10);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: "Google Sans Flex", "Google Sans", "Product Sans", "DM Sans",
+                 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+    user-select: none;
+    color-scheme: light;
+    /* Flat fill from the Figma: delfi-lightgray at 50% over white. */
+    background: linear-gradient(rgba(237,242,244,0.5), rgba(237,242,244,0.5)) #fff;
+  }
+
+  /* ───── App shell: attached 300px left sidebar + centre column ───── */
+  .app-shell {
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+  }
+
+  /* ───── Left sidebar (Format gallery · Stroke color) ───── */
+  .sidebar {
+    flex: 0 0 auto;
+    width: 300px;
+    height: 100%;
+    background: var(--card);
+    border-right: 1px solid var(--border-2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow-y: auto;
+  }
+  .side-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+  }
+  .side-section.formats { border-bottom: 1px solid var(--border-2); }
+  .side-section.strokes { gap: 16px; padding-bottom: 36px; }
+  .side-heading {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  /* Format gallery — ten grid templates, two per row (thumbs drawn by JS from the same
+     template table the canvas uses, so the preview always matches the real fill order). */
+  .format-list {
+    width: 226px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .format-thumb {
+    appearance: none;
+    border: none;
+    background: transparent;
+    font: inherit;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+  .format-thumb:hover { background: var(--hover); }
+  .format-thumb.selected { background: var(--track); }
+  .format-thumb .mini-board {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--muted);
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .format-thumb.selected .mini-board { border-color: var(--ink); }
+  .format-thumb .mini-cell {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    font-size: 10px;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  /* Stroke color — the colour of the seams between collage cells. */
+  .stroke-list { display: flex; align-items: center; gap: 4px; }
+  .stroke-chip {
+    appearance: none;
+    border: none;
+    background: transparent;
+    padding: 8px;
+    border-radius: 16px;
+    cursor: pointer;
+    display: inline-flex;
+    transition: background-color 0.15s;
+  }
+  .stroke-chip:hover { background: var(--hover); }
+  .stroke-chip.selected { background: var(--track); }
+  .stroke-chip .swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: block;
+  }
+  .stroke-chip[data-stroke="#ffffff"] .swatch { background: #fff; border: 1px solid var(--border-2); }
+  .stroke-chip[data-stroke="#000000"] .swatch { background: #000; }
+
+  /* ───── Centre column (header · canvas · floating toolbar) ───── */
+  .main-column {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 36px;
+  }
+
+  .app-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 400;
+  }
+  .brand-face { height: 36px; width: auto; display: block; }
+  .brand-name { font-weight: 700; }
+  .brand-sub  { font-weight: 300; }
+
+  /* ───── Canvas area + collage board ───── */
+  .canvas-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 24px 0;
+  }
+  .canvas-card {
+    position: relative;
+    background: var(--card);
+    box-shadow: var(--shadow-canvas);
+  }
+  .stage { position: relative; overflow: hidden; }
+  /* The artboard lives in true 1920×1080 coordinates and is scaled down to fit the stage,
+     so cell math is identical on screen and in the PNG export. */
+  .artboard {
+    position: absolute;
+    left: 0; top: 0;
+    width: 1920px;
+    height: 1080px;
+    transform-origin: top left;
+    background: #fff;             /* stroke colour — repainted by JS */
+    touch-action: none;
+  }
+
+  .cell {
+    position: absolute;
+    overflow: hidden;
+    background: var(--card);
+    outline: none;
+  }
+  .cell.filled { cursor: move; }
+  .cell.empty  { cursor: pointer; }
+  .cell img {
+    position: absolute;
+    display: block;
+    max-width: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    pointer-events: none;
+    transition: opacity 0.15s;
+  }
+  /* While its photo is being carried to another cell, the source fades to a ghost. */
+  .cell.drag-source img { opacity: 0.35; }
+
+  /* Empty slot affordance (Figma 814:1055) — delfi-lightgray well with a small white
+     circular upload button. Editor-only chrome; empty cells export as plain white.
+     Divided by --s so the button keeps its designed 34px size at any canvas scale. */
+  .cell .cell-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--track);
+    pointer-events: none;
+  }
+  .cell.filled .cell-hint { display: none; }
+  .cell .cell-hint .up-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+    border-radius: 100px;
+    padding: calc(8px / var(--s, 1));
+    box-shadow: 0 calc(4px / var(--s, 1)) calc(5px / var(--s, 1)) rgba(0,0,0,0.10);
+    color: var(--ink);
+  }
+  .cell .cell-hint .ico {
+    width: calc(18px / var(--s, 1));
+    height: calc(18px / var(--s, 1));
+    display: block;
+  }
+
+  /* Selection chrome (delfi-red, like the sister tools) + drop/swap target highlight.
+     The artboard is scaled by --s, so dividing by it keeps these at true screen px —
+     2px chrome and a hairline dashed drop indicator, same weight as the sister tools. */
+  .cell.selected::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: calc(2px / var(--s, 1)) solid var(--accent);
+    pointer-events: none;
+  }
+  .cell.drop-hover::after {
+    content: "";
+    position: absolute;
+    inset: calc(6px / var(--s, 1));
+    border: calc(2px / var(--s, 1)) dashed var(--ink);
+    border-radius: calc(8px / var(--s, 1));
+    background: rgba(17,19,23,0.04);
+    pointer-events: none;
+  }
+
+  /* ───── Active-image toolbar (rotate · size · remove) ─────
+     Lives in stage space (not the scaled artboard) so it keeps its designed 274×34 px
+     footprint at any canvas zoom; centred over the bottom edge of the selected cell. */
+  .image-toolbar {
+    position: absolute;
+    z-index: 20;
+    width: 274px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    box-shadow: var(--shadow-card);
+    padding: 4px;
+    transform: translateX(-50%);
+  }
+  .image-toolbar.hidden { display: none; }
+  .it-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    width: 26px;
+    height: 26px;
+    flex: 0 0 auto;
+    border-radius: 100px;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s;
+  }
+  .it-btn:hover { background: var(--hover); }
+  .it-btn.it-rotate { background: var(--track); }
+  .it-btn.it-rotate:hover { background: #e2e9ec; }
+  .it-btn.it-rotate .ico { width: 14px; height: 14px; }
+  .it-btn.it-del { color: var(--accent); }
+  .it-btn.it-del:hover { background: rgba(250,4,79,0.08); }
+  .it-btn.it-del .ico { width: 18px; height: 18px; }
+  .it-label {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    flex: 0 0 auto;
+  }
+  .it-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--track);
+    outline: none;
+    margin: 0;
+    cursor: pointer;
+  }
+  .it-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #000;
+    border: none;
+    cursor: pointer;
+  }
+  .it-slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #000;
+    border: none;
+    cursor: pointer;
+  }
+  .it-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--track);
+  }
+
+  /* ───── Floating bottom toolbar ───── */
+  .bottom-toolbar {
+    flex: 0 0 auto;
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    box-shadow: var(--shadow-card);
+    padding: 6px;
+  }
+  .tool {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    border-radius: 100px;
+    padding: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+  }
+  .tool .ico { width: 18px; height: 18px; display: block; }
+  .tool:hover { background: var(--hover); }
+  .tool:disabled { opacity: 0.4; cursor: default; }
+  .tool:disabled:hover { background: transparent; }
+  .tool.tool-primary {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: var(--shadow-card);
+  }
+  .tool.tool-primary:hover { background: #2a2d33; }
+  .tool.tool-danger { color: var(--accent); }
+  .tool.tool-danger:hover { background: rgba(250,4,79,0.08); }
+  .tool.exporting { cursor: progress; }
+
+  #file-input { display: none; }
+
+  /* ───── Drag ghost: the thumbnail that rides the cursor while rearranging ───── */
+  #drag-ghost {
+    position: fixed;
+    z-index: 100;
+    width: 96px;
+    height: 96px;
+    pointer-events: none;
+    transform: translate(-50%, -60%) scale(0.4);
+    transition: transform 0.12s ease-out;
+  }
+  #drag-ghost.lifted { transform: translate(-50%, -60%) scale(1); }
+  #drag-ghost.hidden { display: none; }
+  #drag-ghost .ghost-img-wrap {
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    border: 2px solid #fff;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+  }
+  #drag-ghost img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  /* Corner badge: ⇄ when the drop swaps with another photo, + when the cell is empty. */
+  #drag-ghost .ghost-badge {
+    position: absolute;
+    right: -8px;
+    bottom: -8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-card);
+  }
+  #drag-ghost .ghost-badge.hidden { display: none; }
+  #drag-ghost .ghost-badge svg { width: 13px; height: 13px; display: block; }
+  body.dragging-move, body.dragging-move * { cursor: grabbing !important; }
+
+  /* ───── Focus visibility (keyboard users) ───── */
+  .format-thumb:focus-visible,
+  .stroke-chip:focus-visible,
+  .tool:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .cell:focus-visible::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 4px solid var(--focus);
+    pointer-events: none;
+  }
+
+  /* ───── Compact layouts ───── */
+  @media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      height: auto;
+      flex-direction: row;
+      justify-content: flex-start;
+      border-right: none;
+      border-bottom: 1px solid var(--border-2);
+      overflow-y: visible;
+    }
+    .side-section.formats {
+      flex: 1 1 auto;
+      min-width: 0;
+      border-bottom: none;
+      border-right: 1px solid var(--border-2);
+    }
+    .side-section.strokes { flex: 0 0 auto; padding-bottom: 16px; }
+    .format-list {
+      width: 100%;
+      display: flex;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .format-thumb { flex: 0 0 96px; }
+    .main-column { padding: 20px; }
+    .app-header { font-size: 18px; }
+    .brand-face { height: 28px; }
+  }
+
+  /* ───── Reduced motion ───── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ════════════════════════ LEFT SIDEBAR ════════════════════════ -->
+    <aside class="sidebar">
+      <section class="side-section formats" aria-label="Format">
+        <h2 class="side-heading">Format</h2>
+        <div class="format-list" id="format-list" role="radiogroup" aria-label="Collage format"></div>
+      </section>
+      <section class="side-section strokes" aria-label="Stroke color">
+        <h2 class="side-heading">Stroke color</h2>
+        <div class="stroke-list" role="radiogroup" aria-label="Stroke color">
+          <button class="stroke-chip selected" data-stroke="#ffffff" type="button" role="radio" aria-checked="true" title="White stroke" aria-label="White stroke">
+            <span class="swatch"></span>
+          </button>
+          <button class="stroke-chip" data-stroke="#000000" type="button" role="radio" aria-checked="false" title="Black stroke" aria-label="Black stroke">
+            <span class="swatch"></span>
+          </button>
+        </div>
+      </section>
+    </aside>
+
+    <!-- ════════════════════════ CENTRE COLUMN ════════════════════════ -->
+    <main class="main-column">
+      <h1 class="app-header">
+        <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
+        <span class="brand-name">Onu Sano®</span>
+        <span class="brand-sub">Kollaažer</span>
+      </h1>
+
+      <div class="canvas-area" id="canvas-area">
+        <div class="canvas-card" id="canvas-card">
+          <div class="stage" id="stage">
+            <div class="artboard" id="artboard" role="group" aria-label="Collage cells"></div>
+            <!-- Active-image toolbar (Figma 812:758): rotate · Size slider · remove -->
+            <div class="image-toolbar hidden" id="image-toolbar">
+              <button class="it-btn it-rotate" id="rotate-btn" type="button" title="Rotate 90°" aria-label="Rotate 90 degrees">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.25 7A5.25 5.25 0 1 1 7 1.75c1.47 0 2.876.583 3.932 1.598L12.25 4.667"/><path d="M12.25 1.75v2.917H9.333"/></svg>
+              </button>
+              <span class="it-label" id="size-label">Size</span>
+              <input class="it-slider" id="size-slider" type="range" min="100" max="800" step="1" value="100" aria-labelledby="size-label">
+              <button class="it-btn it-del" id="cell-delete-btn" type="button" title="Remove image" aria-label="Remove image">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 8.25v4.5"/><path d="M10.5 8.25v4.5"/><path d="M14.25 4.5V15a1.5 1.5 0 0 1-1.5 1.5h-7.5a1.5 1.5 0 0 1-1.5-1.5V4.5"/><path d="M2.25 4.5h13.5"/><path d="M6 4.5V3a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 12 3v1.5"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating toolbar: upload · fill cell · remove · download (icon paths lifted from the Figma) -->
+      <div class="bottom-toolbar">
+        <button class="tool tool-primary" id="upload-btn" type="button" title="Upload images" aria-label="Upload images">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.25v9"/><path d="M12.75 6 9 2.25 5.25 6"/><path d="M15.75 11.25v3a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-3"/></svg>
+        </button>
+        <button class="tool" id="fit-btn" type="button" title="Fill cell" aria-label="Fill cell">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m11.25 11.25 4.5 4.5"/><path d="m11.25 6.75 4.5-4.5"/><path d="M15.75 12v3.75H12"/><path d="M15.75 6V2.25H12"/><path d="M2.25 12v3.75H6"/><path d="m2.25 15.75 4.5-4.5"/><path d="M2.25 6V2.25H6"/><path d="m6.75 6.75-4.5-4.5"/></svg>
+        </button>
+        <button class="tool tool-danger" id="delete-btn" type="button" title="Remove image" aria-label="Remove image">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 8.25v4.5"/><path d="M10.5 8.25v4.5"/><path d="M14.25 4.5V15a1.5 1.5 0 0 1-1.5 1.5h-7.5a1.5 1.5 0 0 1-1.5-1.5V4.5"/><path d="M2.25 4.5h13.5"/><path d="M6 4.5V3a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 12 3v1.5"/></svg>
+        </button>
+        <button class="tool" id="download-btn" type="button" title="Download PNG" aria-label="Download PNG">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11.25v-9"/><path d="M15.75 11.25v3a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-3"/><path d="M5.25 7.5 9 11.25 12.75 7.5"/></svg>
+        </button>
+        <input type="file" id="file-input" accept="image/*" multiple>
+      </div>
+    </main>
+  </div>
+
+  <!-- Thumbnail that follows the cursor while an image is carried between cells -->
+  <div id="drag-ghost" class="hidden" aria-hidden="true">
+    <div class="ghost-img-wrap"><img id="drag-ghost-img" alt=""></div>
+    <div class="ghost-badge hidden" id="ghost-badge-swap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+    </div>
+    <div class="ghost-badge hidden" id="ghost-badge-add">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ═══════════════ Constants + templates ═══════════════ */
+
+  const BOARD_W = 1920;
+  const BOARD_H = 1080;
+  const GAP     = 5;      // seam width between cells at export scale (measured off the Figma sample)
+  const MAX_ZOOM = 8;
+  const EPS = 0.001;
+
+  // Cell rects as [x, y, w, h] fractions of the board. Order = fill/numbering order
+  // (matches the numbers in the Figma thumbnails, e.g. the 2×2 counts down the left column first).
+  const TEMPLATES = [
+    { id: '2-cols',         cells: [[0,0,1/2,1],[1/2,0,1/2,1]] },
+    { id: '2-rows',         cells: [[0,0,1,1/2],[0,1/2,1,1/2]] },
+    { id: '3-cols',         cells: [[0,0,1/3,1],[1/3,0,1/3,1],[2/3,0,1/3,1]] },
+    { id: '1-top-2-bottom', cells: [[0,0,1,1/2],[0,1/2,1/2,1/2],[1/2,1/2,1/2,1/2]] },
+    { id: '1-left-2-right', cells: [[0,0,1/2,1],[1/2,0,1/2,1/2],[1/2,1/2,1/2,1/2]] },
+    { id: '4-cols',         cells: [[0,0,1/4,1],[1/4,0,1/4,1],[2/4,0,1/4,1],[3/4,0,1/4,1]] },
+    { id: '2x2',            cells: [[0,0,1/2,1/2],[0,1/2,1/2,1/2],[1/2,0,1/2,1/2],[1/2,1/2,1/2,1/2]] },
+    { id: '1-left-3-right', cells: [[0,0,1/2,1],[1/2,0,1/2,1/3],[1/2,1/3,1/2,1/3],[1/2,2/3,1/2,1/3]] },
+    { id: '5-cols',         cells: [[0,0,1/5,1],[1/5,0,1/5,1],[2/5,0,1/5,1],[3/5,0,1/5,1],[4/5,0,1/5,1]] },
+    { id: '3-left-2-right', cells: [[0,0,1/2,1/3],[0,1/3,1/2,1/3],[0,2/3,1/2,1/3],[1/2,0,1/2,1/2],[1/2,1/2,1/2,1/2]] },
+  ];
+  const MAX_CELLS = 5;
+
+  /* ═══════════════ State ═══════════════ */
+
+  const state = {
+    tpl: 0,
+    stroke: '#ffffff',
+    selected: -1,
+    // One slot per possible cell. Slots beyond the current template's cell count keep their
+    // image so switching formats back and forth never loses a photo.
+    // Slot: { url, img, nw, nh, zoom, offX, offY, rot } — zoom is relative to cover-fit,
+    // offX/offY pan the photo from the cell centre in artboard px, rot ∈ {0,90,180,270}.
+    slots: new Array(MAX_CELLS).fill(null),
+  };
+
+  let stageScale = 1;
+
+  /* ═══════════════ DOM ═══════════════ */
+
+  const canvasArea  = document.getElementById('canvas-area');
+  const canvasCard  = document.getElementById('canvas-card');
+  const stage       = document.getElementById('stage');
+  const artboard    = document.getElementById('artboard');
+  const formatList  = document.getElementById('format-list');
+  const strokeChips = Array.from(document.querySelectorAll('.stroke-chip'));
+  const dragGhost    = document.getElementById('drag-ghost');
+  const dragGhostImg = document.getElementById('drag-ghost-img');
+  const ghostBadgeSwap = document.getElementById('ghost-badge-swap');
+  const ghostBadgeAdd  = document.getElementById('ghost-badge-add');
+  const imageToolbar = document.getElementById('image-toolbar');
+  const rotateBtn    = document.getElementById('rotate-btn');
+  const sizeSlider   = document.getElementById('size-slider');
+  const cellDeleteBtn = document.getElementById('cell-delete-btn');
+  const uploadBtn   = document.getElementById('upload-btn');
+  const fitBtn      = document.getElementById('fit-btn');
+  const deleteBtn   = document.getElementById('delete-btn');
+  const downloadBtn = document.getElementById('download-btn');
+  const fileInput   = document.getElementById('file-input');
+
+  const UPLOAD_GLYPH =
+    '<span class="up-circle">' +
+    '<svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M9 2.25v9"/><path d="M12.75 6 9 2.25 5.25 6"/><path d="M15.75 11.25v3a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-3"/></svg>' +
+    '</span>';
+
+  /* ═══════════════ Geometry ═══════════════ */
+
+  function tpl() { return TEMPLATES[state.tpl]; }
+
+  // Cell rect in artboard px: seams only between cells (GAP/2 shaved off each internal edge),
+  // never along the board's outer edge — matches the Figma export sample.
+  function cellRect(i) {
+    const [fx, fy, fw, fh] = tpl().cells[i];
+    const l = fx * BOARD_W + (fx > EPS ? GAP / 2 : 0);
+    const t = fy * BOARD_H + (fy > EPS ? GAP / 2 : 0);
+    const r = (fx + fw) * BOARD_W - (fx + fw < 1 - EPS ? GAP / 2 : 0);
+    const b = (fy + fh) * BOARD_H - (fy + fh < 1 - EPS ? GAP / 2 : 0);
+    return { x: l, y: t, w: r - l, h: b - t };
+  }
+
+  // Where the photo lands inside its cell (cell-local px). Cover-fit × zoom, panned by
+  // offX/offY. bx/by/bw/bh is the rotated bounding box; iw/ih is the unrotated <img>
+  // element size, centred in that box and spun by slot.rot.
+  function imageLayout(slot, rect) {
+    const swapped = slot.rot % 180 !== 0;
+    const ew = swapped ? slot.nh : slot.nw;
+    const eh = swapped ? slot.nw : slot.nh;
+    const base = Math.max(rect.w / ew, rect.h / eh);
+    const bw = ew * base * slot.zoom;
+    const bh = eh * base * slot.zoom;
+    const maxX = (bw - rect.w) / 2;
+    const maxY = (bh - rect.h) / 2;
+    slot.offX = Math.min(maxX, Math.max(-maxX, slot.offX));
+    slot.offY = Math.min(maxY, Math.max(-maxY, slot.offY));
+    return {
+      bx: (rect.w - bw) / 2 + slot.offX,
+      by: (rect.h - bh) / 2 + slot.offY,
+      bw, bh,
+      iw: slot.nw * base * slot.zoom,
+      ih: slot.nh * base * slot.zoom,
+    };
+  }
+
+  /* ═══════════════ Rendering ═══════════════ */
+
+  function buildCells() {
+    artboard.innerHTML = '';
+    tpl().cells.forEach((_, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = i;
+      cell.tabIndex = 0;
+      cell.setAttribute('aria-label', 'Cell ' + (i + 1));
+      const img = document.createElement('img');
+      img.alt = '';
+      const hint = document.createElement('div');
+      hint.className = 'cell-hint';
+      hint.innerHTML = UPLOAD_GLYPH;
+      cell.append(img, hint);
+      artboard.appendChild(cell);
+    });
+    renderAll();
+  }
+
+  function renderCell(i) {
+    const cell = artboard.children[i];
+    if (!cell) return;
+    const rect = cellRect(i);
+    cell.style.left   = rect.x + 'px';
+    cell.style.top    = rect.y + 'px';
+    cell.style.width  = rect.w + 'px';
+    cell.style.height = rect.h + 'px';
+
+    const slot = state.slots[i];
+    cell.classList.toggle('filled', !!slot);
+    cell.classList.toggle('empty', !slot);
+    cell.classList.toggle('selected', state.selected === i);
+    const img = cell.querySelector('img');
+    if (slot) {
+      if (img.src !== slot.url) img.src = slot.url;
+      img.style.display = 'block';
+      const lay = imageLayout(slot, rect);
+      img.style.left   = (lay.bx + (lay.bw - lay.iw) / 2) + 'px';
+      img.style.top    = (lay.by + (lay.bh - lay.ih) / 2) + 'px';
+      img.style.width  = lay.iw + 'px';
+      img.style.height = lay.ih + 'px';
+      img.style.transform = 'rotate(' + slot.rot + 'deg)';
+    } else {
+      img.removeAttribute('src');
+      img.style.display = 'none';
+    }
+  }
+
+  function renderAll() {
+    artboard.style.background = state.stroke;
+    for (let i = 0; i < tpl().cells.length; i++) renderCell(i);
+    updateToolbar();
+  }
+
+  function updateToolbar() {
+    const sel = state.selected >= 0 ? state.slots[state.selected] : null;
+    fitBtn.disabled    = !sel;
+    deleteBtn.disabled = !sel;
+    downloadBtn.disabled = !tpl().cells.some((_, i) => state.slots[i]);
+    updateImageToolbar();
+  }
+
+  // Float the rotate/size/remove pill centred over the selected cell's bottom edge,
+  // in stage (screen) space so it keeps its designed size at any canvas scale.
+  function updateImageToolbar() {
+    const sel = state.selected;
+    const slot = sel >= 0 && sel < tpl().cells.length ? state.slots[sel] : null;
+    imageToolbar.classList.toggle('hidden', !slot);
+    if (!slot) return;
+    sizeSlider.value = Math.round(slot.zoom * 100);
+    const rect = cellRect(sel);
+    const half = 137 + 6;                                   // toolbar half-width + margin
+    const cx = (rect.x + rect.w / 2) * stageScale;
+    const left = Math.min(BOARD_W * stageScale - half, Math.max(half, cx));
+    const top = Math.max(4, (rect.y + rect.h) * stageScale - 16 - 34);
+    imageToolbar.style.left = left + 'px';
+    imageToolbar.style.top  = top + 'px';
+  }
+
+  function selectCell(i) {
+    if (state.selected === i) return;
+    const prev = state.selected;
+    state.selected = i;
+    if (prev >= 0) renderCell(prev);
+    if (i >= 0) renderCell(i);
+    updateToolbar();
+  }
+
+  /* ═══════════════ Stage sizing ═══════════════ */
+
+  function fitStage() {
+    const availW = canvasArea.clientWidth;
+    const availH = canvasArea.clientHeight - 48;      // canvas-area's vertical padding
+    stageScale = Math.max(0.05, Math.min(availW / BOARD_W, availH / BOARD_H));
+    stage.style.width  = (BOARD_W * stageScale) + 'px';
+    stage.style.height = (BOARD_H * stageScale) + 'px';
+    artboard.style.transform = 'scale(' + stageScale + ')';
+    artboard.style.setProperty('--s', stageScale);    // keeps chrome/drop borders at true screen px
+    updateImageToolbar();
+  }
+  new ResizeObserver(fitStage).observe(canvasArea);
+
+  /* ═══════════════ Format gallery ═══════════════ */
+
+  function buildFormatList() {
+    TEMPLATES.forEach((t, ti) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'format-thumb' + (ti === state.tpl ? ' selected' : '');
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', ti === state.tpl ? 'true' : 'false');
+      btn.setAttribute('aria-label', 'Format ' + t.id.replaceAll('-', ' '));
+      btn.title = 'Format: ' + t.id.replaceAll('-', ' ');
+      const board = document.createElement('div');
+      board.className = 'mini-board';
+      t.cells.forEach(([fx, fy, fw, fh], ci) => {
+        const c = document.createElement('div');
+        c.className = 'mini-cell';
+        c.style.left   = (fx * 100) + '%';
+        c.style.top    = (fy * 100) + '%';
+        c.style.width  = (fw * 100) + '%';
+        c.style.height = (fh * 100) + '%';
+        c.textContent = ci + 1;
+        board.appendChild(c);
+      });
+      btn.appendChild(board);
+      btn.addEventListener('click', () => setTemplate(ti));
+      formatList.appendChild(btn);
+    });
+  }
+
+  function setTemplate(ti) {
+    if (ti === state.tpl) return;
+    state.tpl = ti;
+    state.selected = -1;
+    Array.from(formatList.children).forEach((b, i) => {
+      b.classList.toggle('selected', i === ti);
+      b.setAttribute('aria-checked', i === ti ? 'true' : 'false');
+    });
+    buildCells();
+  }
+
+  /* ═══════════════ Stroke color ═══════════════ */
+
+  strokeChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      state.stroke = chip.dataset.stroke;
+      strokeChips.forEach(c => {
+        const on = c === chip;
+        c.classList.toggle('selected', on);
+        c.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+      artboard.style.background = state.stroke;
+    });
+  });
+
+  /* ═══════════════ Image loading ═══════════════ */
+
+  function loadImageIntoSlot(file, idx) {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const old = state.slots[idx];
+      if (old) URL.revokeObjectURL(old.url);
+      state.slots[idx] = { url, img, nw: img.naturalWidth, nh: img.naturalHeight, zoom: 1, offX: 0, offY: 0, rot: 0 };
+      if (idx < tpl().cells.length) {
+        renderCell(idx);
+        updateToolbar();
+      }
+    };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
+  }
+
+  // First file goes to the target cell (replacing its photo if any); the rest spill into
+  // the remaining empty cells in numbering order. No target → start with the empty cells.
+  function assignFiles(fileList, target) {
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    if (!files.length) return;
+    const n = tpl().cells.length;
+    const dest = [];
+    if (target >= 0 && target < n) dest.push(target);
+    for (let i = 0; i < n && dest.length < files.length; i++) {
+      if (!state.slots[i] && i !== target) dest.push(i);
+    }
+    files.slice(0, dest.length).forEach((f, k) => loadImageIntoSlot(f, dest[k]));
+    if (dest.length) selectCell(dest[0]);
+  }
+
+  let pendingTarget = -1;
+  fileInput.addEventListener('change', () => {
+    assignFiles(fileInput.files, pendingTarget);
+    pendingTarget = -1;
+    fileInput.value = '';
+  });
+
+  uploadBtn.addEventListener('click', () => {
+    pendingTarget = state.selected;
+    fileInput.click();
+  });
+
+  /* ═══════════════ Drag & drop from the desktop ═══════════════ */
+
+  let hoverCell = null;
+  function setHoverCell(cell) {
+    if (hoverCell === cell) return;
+    if (hoverCell) hoverCell.classList.remove('drop-hover');
+    hoverCell = cell;
+    if (hoverCell) hoverCell.classList.add('drop-hover');
+  }
+
+  document.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    e.dataTransfer.dropEffect = 'copy';
+    setHoverCell(e.target.closest ? e.target.closest('.cell') : null);
+  });
+  document.addEventListener('dragleave', e => {
+    if (e.relatedTarget === null) setHoverCell(null);
+  });
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    const cell = e.target.closest ? e.target.closest('.cell') : null;
+    setHoverCell(null);
+    if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+    assignFiles(e.dataTransfer.files, cell ? +cell.dataset.index : -1);
+  });
+
+  /* ═══════════════ Pointer interactions: select · pan · pinch ═══════════════ */
+
+  const pointers = new Map();   // pointerId → {x, y}
+  let gesture = null;           // {type:'pan'|'pinch', idx, moved, ...}
+
+  function cellFromEvent(e) {
+    const cell = e.target.closest ? e.target.closest('.cell') : null;
+    return cell ? +cell.dataset.index : -1;
+  }
+
+  function setSwapTarget(idx) {
+    if (!gesture || gesture.swapTarget === idx) return;
+    if (gesture.swapTarget >= 0) {
+      const prev = artboard.children[gesture.swapTarget];
+      if (prev) prev.classList.remove('drop-hover');
+    }
+    gesture.swapTarget = idx;
+    if (idx >= 0) artboard.children[idx].classList.add('drop-hover');
+    updateGhostBadge();
+  }
+
+  function updateGhostBadge() {
+    const t = gesture ? gesture.swapTarget : -1;
+    ghostBadgeSwap.classList.toggle('hidden', !(t >= 0 && state.slots[t]));
+    ghostBadgeAdd.classList.toggle('hidden', !(t >= 0 && !state.slots[t]));
+  }
+
+  function positionGhost(e) {
+    dragGhost.style.left = e.clientX + 'px';
+    dragGhost.style.top  = e.clientY + 'px';
+  }
+
+  // The drag crossed into another cell: the photo is now carried, not panned.
+  // Its crop snaps back, the source dims, and a thumbnail rides the cursor.
+  function enterMoveMode(e) {
+    const slot = state.slots[gesture.idx];
+    gesture.mode = 'move';
+    slot.offX = gesture.startOffX;
+    slot.offY = gesture.startOffY;
+    renderCell(gesture.idx);
+    artboard.children[gesture.idx].classList.add('drag-source');
+    dragGhostImg.src = slot.url;
+    positionGhost(e);
+    dragGhost.classList.remove('hidden');
+    requestAnimationFrame(() => dragGhost.classList.add('lifted'));
+    document.body.classList.add('dragging-move');
+    imageToolbar.classList.add('hidden');
+  }
+
+  // Back over the source cell: put the photo down and let the pan continue.
+  function exitMoveMode() {
+    gesture.mode = 'pan';
+    const src = artboard.children[gesture.idx];
+    if (src) src.classList.remove('drag-source');
+    hideGhost();
+    setSwapTarget(-1);
+    updateImageToolbar();
+  }
+
+  function hideGhost() {
+    dragGhost.classList.add('hidden');
+    dragGhost.classList.remove('lifted');
+    document.body.classList.remove('dragging-move');
+  }
+
+  artboard.addEventListener('pointerdown', e => {
+    const idx = cellFromEvent(e);
+    if (idx < 0) return;
+    e.preventDefault();
+    artboard.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const slot = state.slots[idx];
+
+    if (pointers.size === 2 && gesture && gesture.idx === idx && slot) {
+      if (gesture.mode === 'move') exitMoveMode();
+      setSwapTarget(-1);
+      const [a, b] = Array.from(pointers.values());
+      gesture = { type: 'pinch', mode: 'pinch', idx, moved: true, dist: Math.hypot(a.x - b.x, a.y - b.y), zoom0: slot.zoom, swapTarget: -1 };
+      return;
+    }
+    gesture = {
+      type: 'pan', mode: 'pan', idx, moved: false, hasImage: !!slot, swapTarget: -1,
+      startOffX: slot ? slot.offX : 0, startOffY: slot ? slot.offY : 0,
+    };
+  });
+
+  artboard.addEventListener('pointermove', e => {
+    if (!pointers.has(e.pointerId) || !gesture) return;
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const slot = state.slots[gesture.idx];
+    if (!slot) return;
+
+    if (gesture.type === 'pinch' && pointers.size >= 2) {
+      const [a, b] = Array.from(pointers.values());
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (gesture.dist > 0) setZoom(gesture.idx, gesture.zoom0 * (dist / gesture.dist));
+      return;
+    }
+    if (gesture.type === 'pan') {
+      if (Math.abs(e.clientX - prev.x) + Math.abs(e.clientY - prev.y) > 0) gesture.moved = true;
+
+      // Which cell is under the pointer? elementFromPoint sidesteps the pointer
+      // capture, which retargets the raw events at the artboard.
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      const over = under && under.closest ? under.closest('.cell') : null;
+      const overIdx = over ? +over.dataset.index : -1;
+
+      if (gesture.mode === 'move') {
+        positionGhost(e);
+        if (overIdx === gesture.idx) {
+          exitMoveMode();                 // carried back home → resume panning below
+        } else {
+          setSwapTarget(overIdx >= 0 ? overIdx : -1);
+          return;
+        }
+      }
+
+      const dx = (e.clientX - prev.x) / stageScale;
+      const dy = (e.clientY - prev.y) / stageScale;
+      slot.offX += dx;
+      slot.offY += dy;
+      renderCell(gesture.idx);
+
+      // Dragging past the cell's edge onto another cell lifts the photo for a rearrange.
+      if (gesture.hasImage && overIdx >= 0 && overIdx !== gesture.idx) {
+        enterMoveMode(e);
+        setSwapTarget(overIdx);
+      }
+    }
+  });
+
+  function endPointer(e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (gesture && pointers.size === 0) {
+      const target = gesture.swapTarget;
+      if (gesture.mode === 'move') {
+        const src = artboard.children[gesture.idx];
+        if (src) src.classList.remove('drag-source');
+        hideGhost();
+      }
+      setSwapTarget(-1);
+      if (gesture.type === 'pan' && gesture.hasImage && target >= 0) {
+        // Released over another cell → rearrange. Undo the pan this drag applied,
+        // then swap the two slots (each photo keeps its own zoom/rotation).
+        const slot = state.slots[gesture.idx];
+        if (slot) { slot.offX = gesture.startOffX; slot.offY = gesture.startOffY; }
+        const tmp = state.slots[target];
+        state.slots[target] = state.slots[gesture.idx];
+        state.slots[gesture.idx] = tmp;
+        renderCell(gesture.idx);
+        renderCell(target);
+        selectCell(target);
+        updateToolbar();
+      } else if (gesture.type === 'pan' && !gesture.moved) {
+        // A press that never moved is a click: select the cell, or open the picker when empty.
+        if (gesture.hasImage) {
+          selectCell(gesture.idx);
+        } else {
+          selectCell(gesture.idx);
+          pendingTarget = gesture.idx;
+          fileInput.click();
+        }
+      } else if (gesture.moved && gesture.hasImage) {
+        selectCell(gesture.idx);
+      }
+      updateImageToolbar();               // restore the pill if a lift hid it
+      gesture = null;
+    }
+  }
+  artboard.addEventListener('pointerup', endPointer);
+  artboard.addEventListener('pointercancel', endPointer);
+
+  // Wheel zoom, anchored on the cursor so the point under it stays put.
+  artboard.addEventListener('wheel', e => {
+    const idx = cellFromEvent(e);
+    if (idx < 0) return;
+    const slot = state.slots[idx];
+    if (!slot) return;
+    e.preventDefault();
+
+    const rect = cellRect(idx);
+    const cellEl = artboard.children[idx];
+    const box = cellEl.getBoundingClientRect();
+    const px = (e.clientX - box.left) / stageScale;   // cursor in cell-local artboard px
+    const py = (e.clientY - box.top) / stageScale;
+
+    // Anchor on the bounding box (rotation-agnostic): the box point under the cursor stays put.
+    const before = imageLayout(slot, rect);
+    const fx = (px - before.bx) / before.bw;
+    const fy = (py - before.by) / before.bh;
+
+    slot.zoom = Math.min(MAX_ZOOM, Math.max(1, slot.zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08)));
+
+    const swapped = slot.rot % 180 !== 0;
+    const ew = swapped ? slot.nh : slot.nw;
+    const eh = swapped ? slot.nw : slot.nh;
+    const base = Math.max(rect.w / ew, rect.h / eh);
+    const nbw = ew * base * slot.zoom;
+    const nbh = eh * base * slot.zoom;
+    slot.offX = (px - fx * nbw) - (rect.w - nbw) / 2;
+    slot.offY = (py - fy * nbh) - (rect.h - nbh) / 2;
+    renderCell(idx);
+    if (state.selected !== idx) selectCell(idx); else updateImageToolbar();
+  }, { passive: false });
+
+  // Double-click a photo → back to a centred cover fit.
+  artboard.addEventListener('dblclick', e => {
+    const idx = cellFromEvent(e);
+    if (idx < 0 || !state.slots[idx]) return;
+    resetSlot(idx);
+  });
+
+  function resetSlot(idx) {
+    const slot = state.slots[idx];
+    if (!slot) return;
+    slot.zoom = 1; slot.offX = 0; slot.offY = 0;   // keeps rotation — it's content orientation, not framing
+    renderCell(idx);
+    updateImageToolbar();
+  }
+
+  // Zoom around the cell centre, dragging the pan along so the framed point stays framed.
+  function setZoom(idx, zoom) {
+    const slot = state.slots[idx];
+    if (!slot) return;
+    const z = Math.min(MAX_ZOOM, Math.max(1, zoom));
+    const ratio = z / slot.zoom;
+    slot.offX *= ratio;
+    slot.offY *= ratio;
+    slot.zoom = z;
+    renderCell(idx);
+  }
+
+  function rotateSlot(idx) {
+    const slot = state.slots[idx];
+    if (!slot) return;
+    slot.rot = (slot.rot + 90) % 360;
+    const { offX, offY } = slot;
+    slot.offX = -offY;                             // spin the pan with the photo
+    slot.offY = offX;
+    renderCell(idx);
+  }
+
+  // Click on the backdrop (outside the board and controls) → deselect.
+  document.addEventListener('pointerdown', e => {
+    if (e.target.closest('.cell, .image-toolbar, .bottom-toolbar, .sidebar, .app-header')) return;
+    selectCell(-1);
+  });
+
+  /* ═══════════════ Active-image toolbar actions ═══════════════ */
+
+  rotateBtn.addEventListener('click', () => { if (state.selected >= 0) rotateSlot(state.selected); });
+  cellDeleteBtn.addEventListener('click', () => { if (state.selected >= 0) clearSlot(state.selected); });
+  sizeSlider.addEventListener('input', () => {
+    if (state.selected >= 0) setZoom(state.selected, sizeSlider.value / 100);
+  });
+
+  /* ═══════════════ Keyboard ═══════════════ */
+
+  document.addEventListener('keydown', e => {
+    if (e.target.matches('input, textarea')) return;
+    const idx = state.selected;
+    const slot = idx >= 0 ? state.slots[idx] : null;
+
+    if (e.key === 'Escape') { selectCell(-1); return; }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('cell')) {
+      e.preventDefault();
+      const i = +e.target.dataset.index;
+      selectCell(i);
+      if (!state.slots[i]) { pendingTarget = i; fileInput.click(); }
+      return;
+    }
+    if (!slot) return;
+
+    const step = e.shiftKey ? 1 : 10;
+    if (e.key === 'ArrowLeft')       { slot.offX -= step; }
+    else if (e.key === 'ArrowRight') { slot.offX += step; }
+    else if (e.key === 'ArrowUp')    { slot.offY -= step; }
+    else if (e.key === 'ArrowDown')  { slot.offY += step; }
+    else if (e.key === '+' || e.key === '=') { setZoom(idx, slot.zoom * 1.08); }
+    else if (e.key === '-')          { setZoom(idx, slot.zoom / 1.08); }
+    else if (e.key === 'r' || e.key === 'R') { rotateSlot(idx); }
+    else if (e.key === 'Delete' || e.key === 'Backspace') { clearSlot(idx); return; }
+    else return;
+    e.preventDefault();
+    renderCell(idx);
+    updateImageToolbar();
+  });
+
+  /* ═══════════════ Toolbar actions ═══════════════ */
+
+  function clearSlot(idx) {
+    const slot = state.slots[idx];
+    if (!slot) return;
+    URL.revokeObjectURL(slot.url);
+    state.slots[idx] = null;
+    renderCell(idx);
+    updateToolbar();
+  }
+
+  fitBtn.addEventListener('click', () => { if (state.selected >= 0) resetSlot(state.selected); });
+  deleteBtn.addEventListener('click', () => { if (state.selected >= 0) clearSlot(state.selected); });
+
+  /* ═══════════════ Export ═══════════════ */
+
+  async function download() {
+    const canvas = document.createElement('canvas');
+    canvas.width = BOARD_W;
+    canvas.height = BOARD_H;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.fillStyle = state.stroke;
+    ctx.fillRect(0, 0, BOARD_W, BOARD_H);
+
+    tpl().cells.forEach((_, i) => {
+      const rect = cellRect(i);
+      const slot = state.slots[i];
+      if (!slot) {
+        ctx.fillStyle = '#ffffff';   // empty cells export as plain white
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+        return;
+      }
+      const lay = imageLayout(slot, rect);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(rect.x, rect.y, rect.w, rect.h);
+      ctx.clip();
+      ctx.translate(rect.x + lay.bx + lay.bw / 2, rect.y + lay.by + lay.bh / 2);
+      ctx.rotate(slot.rot * Math.PI / 180);
+      ctx.drawImage(slot.img, -lay.iw / 2, -lay.ih / 2, lay.iw, lay.ih);
+      ctx.restore();
+    });
+
+    await new Promise(resolve => {
+      canvas.toBlob(blob => {
+        if (blob) {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'onusano-kollaaz-' + tpl().id + '-1920x1080.png';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+        }
+        resolve();
+      }, 'image/png');
+    });
+  }
+
+  downloadBtn.addEventListener('click', async () => {
+    if (downloadBtn.disabled) return;
+    downloadBtn.disabled = true;
+    downloadBtn.classList.add('exporting');
+    try { await download(); }
+    catch (err) { console.error('Export failed:', err); }
+    finally { downloadBtn.disabled = false; downloadBtn.classList.remove('exporting'); updateToolbar(); }
+  });
+
+  /* ═══════════════ Boot ═══════════════ */
+
+  buildFormatList();
+  buildCells();
+  fitStage();
+})();
+</script>
+</body>
+</html>
