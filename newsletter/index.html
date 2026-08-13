@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onu Sano · Newsletter</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="description" content="Two Onu Sano tools that run fully in your browser: face-centred circular crops, and dated Delfi newsletter banners.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Onu Sano · Newsletter">
+<meta property="og:description" content="Two Onu Sano tools that run fully in your browser: face-centred circular crops, and dated Delfi newsletter banners.">
+<meta property="og:image" content="assets/onusano-og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="assets/onusano-og-image.png">
+<style>
+  /* Google Sans Flex — the exact family used in the Figma. Self-hosted rather
+     than linked, so the page works offline and never falls back silently. */
+  @font-face {
+    font-family: "Google Sans Flex";
+    font-style: normal;
+    font-weight: 300 800;
+    font-stretch: 100%;
+    font-display: swap;
+    src: url("assets/google-sans-flex-latin.woff2") format("woff2");
+  }
+  /* Inter is here for one job: it is baked into the exported newsletter
+     banner, so it has to match the banners already sent out. */
+  @font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: block;
+    src: url("assets/inter-latin.woff2") format("woff2");
+  }
+
+  :root {
+    --bg:           #f6f9fa;   /* app base: delfi-lightgray at 50% over white */
+    --card:         #ffffff;   /* card / panel surface */
+    --border:       #ebebeb;   /* canvas card hairline */
+    --border-2:     #dedfe0;   /* floating toolbar hairline */
+    --ink:          #111317;   /* near-black: text + solid fills */
+    --muted:        #708597;   /* delfi-darkgray: secondary text */
+    --track:        #edf2f4;   /* delfi-lightgray: slider track + empty well */
+    --hover:        #f2f4f6;   /* subtle hover wash on light controls */
+    --accent:       #fa044f;   /* delfi-red: destructive action */
+    --focus:        #000000;   /* keyboard / active focus ring */
+    --shadow-card:  0 4px 5px rgba(0,0,0,0.10);
+    --shadow-canvas:0 4px 10px rgba(0,0,0,0.10);
+    /* Overwritten from OUT / THUMB / PREVIEW on boot — the script is the
+       single source of truth for these sizes. */
+    --out:     175px;
+    --thumb:   52px;
+    --preview: 240px;   /* dropzone height == preview circle size */
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: "Google Sans Flex", "Google Sans", "Product Sans", "DM Sans",
+                 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: var(--ink);
+    user-select: none;
+    color-scheme: light;
+    /* Flat fill from the Figma: delfi-lightgray at 50% over white. */
+    background: linear-gradient(rgba(237,242,244,0.5), rgba(237,242,244,0.5)) #fff;
+  }
+  input { user-select: text; }
+
+  /* ───── Page shell ───── */
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 24px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 400;
+    margin: 0;
+  }
+  .brand-face { height: 36px; width: auto; display: block; }
+  .brand-name { font-weight: 700; }
+  .brand-sub  { font-weight: 300; }
+
+  .rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+    width: 100%;
+  }
+
+  /* ───── A tool ───── */
+  .tool {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+  }
+  .tool-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+  }
+  .tool-head h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  /* ───── Circler: dropzone + preview, side by side at equal height ───── */
+  .workspace {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    width: 100%;
+  }
+
+  /* Dashed, rounded well — the sister tools' drop treatment, held as the
+     resting state and escalated to full ink while a drag is over it.
+     The white circular upload button is Kollaažer's (Figma 814:1055). */
+  .dropzone {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: var(--preview);
+    position: relative;
+    appearance: none;
+    padding: 0;
+    font: inherit;
+    color: var(--muted);
+    background: var(--track);
+    border: 2px dashed var(--border-2);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+  }
+  .dropzone:hover { border-color: var(--muted); }
+  .dropzone .up-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+    border-radius: 100px;
+    padding: 8px;
+    box-shadow: var(--shadow-card);
+    color: var(--ink);
+    transition: transform 0.15s;
+  }
+  .dropzone:hover .up-circle { transform: scale(1.06); }
+  .dropzone .up-circle .ico { width: 18px; height: 18px; display: block; }
+  .dropzone .label { font-size: 14px; font-weight: 500; }
+
+  /* Drag-and-drop feedback — 3px dashed ink over a 4% ink wash, the same
+     weight the sister tools use. */
+  .dropzone.drop-target {
+    border: 3px dashed var(--ink);
+    background: rgba(17,19,23,0.04);
+    color: var(--ink);
+  }
+
+  .preview-card {
+    flex: 0 0 auto;
+    width: var(--preview);
+    height: var(--preview);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--card);
+    /* Checkerboard so the transparent corners read as transparent. */
+    background-image: repeating-conic-gradient(#eef1f3 0% 25%, #ffffff 0% 50%);
+    background-size: 24px 24px;
+    box-shadow: var(--shadow-canvas);
+  }
+  /* Nothing loaded yet: the dropzone is the whole tool. */
+  .preview-card.empty { display: none; }
+  /* Shown larger than the 175px export and drawn straight from the source, so
+     the face is previewed at its own resolution rather than upscaled from the
+     export. */
+  #preview {
+    display: block;
+    width: var(--preview);
+    height: var(--preview);
+    cursor: grab;
+  }
+  #preview.dragging { cursor: grabbing; }
+
+  /* Only speaks up when something needs attention — a success message would
+     just be noise, so it collapses away entirely when there is nothing to say. */
+  .status {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    text-align: center;
+    margin: 0;
+  }
+  .status:empty { display: none; }
+  .status .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: 0 0 auto;
+  }
+  .status.found { color: var(--ink); }
+  .status.missed { color: var(--accent); }
+
+  /* Filmstrip of every loaded image */
+  .filmstrip {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    max-width: 100%;
+    padding: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+  }
+  .filmstrip:empty { display: none; }
+  .thumb {
+    position: relative;
+    flex: 0 0 auto;
+    width: var(--thumb);
+    height: var(--thumb);
+    appearance: none;
+    border: none;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    border-radius: 50%;
+  }
+  .thumb canvas {
+    display: block;
+    width: var(--thumb);
+    height: var(--thumb);
+    border-radius: 50%;
+    background-image: repeating-conic-gradient(#eef1f3 0% 25%, #ffffff 0% 50%);
+    background-size: 10px 10px;
+    box-shadow: var(--shadow-card);
+  }
+  .thumb.selected::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .thumb.missed canvas { box-shadow: 0 0 0 2px var(--accent); }
+  /* Sits above the selection ring — the ::after paints after the button in
+     DOM order, so without this the stroke cuts across the ✕. */
+  .thumb .remove {
+    position: absolute;
+    z-index: 2;
+    top: -5px;
+    right: -5px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    background: var(--ink);
+    color: #fff;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .thumb .remove svg { width: 9px; height: 9px; display: block; }
+  .thumb:hover .remove, .thumb:focus-within .remove { display: flex; }
+  .thumb .remove:hover { background: var(--accent); }
+
+  /* Processing overlay */
+  .busy-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(255,255,255,0.82);
+    z-index: 10;
+  }
+  .preview-card.busy .busy-overlay { display: flex; }
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid var(--track);
+    border-top-color: var(--ink);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .busy-text { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .busy-text:empty { display: none; }
+
+  /* ───── Shared pill toolbar ───── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    box-shadow: var(--shadow-card);
+    padding: 6px;
+    max-width: 100%;
+  }
+  .tool-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    border-radius: 100px;
+    padding: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font: inherit;
+    transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+  }
+  .tool-btn .ico { width: 18px; height: 18px; display: block; }
+  .tool-btn:hover { background: var(--hover); }
+  .tool-btn:disabled { opacity: 0.4; cursor: default; }
+  .tool-btn:disabled:hover { background: transparent; }
+  .tool-btn.primary {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: var(--shadow-card);
+  }
+  .tool-btn.primary:hover { background: #2a2d33; }
+  .tool-btn.primary:disabled:hover { background: var(--ink); }
+  .tool-btn.exporting { cursor: progress; }
+  .tool-btn .count {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    padding-left: 2px;
+  }
+  .tool-btn .count:empty { display: none; }
+
+  /* Zoom slider — same look as the Kollaažer image toolbar (Figma 812:763). */
+  .zoom-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 210px;
+  }
+  .zoom-label { font-size: 12px; font-weight: 500; line-height: 1.2; flex: 0 0 auto; }
+  .zoom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--track);
+    outline: none;
+    margin: 0;
+    cursor: pointer;
+  }
+  .zoom-slider:disabled { cursor: default; opacity: 0.5; }
+  .zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #000;
+    border: none;
+    cursor: pointer;
+  }
+  .zoom-slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #000;
+    border: none;
+    cursor: pointer;
+  }
+  .zoom-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--track);
+  }
+
+  #file-input { display: none; }
+
+  /* ───── Uudiskiri (newsletter banner) ───── */
+  .banner-card {
+    width: 100%;
+    max-width: 600px;      /* the banner's own width, so it renders 1:1 */
+    box-shadow: var(--shadow-canvas);
+    line-height: 0;
+    background: var(--track);
+  }
+  #banner-canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 5 / 1;
+  }
+  .banner-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 600px;
+  }
+  .field {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 44px;
+    padding: 0 18px;
+    font: 400 14px/1 "Google Sans Flex", -apple-system, system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    outline: none;
+    box-shadow: var(--shadow-card);
+  }
+  .field::placeholder { color: var(--muted); }
+  .field:focus { border-color: var(--ink); }
+  .btn-download {
+    flex: 0 0 auto;
+    height: 44px;
+    padding: 0 22px;
+    font: 600 14px/1 "Google Sans Flex", -apple-system, system-ui, sans-serif;
+    color: #fff;
+    background: var(--ink);
+    border: none;
+    border-radius: 100px;
+    cursor: pointer;
+    box-shadow: var(--shadow-card);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.15s;
+  }
+  .btn-download:hover { background: #2a2d33; }
+  .btn-download:disabled { opacity: 0.4; cursor: default; background: var(--ink); }
+  .btn-download .ico { width: 16px; height: 16px; display: block; }
+  .banner-note {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tool-btn:focus-visible,
+  .zoom-slider:focus-visible,
+  .dropzone:focus-visible,
+  .thumb:focus-visible,
+  .field:focus-visible,
+  .btn-download:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  @media (max-width: 600px) {
+    .page { padding: 28px 16px 56px; gap: 32px; }
+    .page-header { font-size: 18px; }
+    .brand-face { height: 28px; }
+    .zoom-group { width: 128px; }
+    .toolbar { gap: 10px; }
+    /* Stack the pair rather than squeezing the dropzone to a sliver. */
+    .workspace { flex-direction: column; align-items: center; }
+    .dropzone { width: 100%; height: 132px; }
+    .preview-card { width: var(--preview); height: var(--preview); }
+    .banner-controls { flex-direction: column; align-items: stretch; }
+    .btn-download { justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+    .spinner { animation-duration: 1.5s !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <h1 class="page-header">
+      <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
+      <span class="brand-name">Onu Sano®</span>
+      <span class="brand-sub">Newsletter</span>
+    </h1>
+
+    <!-- ══════════ Uudiskiri ══════════ -->
+    <section class="tool" id="uudiskiri" aria-labelledby="uudiskiri-title">
+      <div class="tool-head">
+        <h2 id="uudiskiri-title">Uudiskiri</h2>
+      </div>
+
+      <div class="banner-card">
+        <canvas id="banner-canvas" width="600" height="120" role="img" aria-label="Uudiskirja bänneri eelvaade"></canvas>
+      </div>
+
+      <div class="banner-controls">
+        <input class="field" id="nr-input" type="text" inputmode="numeric" autocomplete="off"
+               placeholder="Sisesta siia uudiskirja number" aria-label="Uudiskirja number">
+        <button class="btn-download" id="nr-download" type="button">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11.25v-9"/><path d="M15.75 11.25v3a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-3"/><path d="M5.25 7.5 9 11.25 12.75 7.5"/></svg>
+          Laadi alla
+        </button>
+      </div>
+      <p class="banner-note" id="banner-note"></p>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ══════════ Circler ══════════ -->
+    <section class="tool" id="circler" aria-labelledby="circler-title">
+      <div class="tool-head">
+        <h2 id="circler-title">Circler</h2>
+      </div>
+
+      <div class="workspace">
+        <button class="dropzone" id="dropzone" type="button" aria-label="Upload or drop images here">
+          <span class="up-circle">
+            <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.25v9"/><path d="M12.75 6 9 2.25 5.25 6"/><path d="M15.75 11.25v3a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-3"/></svg>
+          </span>
+          <span class="label">Upload or drop images here.</span>
+        </button>
+
+        <div class="preview-card empty" id="preview-card">
+          <canvas id="preview" title="Drag to reposition · double-click to re-centre on the face"></canvas>
+          <div class="busy-overlay" aria-hidden="true">
+            <div class="spinner"></div>
+            <div class="busy-text" id="busy-text"></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+      <div class="filmstrip" id="filmstrip"></div>
+
+      <div class="toolbar">
+        <button class="tool-btn primary" id="upload-btn" type="button" title="Add images" aria-label="Add images">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.25v9"/><path d="M12.75 6 9 2.25 5.25 6"/><path d="M15.75 11.25v3a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-3"/></svg>
+        </button>
+        <div class="zoom-group">
+          <span class="zoom-label" id="zoom-label">Zoom</span>
+          <input class="zoom-slider" id="zoom-slider" type="range" min="0" max="100" step="1" value="50" aria-labelledby="zoom-label" disabled>
+        </div>
+        <button class="tool-btn" id="download-btn" type="button" title="Download PNG" aria-label="Download" disabled>
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11.25v-9"/><path d="M15.75 11.25v3a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-3"/><path d="M5.25 7.5 9 11.25 12.75 7.5"/></svg>
+          <span class="count" id="download-count"></span>
+        </button>
+        <input type="file" id="file-input" accept="image/*" multiple>
+      </div>
+    </section>
+  </div>
+
+<script src="assets/pico.js"></script>
+<script src="assets/facefinder.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   Circler — face-centred circular crops
+   ══════════════════════════════════════════════════════════════════ */
+(() => {
+  'use strict';
+
+  /* Face detection is pico.js (MIT) running on the vendored "facefinder"
+     cascade — ~240 KB of decision trees, no network, no WASM, no model
+     download. Photos never leave the machine. */
+
+  const OUT = 175;            // export size, px
+  const PREVIEW = 240;        // on-screen preview / dropzone height, px
+  const PREVIEW_SCALE = 2;    // preview backing store, for crisp retina detail
+  const THUMB = 52;           // filmstrip thumbnail size, px (rendered at 2×)
+  const SOURCE_MAX = 2000;    // long edge kept in memory per image
+  const DETECT_MAX = 640;     // long edge used for detection (accuracy plateaus above this)
+  const MIN_FACE_FRAC = 0.06; // smallest face to look for, as a share of the short edge
+  const QUALITY = 50.0;       // pico score threshold; below this it starts inventing faces
+  const CLUSTER_IOU = 0.2;
+
+  /* pico's detection window sits high on the head and runs a little wide of
+     the face itself. Both constants were measured against Apple Vision's
+     boxes over a test set of portraits. */
+  const DROP = 0.12;          // shift the centre down by 12% of the window
+  const ZOOM_MIN = 1.3, ZOOM_MAX = 3.4;  // crop side as a multiple of the window
+
+  const dropzone    = document.getElementById('dropzone');
+  const previewCard = document.getElementById('preview-card');
+  const preview     = document.getElementById('preview');
+  const statusEl   = document.getElementById('status');
+  const filmstrip  = document.getElementById('filmstrip');
+  const busyText   = document.getElementById('busy-text');
+  const uploadBtn  = document.getElementById('upload-btn');
+  const downloadBtn= document.getElementById('download-btn');
+  const downloadCount = document.getElementById('download-count');
+  const zoomSlider = document.getElementById('zoom-slider');
+  const fileInput  = document.getElementById('file-input');
+
+  /* Each item: {name, source, face, offset:{x,y}, zoom, thumbCanvas, el} */
+  const state = { items: [], sel: -1, busy: false };
+  const current = () => state.items[state.sel] || null;
+
+  /* ═══════════════ Detector ═══════════════ */
+
+  let classify = null;
+  function getClassifier() {
+    if (!classify) {
+      const raw = atob(window.PICO_FACEFINDER_B64);
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      classify = pico.unpack_cascade(bytes);
+    }
+    return classify;
+  }
+
+  /* Returns {x, y, size} in source pixels, or null if nobody is found. */
+  function detectFace(source) {
+    const scale = Math.min(1, DETECT_MAX / Math.max(source.width, source.height));
+    const w = Math.max(1, Math.round(source.width * scale));
+    const h = Math.max(1, Math.round(source.height * scale));
+
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, w, h);
+
+    const rgba = ctx.getImageData(0, 0, w, h).data;
+    const grey = new Uint8Array(w * h);
+    for (let i = 0, p = 0; i < grey.length; i++, p += 4) {
+      grey[i] = (rgba[p] * 0.299 + rgba[p + 1] * 0.587 + rgba[p + 2] * 0.114) | 0;
+    }
+
+    const shortEdge = Math.min(w, h);
+    let dets = pico.run_cascade(
+      { pixels: grey, nrows: h, ncols: w, ldim: w },
+      getClassifier(),
+      {
+        shiftfactor: 0.1,
+        minsize: Math.max(20, Math.round(shortEdge * MIN_FACE_FRAC)),
+        maxsize: shortEdge,
+        scalefactor: 1.1,
+      }
+    );
+    dets = pico.cluster_detections(dets, CLUSTER_IOU).filter(d => d[3] > QUALITY);
+    if (!dets.length) return null;
+
+    // In a group shot the biggest face is almost always the subject.
+    dets.sort((a, b) => b[2] - a[2]);
+    const [row, col, size] = dets[0];
+    return { x: col / scale, y: (row + DROP * size) / scale, size: size / scale };
+  }
+
+  /* ═══════════════ Crop geometry ═══════════════ */
+
+  /* Slider right = zoom in. A higher value therefore has to mean a SMALLER
+     crop square, so the multiplier runs from ZOOM_MAX down to ZOOM_MIN. */
+  function zoomFactor(item) {
+    return ZOOM_MAX - (item.zoom / 100) * (ZOOM_MAX - ZOOM_MIN);
+  }
+
+  /* The square to cut out: centred on the face, sized by the zoom, and kept
+     inside the image. When the ideal square would overhang an edge we shrink
+     it rather than sliding it, so the face stays centred — sliding is the
+     last resort, for faces right up against the edge. */
+  function cropSquare(item) {
+    item = item || current();
+    if (!item) return null;
+    const W = item.source.width, H = item.source.height;
+    const maxSide = Math.min(W, H);
+
+    if (!item.face) {
+      const side = maxSide;
+      let cx = W / 2 + item.offset.x, cy = H / 2 + item.offset.y;
+      cx = Math.min(Math.max(cx, side / 2), W - side / 2);
+      cy = Math.min(Math.max(cy, side / 2), H - side / 2);
+      return { x: cx - side / 2, y: cy - side / 2, side };
+    }
+
+    const cx0 = item.face.x + item.offset.x;
+    const cy0 = item.face.y + item.offset.y;
+    const ideal = Math.min(item.face.size * zoomFactor(item), maxSide);
+
+    // Biggest square that is exactly centred here and still fits.
+    const centred = 2 * Math.min(cx0, W - cx0, cy0, H - cy0);
+    // Below this the face itself starts getting clipped — then a tight
+    // centre beats a true centre.
+    const tightest = item.face.size * 1.15;
+
+    let side;
+    if (centred >= ideal)         side = ideal;    // room to spare
+    else if (centred >= tightest) side = centred;  // near an edge: zoom in, stay centred
+    else                          side = ideal;    // hard against the edge: slide instead
+
+    const cx = Math.min(Math.max(cx0, side / 2), W - side / 2);
+    const cy = Math.min(Math.max(cy0, side / 2), H - side / 2);
+    return { x: cx - side / 2, y: cy - side / 2, side };
+  }
+
+  /* ═══════════════ Rendering ═══════════════ */
+
+  /* Halve repeatedly before the final draw: a single big downscale skips
+     source pixels and turns fine detail into aliasing. */
+  function downscale(source, rect, size) {
+    let c = document.createElement('canvas');
+    let w = Math.max(1, Math.round(rect.side));
+    c.width = w; c.height = w;
+    let ctx = c.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, rect.x, rect.y, rect.side, rect.side, 0, 0, w, w);
+
+    while (w > size * 2) {
+      const nw = Math.max(size, Math.round(w / 2));
+      const next = document.createElement('canvas');
+      next.width = nw; next.height = nw;
+      const nctx = next.getContext('2d');
+      nctx.imageSmoothingQuality = 'high';
+      nctx.drawImage(c, 0, 0, w, w, 0, 0, nw, nw);
+      c = next; w = nw;
+    }
+    return c;
+  }
+
+  function render(canvas, size, item) {
+    item = item || current();
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, size, size);
+    if (!item) return;
+
+    const scaled = downscale(item.source, cropSquare(item), size);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(scaled, 0, 0, scaled.width, scaled.height, 0, 0, size, size);
+
+    // Punch out the circle. destination-in keeps the arc's own anti-aliased
+    // alpha, which a clip() path would not.
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  let queued = false;
+  function renderPreview() {
+    if (queued || !current()) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      const item = current();
+      if (!item) return;
+      // Drawn from the source at the preview's own pixel density, so the face
+      // shows at its original resolution instead of an upscaled 175px export.
+      render(preview, PREVIEW * PREVIEW_SCALE, item);
+      render(item.thumbCanvas, THUMB * 2, item);
+    });
+  }
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text || '';
+    statusEl.className = 'status' + (kind ? ' ' + kind : '');
+    if (text) statusEl.prepend(Object.assign(document.createElement('i'), { className: 'dot' }));
+  }
+
+  /* A found face needs no announcement — the preview shows it. Only the
+     fallback case is worth a line. */
+  function statusForCurrent() {
+    const item = current();
+    setStatus(item && !item.face ? 'No face found — centred crop' : '',
+              item && !item.face ? 'missed' : '');
+  }
+
+  function setBusy(on, text) {
+    state.busy = on;
+    previewCard.classList.toggle('busy', on);
+    busyText.textContent = text || '';
+    syncControls();
+  }
+
+  function syncControls() {
+    const has = state.items.length > 0;
+    uploadBtn.disabled = state.busy;
+    downloadBtn.disabled = state.busy || !has;
+    zoomSlider.disabled = state.busy || !current();
+    downloadCount.textContent = state.items.length > 1 ? String(state.items.length) : '';
+    downloadBtn.title = state.items.length > 1
+      ? `Download ${state.items.length} PNGs as a ZIP`
+      : 'Download PNG';
+  }
+
+  /* ═══════════════ Filmstrip ═══════════════ */
+
+  function buildThumb(item) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'thumb';
+    btn.title = item.name;
+    btn.setAttribute('aria-label', 'Select ' + item.name);
+    btn.appendChild(item.thumbCanvas);
+
+    const rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'remove';
+    rm.title = 'Remove ' + item.name;
+    rm.setAttribute('aria-label', 'Remove ' + item.name);
+    rm.innerHTML = '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg>';
+    rm.addEventListener('click', e => { e.stopPropagation(); removeItem(item); });
+    btn.appendChild(rm);
+
+    btn.addEventListener('click', () => select(state.items.indexOf(item)));
+    item.el = btn;
+    return btn;
+  }
+
+  function refreshFilmstrip() {
+    filmstrip.textContent = '';
+    state.items.forEach((item, i) => {
+      const el = item.el || buildThumb(item);
+      el.classList.toggle('selected', i === state.sel);
+      el.classList.toggle('missed', !item.face);
+      filmstrip.appendChild(el);
+    });
+  }
+
+  function select(index) {
+    if (index < 0 || index >= state.items.length) return;
+    state.sel = index;
+    const item = current();
+    zoomSlider.value = item.zoom;
+    refreshFilmstrip();
+    statusForCurrent();
+    syncControls();
+    renderPreview();
+    if (item.el) item.el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+
+  function removeItem(item) {
+    const i = state.items.indexOf(item);
+    if (i < 0) return;
+    state.items.splice(i, 1);
+    if (!state.items.length) {
+      state.sel = -1;
+      previewCard.classList.add('empty');
+      preview.getContext('2d').clearRect(0, 0, preview.width, preview.height);
+      setStatus('');
+      refreshFilmstrip();
+      syncControls();
+      return;
+    }
+    select(Math.min(i, state.items.length - 1));
+  }
+
+  /* ═══════════════ Load ═══════════════ */
+
+  async function decode(file) {
+    // createImageBitmap honours EXIF orientation and is the fast path;
+    // fall back to an <img> for browsers that lack the option.
+    if (window.createImageBitmap) {
+      try {
+        return await createImageBitmap(file, { imageOrientation: 'from-image' });
+      } catch (err) { /* fall through */ }
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      return await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('decode failed'));
+        img.src = url;
+      });
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+  }
+
+  async function addOne(file) {
+    const bitmap = await decode(file);
+    const bw = bitmap.width || bitmap.naturalWidth;
+    const bh = bitmap.height || bitmap.naturalHeight;
+
+    // Cap what we hold in memory — well above what a 175px circle can show.
+    const s = Math.min(1, SOURCE_MAX / Math.max(bw, bh));
+    const source = document.createElement('canvas');
+    source.width = Math.max(1, Math.round(bw * s));
+    source.height = Math.max(1, Math.round(bh * s));
+    const sctx = source.getContext('2d');
+    sctx.imageSmoothingQuality = 'high';
+    sctx.drawImage(bitmap, 0, 0, source.width, source.height);
+    if (bitmap.close) bitmap.close();
+
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = THUMB * 2;
+    thumbCanvas.height = THUMB * 2;
+
+    const item = {
+      name: (file.name || 'image').replace(/\.[^.]+$/, ''),
+      source,
+      face: detectFace(source),
+      offset: { x: 0, y: 0 },
+      zoom: 50,
+      thumbCanvas,
+      el: null,
+    };
+    render(item.thumbCanvas, THUMB * 2, item);
+    state.items.push(item);
+    return item;
+  }
+
+  async function handleFiles(fileList) {
+    const all = Array.from(fileList || []);
+    const files = all.filter(f => f && f.type.startsWith('image/'));
+    if (!files.length) {
+      if (all.length) setStatus('Those are not image files.', 'missed');
+      return;
+    }
+    if (state.busy) return;
+
+    setBusy(true, files.length > 1 ? `0 / ${files.length}` : '');
+    // Reveal the slot up front, otherwise the spinner would be inside a
+    // still-hidden card on the very first drop.
+    previewCard.classList.remove('empty');
+    // Let the spinner paint before detection blocks the thread.
+    await new Promise(r => setTimeout(r, 16));
+
+    let failed = 0;
+    for (let i = 0; i < files.length; i++) {
+      try {
+        await addOne(files[i]);
+      } catch (err) {
+        console.error('Circler could not read', files[i].name, err);
+        failed++;
+      }
+      if (files.length > 1) {
+        busyText.textContent = `${i + 1} / ${files.length}`;
+        await new Promise(r => setTimeout(r, 0)); // let the counter paint
+      }
+    }
+
+    setBusy(false);
+    if (!state.items.length) {
+      // Nothing usable arrived — fall back to the dropzone-only layout.
+      previewCard.classList.add('empty');
+      setStatus('Could not read that image. HEIC files need converting first.', 'missed');
+      return;
+    }
+
+    // Land on the first of the newly added images.
+    select(Math.max(0, state.items.length - files.length + failed));
+    if (failed) setStatus(`${failed} of ${files.length} could not be read.`, 'missed');
+  }
+
+  /* ═══════════════ ZIP (store, no compression — PNGs are already deflated) ═══════════════ */
+
+  let crcTable = null;
+  function crc32(bytes) {
+    if (!crcTable) {
+      crcTable = new Int32Array(256);
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        crcTable[n] = c;
+      }
+    }
+    let crc = -1;
+    for (let i = 0; i < bytes.length; i++) crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xFF];
+    return (crc ^ -1) >>> 0;
+  }
+
+  /* files: [{name, bytes}] → Blob */
+  function makeZip(files) {
+    const enc = new TextEncoder();
+    const parts = [];
+    const central = [];
+    let offset = 0;
+
+    for (const f of files) {
+      const nameBytes = enc.encode(f.name);
+      const crc = crc32(f.bytes);
+      const size = f.bytes.length;
+
+      const local = new Uint8Array(30 + nameBytes.length);
+      const lv = new DataView(local.buffer);
+      lv.setUint32(0, 0x04034b50, true);  // local file header signature
+      lv.setUint16(4, 20, true);          // version needed
+      lv.setUint16(6, 0, true);           // flags
+      lv.setUint16(8, 0, true);           // method: store
+      lv.setUint16(10, 0, true);          // mod time
+      lv.setUint16(12, 0x21, true);       // mod date (1980-01-01)
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, size, true);
+      lv.setUint32(22, size, true);
+      lv.setUint16(26, nameBytes.length, true);
+      lv.setUint16(28, 0, true);          // extra length
+      local.set(nameBytes, 30);
+
+      parts.push(local, f.bytes);
+
+      const cd = new Uint8Array(46 + nameBytes.length);
+      const cv = new DataView(cd.buffer);
+      cv.setUint32(0, 0x02014b50, true);  // central directory signature
+      cv.setUint16(4, 20, true);          // version made by
+      cv.setUint16(6, 20, true);          // version needed
+      cv.setUint16(8, 0, true);
+      cv.setUint16(10, 0, true);
+      cv.setUint16(12, 0, true);
+      cv.setUint16(14, 0x21, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, size, true);
+      cv.setUint32(24, size, true);
+      cv.setUint16(28, nameBytes.length, true);
+      cv.setUint16(30, 0, true);          // extra
+      cv.setUint16(32, 0, true);          // comment
+      cv.setUint16(34, 0, true);          // disk number
+      cv.setUint16(36, 0, true);          // internal attrs
+      cv.setUint32(38, 0, true);          // external attrs
+      cv.setUint32(42, offset, true);     // local header offset
+      cd.set(nameBytes, 46);
+      central.push(cd);
+
+      offset += local.length + size;
+    }
+
+    const cdSize = central.reduce((n, c) => n + c.length, 0);
+    const end = new Uint8Array(22);
+    const ev = new DataView(end.buffer);
+    ev.setUint32(0, 0x06054b50, true);    // end of central directory
+    ev.setUint16(8, files.length, true);
+    ev.setUint16(10, files.length, true);
+    ev.setUint32(12, cdSize, true);
+    ev.setUint32(16, offset, true);
+
+    return new Blob([...parts, ...central, end], { type: 'application/zip' });
+  }
+
+  /* ═══════════════ Download ═══════════════ */
+
+  function renderToBlob(item) {
+    const c = document.createElement('canvas');
+    c.width = OUT; c.height = OUT;
+    render(c, OUT, item);
+    return new Promise(resolve => c.toBlob(resolve, 'image/png'));
+  }
+
+  async function download() {
+    if (!state.items.length) return;
+
+    if (state.items.length === 1) {
+      const blob = await renderToBlob(state.items[0]);
+      if (blob) window.__save(blob, `${state.items[0].name}-circle-${OUT}x${OUT}.png`);
+      return;
+    }
+
+    const used = new Map();
+    const files = [];
+    for (let i = 0; i < state.items.length; i++) {
+      const item = state.items[i];
+      busyText.textContent = `${i + 1} / ${state.items.length}`;
+      const blob = await renderToBlob(item);
+      if (!blob) continue;
+
+      // Two files called "portrait.jpg" must not collide inside the ZIP.
+      let name = `${item.name}-circle-${OUT}x${OUT}.png`;
+      const seen = used.get(name) || 0;
+      used.set(name, seen + 1);
+      if (seen) name = `${item.name}-circle-${OUT}x${OUT}-${seen + 1}.png`;
+
+      files.push({ name, bytes: new Uint8Array(await blob.arrayBuffer()) });
+    }
+    busyText.textContent = '';
+    if (files.length) window.__save(makeZip(files), `onusano-circles-${OUT}x${OUT}.zip`);
+  }
+
+  /* ═══════════════ Reposition by dragging ═══════════════ */
+
+  let drag = null;
+  preview.addEventListener('pointerdown', e => {
+    const item = current();
+    if (!item) return;
+    // One screen pixel of drag is (crop side / PREVIEW) source pixels.
+    drag = { x: e.clientX, y: e.clientY, ox: item.offset.x, oy: item.offset.y,
+             scale: cropSquare(item).side / PREVIEW };
+    preview.setPointerCapture(e.pointerId);
+    preview.classList.add('dragging');
+  });
+  preview.addEventListener('pointermove', e => {
+    const item = current();
+    if (!drag || !item) return;
+    item.offset.x = drag.ox - (e.clientX - drag.x) * drag.scale;
+    item.offset.y = drag.oy - (e.clientY - drag.y) * drag.scale;
+    renderPreview();
+  });
+  const endDrag = () => { drag = null; preview.classList.remove('dragging'); };
+  preview.addEventListener('pointerup', endDrag);
+  preview.addEventListener('pointercancel', endDrag);
+
+  preview.addEventListener('dblclick', () => {
+    const item = current();
+    if (!item) return;
+    item.offset = { x: 0, y: 0 };
+    renderPreview();
+  });
+
+  /* ═══════════════ Events ═══════════════ */
+
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    handleFiles(fileInput.files);
+    fileInput.value = '';
+  });
+
+  zoomSlider.addEventListener('input', () => {
+    const item = current();
+    if (!item) return;
+    item.zoom = Number(zoomSlider.value);
+    renderPreview();
+  });
+
+  // ← / → step through the filmstrip — but never while typing in a field.
+  document.addEventListener('keydown', e => {
+    if (!state.items.length || state.busy) return;
+    if (e.target === zoomSlider) return;
+    if (e.target.closest && e.target.closest('input, textarea, select')) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); select(Math.max(0, state.sel - 1)); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); select(Math.min(state.items.length - 1, state.sel + 1)); }
+  });
+
+  downloadBtn.addEventListener('click', async () => {
+    if (downloadBtn.disabled) return;
+    downloadBtn.disabled = true;
+    downloadBtn.classList.add('exporting');
+    if (state.items.length > 1) previewCard.classList.add('busy');
+    try { await download(); }
+    catch (err) { console.error('Export failed:', err); }
+    finally {
+      previewCard.classList.remove('busy');
+      busyText.textContent = '';
+      downloadBtn.classList.remove('exporting');
+      syncControls();
+    }
+  });
+
+  // Dropping anywhere on the page feeds Circler.
+  document.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    e.dataTransfer.dropEffect = 'copy';
+    dropzone.classList.add('drop-target');
+  });
+  document.addEventListener('dragleave', e => {
+    if (e.relatedTarget === null) dropzone.classList.remove('drop-target');
+  });
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drop-target');
+    if (e.dataTransfer && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  });
+
+  // These constants drive the layout too, so changing one is a single edit.
+  document.documentElement.style.setProperty('--out', OUT + 'px');
+  document.documentElement.style.setProperty('--thumb', THUMB + 'px');
+  document.documentElement.style.setProperty('--preview', PREVIEW + 'px');
+  preview.width = PREVIEW * PREVIEW_SCALE;
+  preview.height = PREVIEW * PREVIEW_SCALE;
+  syncControls();
+
+  // Exposed so the headless test harness can drive the same code path.
+  window.__circler = { state, detectFace, cropSquare, render, handleFiles,
+                       handleFile: f => handleFiles([f]), download, makeZip,
+                       select, removeItem, OUT, PREVIEW, PREVIEW_SCALE };
+})();
+
+/* ══════════════════════════════════════════════════════════════════
+   Uudiskiri — Delfi newsletter banner
+   ══════════════════════════════════════════════════════════════════ */
+(() => {
+  'use strict';
+
+  const BANNER_SRC = 'assets/banner.png';
+  /* Text sits 16 px in from the right and 13 px up from the bottom, in the
+     banner's own pixel space — matching the banners already sent out. */
+  const PAD_RIGHT = 16, PAD_BOTTOM = 13;
+  const FONT = '700 16px Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+  const canvas = document.getElementById('banner-canvas');
+  const input  = document.getElementById('nr-input');
+  const button = document.getElementById('nr-download');
+  const note   = document.getElementById('banner-note');
+
+  const year = new Date().getFullYear();
+  let image = null;
+
+  const digits = () => (input.value || '').replace(/\D+/g, '');
+
+  /* Paints the banner plus, if there is a number, the "NR n (year)" label. */
+  function paint(target) {
+    const ctx = target.getContext('2d');
+    ctx.clearRect(0, 0, target.width, target.height);
+    if (image) ctx.drawImage(image, 0, 0, target.width, target.height);
+
+    const n = digits();
+    if (!n) return;
+
+    const label = `NR ${n} (${year})`;
+    ctx.font = FONT;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    const x = target.width - PAD_RIGHT;
+    const y = target.height - PAD_BOTTOM;
+
+    // A half-pixel dark offset behind the white keeps it readable on any
+    // part of the artwork.
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillText(label, x + 0.5, y + 0.5);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(label, x, y);
+  }
+
+  function update() {
+    paint(canvas);
+    const n = digits();
+    note.textContent = n ? `NR ${n} (${year})` : '';
+    button.disabled = !image;
+  }
+
+  async function boot() {
+    // Canvas text uses whatever is loaded at draw time, so wait for Inter
+    // rather than letting the first paint fall back to a system face.
+    try {
+      if (document.fonts && document.fonts.load) {
+        await document.fonts.load('700 16px Inter');
+        await document.fonts.ready;
+      }
+    } catch (err) { /* draw anyway */ }
+
+    image = await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = BANNER_SRC;
+    });
+    if (image) {
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+    }
+    update();
+  }
+
+  input.addEventListener('input', () => {
+    // Keep the field itself to digits, so what you type is what gets drawn.
+    const clean = digits();
+    if (input.value !== clean) input.value = clean;
+    update();
+  });
+
+  button.addEventListener('click', () => {
+    if (!image) return;
+    // Export at the banner's native resolution, independent of display size.
+    const out = document.createElement('canvas');
+    out.width = image.naturalWidth;
+    out.height = image.naturalHeight;
+    paint(out);
+    const n = digits();
+    out.toBlob(blob => {
+      if (blob) window.__save(blob, n ? `uudiskiri-nr-${n}.png` : 'uudiskiri.png');
+    }, 'image/png');
+  });
+
+  boot();
+
+  window.__banner = { paint, update, digits, year, canvas,
+                      get image() { return image; } };
+})();
+
+/* Shared save helper. */
+window.__save = function (blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.rel = 'noopener';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+};
+</script>
+</body>
+</html>
