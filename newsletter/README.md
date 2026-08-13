@@ -54,8 +54,29 @@ rather than overwriting each other.
 
 Face detection is [pico.js](https://github.com/tehnokv/picojs) (MIT) running the
 vendored `facefinder` cascade — ~240 KB of decision trees, no WASM, no model
-download, ~60–110 ms per photo. The detected face is placed at the exact centre
+download, ~90–170 ms per photo. The detected face is placed at the exact centre
 of the circle.
+
+### Why detection runs twice
+
+pico's cluster score is the **sum** of every overlapping hit, so it measures how
+often the scanner happened to land on a face — not how face-like that face is.
+A face that falls between scan positions collects two hits and scores 6; the
+same face on a denser scan scores 440. Thresholding that number directly missed
+**5 of 10** ordinary portraits in testing.
+
+So detection runs in two passes:
+
+1. a cheap sweep of the whole frame that only proposes candidates;
+2. a dense rescan of each candidate, in a window sized to the candidate itself.
+
+Because that window holds the same number of test positions whatever the face
+size, the second score is comparable between images. Measured over a 15-portrait
+set: real faces score **209 and up**, non-face photos **0–1**. The threshold sits
+at 60. The sub-image for pass 2 is a view into the same pixel buffer (`ldim`
+keeps the full row stride), so nothing is copied.
+
+Result: **15 of 15** portraits detected, against 5 of 10 before.
 
 Two corrections sit on top of the raw detector, both measured against Apple
 Vision's face boxes over a test set of portraits:
@@ -78,10 +99,15 @@ entire zoom range.
 
 ### Known limits
 
-`facefinder` is an **upright, front-facing** cascade. It reliably handles
-headshots and portraits — including moderately tilted heads — but it will miss
-faces in **profile** / strong three-quarter views, and **small or heavily
-angled** faces in busy group shots.
+`facefinder` is an **upright, front-facing** cascade. It handles headshots and
+portraits reliably — including tilted heads, glasses, beards and hats — but
+faces in **strong profile** and **small, heavily angled** faces in busy group
+shots can still be missed.
+
+It has no notion of *human* faces specifically, so a prominent **animal** face
+will be detected and centred. That is the one case no threshold could separate
+(a tiger scored 464 against the weakest real face at 209), and centring on the
+animal seemed the more useful behaviour anyway.
 
 On a miss the tool falls back to a centred square crop, says so in red under the
 preview, and rings that thumbnail — so you always know which you got, and you
@@ -144,7 +170,11 @@ Constants at the top of each script block in `index.html`:
 | `SOURCE_MAX` | `2000` | long edge held in memory per image |
 | `DETECT_MAX` | `640` | long edge used for detection; accuracy plateaus above this |
 | `MIN_FACE_FRAC` | `0.06` | smallest face to look for, as a share of the short edge |
-| `QUALITY` | `50.0` | pico score threshold; below ~30 it starts inventing faces |
+| `SWEEP_SHIFT` / `SWEEP_SCALE` | `0.1` / `1.1` | pass-1 sweep density |
+| `SWEEP_MIN` | `0.5` | how plausible a candidate must be to reach pass 2 |
+| `MAX_CANDIDATES` | `8` | cap on pass-2 work per image |
+| `CONFIRM_SHIFT` / `CONFIRM_SCALE` | `0.02` / `1.05` | pass-2 local density |
+| `CONFIRM_MIN` | `60` | confirmation threshold (faces 209+, non-faces 0–1) |
 | `DROP` | `0.12` | downward centre correction |
 | `ZOOM_MIN` / `ZOOM_MAX` | `1.3` / `3.4` | crop side as a multiple of the detection window |
 | `PAD_RIGHT` / `PAD_BOTTOM` | `16` / `13` | banner label inset, in banner pixels |

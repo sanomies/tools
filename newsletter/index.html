@@ -599,8 +599,23 @@
   const SOURCE_MAX = 2000;    // long edge kept in memory per image
   const DETECT_MAX = 640;     // long edge used for detection (accuracy plateaus above this)
   const MIN_FACE_FRAC = 0.06; // smallest face to look for, as a share of the short edge
-  const QUALITY = 50.0;       // pico score threshold; below this it starts inventing faces
   const CLUSTER_IOU = 0.2;
+
+  /* Detection runs in two passes. pico's cluster score is the SUM of every
+     overlapping hit, so it measures how often the scanner happened to land on
+     a face, not how face-like that face is — a real face that falls between
+     scan positions can score 6 while another scores 300. Thresholding that
+     number directly missed half of an ordinary portrait test set.
+
+     So: pass 1 sweeps cheaply and only proposes candidates, then pass 2
+     rescans each candidate densely in a window sized to the candidate itself.
+     That window holds the same number of test positions whatever the face
+     size, which makes the second score comparable across images. */
+  const SWEEP_SHIFT = 0.1, SWEEP_SCALE = 1.1;  // pass 1: coarse, recall-oriented
+  const SWEEP_MIN = 0.5;      // a candidate only has to be plausible here
+  const MAX_CANDIDATES = 8;   // cap pass-2 work on busy frames
+  const CONFIRM_SHIFT = 0.02, CONFIRM_SCALE = 1.05;   // pass 2: dense and local
+  const CONFIRM_MIN = 60;     // measured: real faces 209+, non-faces 0–1
 
   /* pico's detection window sits high on the head and runs a little wide of
      the face itself. Both constants were measured against Apple Vision's
@@ -655,24 +670,59 @@
       grey[i] = (rgba[p] * 0.299 + rgba[p + 1] * 0.587 + rgba[p + 2] * 0.114) | 0;
     }
 
+    const image = { pixels: grey, nrows: h, ncols: w, ldim: w };
     const shortEdge = Math.min(w, h);
-    let dets = pico.run_cascade(
-      { pixels: grey, nrows: h, ncols: w, ldim: w },
-      getClassifier(),
-      {
-        shiftfactor: 0.1,
-        minsize: Math.max(20, Math.round(shortEdge * MIN_FACE_FRAC)),
-        maxsize: shortEdge,
-        scalefactor: 1.1,
-      }
-    );
-    dets = pico.cluster_detections(dets, CLUSTER_IOU).filter(d => d[3] > QUALITY);
-    if (!dets.length) return null;
+
+    // Pass 1 — cheap sweep of the whole frame, just to propose candidates.
+    let cands = pico.run_cascade(image, getClassifier(), {
+      shiftfactor: SWEEP_SHIFT,
+      minsize: Math.max(20, Math.round(shortEdge * MIN_FACE_FRAC)),
+      maxsize: shortEdge,
+      scalefactor: SWEEP_SCALE,
+    });
+    cands = pico.cluster_detections(cands, CLUSTER_IOU).filter(d => d[3] > SWEEP_MIN);
+    if (!cands.length) return null;
+    cands.sort((a, b) => b[3] - a[3]);
+    cands = cands.slice(0, MAX_CANDIDATES);
+
+    // Pass 2 — confirm each candidate with a dense local rescan.
+    const confirmed = cands.filter(d => confirmScore(image, d) >= CONFIRM_MIN);
+    if (!confirmed.length) return null;
 
     // In a group shot the biggest face is almost always the subject.
-    dets.sort((a, b) => b[2] - a[2]);
-    const [row, col, size] = dets[0];
+    confirmed.sort((a, b) => b[2] - a[2]);
+    const [row, col, size] = confirmed[0];
     return { x: col / scale, y: (row + DROP * size) / scale, size: size / scale };
+  }
+
+  /* Dense rescan of one candidate. The sub-image is a view into the same
+     pixel buffer — `ldim` stays the full row stride, so no copying is needed —
+     and both the window and the scale band scale with the candidate, keeping
+     the returned sum comparable between images. */
+  function confirmScore(image, det) {
+    const [row, col, size] = det;
+    const half = size * 0.9;
+    const r0 = Math.max(0, Math.round(row - half));
+    const c0 = Math.max(0, Math.round(col - half));
+    const r1 = Math.min(image.nrows, Math.round(row + half));
+    const c1 = Math.min(image.ncols, Math.round(col + half));
+    const h = r1 - r0, w = c1 - c0;
+    if (h < 8 || w < 8) return 0;
+
+    const dets = pico.run_cascade(
+      { pixels: image.pixels.subarray(r0 * image.ldim + c0),
+        nrows: h, ncols: w, ldim: image.ldim },
+      getClassifier(),
+      {
+        shiftfactor: CONFIRM_SHIFT,
+        minsize: Math.max(8, Math.round(size * 0.85)),
+        maxsize: Math.max(9, Math.round(size * 1.20)),
+        scalefactor: CONFIRM_SCALE,
+      }
+    );
+    let sum = 0;
+    for (const d of dets) if (d[3] > 0) sum += d[3];
+    return sum;
   }
 
   /* ═══════════════ Crop geometry ═══════════════ */
