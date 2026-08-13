@@ -694,7 +694,12 @@
     const maxSide = Math.min(W, H);
 
     if (!item.face) {
-      const side = maxSide;
+      /* No face to size the crop against, so the slider works off the frame
+         instead: 0 = the whole short edge, 100 = the same proportion the face
+         path reaches at full zoom. Without this the side was pinned to
+         maxSide, which left the slider inert and dragging stuck on one axis. */
+      const tightest = maxSide * (ZOOM_MIN / ZOOM_MAX);
+      const side = maxSide - (item.zoom / 100) * (maxSide - tightest);
       let cx = W / 2 + item.offset.x, cy = H / 2 + item.offset.y;
       cx = Math.min(Math.max(cx, side / 2), W - side / 2);
       cy = Math.min(Math.max(cy, side / 2), H - side / 2);
@@ -917,12 +922,15 @@
     thumbCanvas.width = THUMB * 2;
     thumbCanvas.height = THUMB * 2;
 
+    const face = detectFace(source);
     const item = {
       name: (file.name || 'image').replace(/\.[^.]+$/, ''),
       source,
-      face: detectFace(source),
+      face,
       offset: { x: 0, y: 0 },
-      zoom: 50,
+      // A found face gets the mid-zoom default; without one, start from the
+      // full centre crop so nothing is hidden before you have looked at it.
+      zoom: face ? 50 : 0,
       thumbCanvas,
       el: null,
     };

@@ -36,6 +36,11 @@ density, so you judge the face at its own resolution rather than squinting at an
 upscaled 175 px export. It is therefore *not* 1:1 with the file you get — the
 export is still exactly 175 × 175, from the same crop.
 
+When no face is found the crop falls back to the centre of the frame, and the
+zoom slider then works off the frame instead of the face: it starts at 0 (the
+full short edge, so nothing is hidden before you have looked at it) and tightens
+from there. Drag to move the crop, exactly as with a detected face.
+
 A red ring on a thumbnail means no face was found there, so the ones worth
 checking are obvious at a glance. There is no success message: a found face
 needs no announcement, and the line under the preview only appears when
