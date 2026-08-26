@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Onu Sano · Tööriistad</title>
+<title>Onu Sano · DIY</title>
 <meta name="description" content="Onu Sano tööriistad — vali tööriist, mida soovid kasutada.">
-<meta property="og:title" content="Onu Sano · Tööriistad">
+<meta property="og:title" content="Onu Sano · DIY">
 <meta property="og:description" content="Onu Sano tööriistad — vali tööriist, mida soovid kasutada.">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,24 +16,18 @@
 <script src="assets/transition.js"></script>
 <style>
   /* ─────────────────────────────────────────────────────────────
-     Onu Sano · Tööriistad — tool launcher
-     House style borrowed from the Podcast framer (Delfi light theme):
-     near-white textured base, white cards, near-black ink, black
-     accent reserved for hover/selection. One family: Google Sans Flex.
+     Onu Sano · DIY — tool launcher
+     House style (Delfi light theme): near-white base, near-black ink.
+     A minimal centered list of tool names; the hovered name grows and
+     its one-liner appears under the list. One family: Google Sans Flex.
      ───────────────────────────────────────────────────────────── */
   :root {
-    --bg:           #fbfbfc;   /* app base behind the soft texture */
-    --card:         #ffffff;   /* card / panel surface */
-    --border:       #ebebeb;   /* card hairline */
-    --border-2:     #dedfe0;   /* stronger hairline */
+    --bg:           #fbfbfc;   /* app base */
     --ink:          #111317;   /* near-black: headings + solid fills */
     --muted:        #708597;   /* delfi-darkgray: secondary text */
-    --track:        #edf2f4;   /* delfi-lightgray: icon plate fill */
-    --hover:        #f2f4f6;   /* subtle hover wash */
-    --accent:       #000000;   /* hover + selection chrome */
     --focus:        #000000;   /* keyboard focus ring */
-    --shadow-card:  0 4px 5px rgba(0,0,0,0.10);
-    --shadow-hover: 0 10px 28px rgba(17,19,23,0.14);
+    --name-size:    clamp(28px, 5.2vw, 46px);   /* tool name type size */
+    --preview-w:    336px;                      /* cursor thumbnail width (16:9) */
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -44,12 +38,9 @@
     color: var(--ink);
     color-scheme: light;
     background-color: var(--bg);
-    background-image: url("assets/bg-texture.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    min-height: 100vh;
+    height: 100dvh;
+    overflow: hidden;   /* app shell: the short list always fits */
+    padding: 40px;      /* breathing room around the whole page */
     display: flex;
     flex-direction: column;
   }
@@ -57,13 +48,12 @@
   /* ───── Page shell ───── */
   .page {
     flex: 1 1 auto;
+    min-height: 0;
     width: 100%;
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 64px 24px 48px;
+    padding: 48px 24px 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center;   /* the whole page reads down the centre */
   }
 
   /* ───── Brand header (shared pattern: face · Onu Sano® · sub) ───── */
@@ -91,160 +81,166 @@
   /* Page-transition names — launcher-scoped (see assets/transition.css). Kept here,
      not in the shared file, so they don't collide with tools' reused class names. */
   .app-header  { view-transition-name: vt-header; }
-  .lede        { view-transition-name: vt-lede; }
   .page-footer { view-transition-name: vt-footer; }
 
-  .lede {
-    margin: 2px 0 0;
-    max-width: 46ch;
-    text-align: center;
-    color: var(--muted);
-    font-size: 15px;
-    font-weight: 400;
-    line-height: 1.5;
-  }
-
-  /* ───── Tool grid — auto-fills as more tools are added ───── */
-  .tool-grid {
-    margin-top: 44px;
+  /* ───── Tool list — names stacked in the free space between the lede
+     and the footer; the hovered (or keyboard-focused) name grows and its
+     description appears under the list. ───── */
+  .tools {
+    flex: 1 1 auto;
+    min-height: 0;
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
-  }
-
-  .tool-card {
-    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 24px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: var(--shadow-card);
+    align-items: center;
+    justify-content: center;
+    gap: 34px;
+    padding: 24px 0;
+  }
+  .tool {
+    display: block;
+    font-size: var(--name-size);
+    font-weight: 600;
+    line-height: 1.15;
+    white-space: nowrap;
+    color: var(--ink);
     text-decoration: none;
-    color: inherit;
-    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    cursor: pointer;
+    transform-origin: center;   /* centred names grow evenly outward */
+    transition: transform .22s cubic-bezier(.3, 1.4, .5, 1);
     will-change: transform;
   }
-  .tool-card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-hover);
-    border-color: var(--border-2);
-  }
-  .tool-card:focus-visible {
+  /* --tilt is rolled to a fresh random angle (≤3°) on every hover — see
+     the script. */
+  .tool:hover,
+  .tool:focus-visible { transform: scale(1.14) rotate(var(--tilt, 0deg)); }
+  .tool:focus-visible {
     outline: 2px solid var(--focus);
-    outline-offset: 3px;
+    outline-offset: 6px;
+    border-radius: 8px;
   }
-
-  .tool-icon {
-    width: 48px;
-    height: 48px;
-    flex: 0 0 auto;
+  /* The hovered tool's icon + one-liner, under the list. The slot keeps
+     its height while empty so the list never shifts. */
+  .tool-desc {
+    margin: 26px 0 0;
+    min-height: 24px;
+    max-width: min(80vw, 560px);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
-    overflow: hidden;
-    background: var(--track);
-    color: var(--ink);
-  }
-  /* Tool icons are full-bleed 80×80 tiles (own background), scaled into the plate. */
-  .tool-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-  .tool-title {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 600;
-    line-height: 1.25;
-  }
-  .tool-desc {
-    margin: 0;
+    gap: 9px;
+    text-align: center;
     color: var(--muted);
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 400;
-    line-height: 1.5;
+    line-height: 1.45;
+    opacity: 0;
+    transition: opacity .15s ease;
+  }
+  .tool-desc.show { opacity: 1; transition: opacity .3s ease .05s; }
+  .tool-desc img {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    flex: 0 0 auto;
+    display: block;
   }
 
-  .tool-cta {
-    margin-top: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    transition: color .18s ease;
+  /* ───── Site preview — a small 16:9 screenshot of the hovered tool that
+     rides along with the cursor. Decorative: it takes no clicks and is
+     hidden from AT, from touch, and from windows too narrow for it. ───── */
+  .preview {
+    position: fixed;
+    top: 0;
+    left: 0;                 /* the script drives it by transform */
+    width: var(--preview-w);
+    z-index: 5;
+    perspective: 700px;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .16s ease, visibility 0s linear .16s;
   }
-  .tool-card:hover .tool-cta { color: var(--accent); }
-  .tool-cta svg {
-    width: 16px; height: 16px;
-    transition: transform .18s ease;
+  .preview.show {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity .18s ease;
   }
-  .tool-card:hover .tool-cta svg { transform: translateX(3px); }
-
-  /* "Coming soon" placeholder card — non-interactive, signals the launcher grows */
-  .tool-card.is-soon {
-    border-style: dashed;
-    box-shadow: none;
-    background: transparent;
-    color: var(--muted);
-    cursor: default;
+  .preview-card {
+    /* A 16:9 thumbnail of the tool's own screenshot (assets/previews/). */
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(17, 19, 23, .16);
+    /* --ry/--rx lean the card into the cursor's direction of travel;
+       --pop scales it up as it appears. */
+    transform: rotateY(var(--ry, 0deg)) rotateX(var(--rx, 0deg)) scale(var(--pop, .9));
+    transition: transform .18s ease-out;
+    will-change: transform;
   }
-  .tool-card.is-soon:hover { transform: none; box-shadow: none; border-color: var(--border-2); }
-  .tool-card.is-soon .tool-icon { background: transparent; border: 1px dashed var(--border-2); }
-  .tool-card.is-soon:hover .tool-icon { background: transparent; color: var(--muted); }
-  .tool-card.is-soon .tool-cta { color: var(--muted); }
+  .preview.show .preview-card { --pop: 1; }
+  .preview-card img {
+    /* Held blank until the shot has decoded, so no half-drawn tool shows. */
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity .2s ease;
+  }
+  .preview-card img.ready { opacity: 1; }
+  @media (hover: none), (max-width: 600px) {
+    .preview { display: none; }  /* no cursor to ride along with */
+  }
 
   /* ───── Footer ───── */
   .page-footer {
     flex: 0 0 auto;
+    width: 100%;
     padding: 24px;
     text-align: center;
-    color: var(--muted);
-    font-size: 12px;
+    color: var(--ink);
+    font-size: 20px;
     font-weight: 400;
   }
-  .page-footer a { color: var(--muted); text-decoration: none; }
-  .page-footer a:hover { color: var(--ink); text-decoration: underline; }
 
-  /* ───── First-load intro — elements rise in on a direct visit. (A Back/Forward
-     navigation animates via the shared page transition, so .intro is only added
-     when there's no view transition — see the script below.) ───── */
+  /* ───── First-load intro — elements rise in on a direct visit. (A
+     Back/Forward navigation animates via the shared page transition, so
+     .intro is only added when there's no view transition.) ───── */
   @keyframes os-intro { from { opacity: 0; transform: translateY(18px); } }
-  html.intro { overflow: hidden; }   /* contain the rise-in transforms so no transient scrollbar shows */
-  html.intro .app-header    { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) both; }
-  html.intro .lede          { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) .06s both; }
-  html.intro .tool-grid > * { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) both; }
-  html.intro .tool-grid > *:nth-child(1) { animation-delay: .12s; }
-  html.intro .tool-grid > *:nth-child(2) { animation-delay: .18s; }
-  html.intro .tool-grid > *:nth-child(3) { animation-delay: .24s; }
-  html.intro .tool-grid > *:nth-child(4) { animation-delay: .30s; }
-  html.intro .tool-grid > *:nth-child(5) { animation-delay: .36s; }
-  html.intro .tool-grid > *:nth-child(6) { animation-delay: .42s; }
-  html.intro .tool-grid > *:nth-child(7) { animation-delay: .48s; }
-  html.intro .tool-grid > *:nth-child(8) { animation-delay: .54s; }
-  html.intro .page-footer   { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) .5s both; }
+  html.intro .app-header   { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) both; }
+  html.intro .tools > *    { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) both; }
+  html.intro .tools > *:nth-child(1) { animation-delay: .12s; }
+  html.intro .tools > *:nth-child(2) { animation-delay: .17s; }
+  html.intro .tools > *:nth-child(3) { animation-delay: .22s; }
+  html.intro .tools > *:nth-child(4) { animation-delay: .27s; }
+  html.intro .tools > *:nth-child(5) { animation-delay: .32s; }
+  html.intro .tools > *:nth-child(6) { animation-delay: .37s; }
+  html.intro .page-footer  { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) .48s both; }
   @media (prefers-reduced-motion: reduce) {
     html.intro .app-header,
-    html.intro .lede,
-    html.intro .tool-grid > *,
+    html.intro .tools > *,
     html.intro .page-footer { animation: none; }
   }
 
   /* ───── Responsive ───── */
   @media (max-width: 600px) {
-    .page { padding: 40px 18px 32px; }
+    .page { padding: 40px 18px 0; }
+    .page-footer { padding: 20px 18px; }
     .app-header { font-size: 33px; }
     .brand-face { height: 51px; }
-    .tool-grid { margin-top: 32px; gap: 14px; }
+    .tools { gap: 24px; }
+  }
+  /* Short windows: tighten so the whole list stays in view. */
+  @media (max-height: 700px) {
+    :root { --name-size: clamp(24px, 4.2vw, 36px); }
+    .tools { gap: 18px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; }
-    .tool-card:hover { transform: none; }
-    .tool-card:hover .tool-cta svg { transform: none; }
+    .tool:hover, .tool:focus-visible { transform: none; }
   }
 </style>
 </head>
@@ -253,34 +249,38 @@
     <h1 class="app-header">
       <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
       <span class="brand-name">Onu Sano®</span>
-      <span class="brand-sub">Tööriistad</span>
+      <span class="brand-sub">DIY</span>
     </h1>
-    <p class="lede">Vali tööriist, millega soovid tööd alustada.</p>
 
-    <div class="tool-grid" id="toolGrid"></div>
+    <!-- id="toolGrid" stays here: assets/transition.js recognises the
+         launcher by it and skips its automatic region naming. -->
+    <nav class="tools" id="toolGrid" aria-label="DIY"></nav>
   </main>
 
-  <footer class="page-footer">
-    © <span id="year"></span> Onu Sano® · Delfi Meedia
-  </footer>
+  <!-- Cursor-following 16:9 screenshot of the hovered tool — decorative only. -->
+  <aside class="preview" aria-hidden="true">
+    <div class="preview-card">
+      <img alt="">
+    </div>
+  </aside>
 
-  <!-- Line icon used by the card CTA arrow. -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <defs>
-      <g id="ico-arrow">
-        <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-      </g>
-    </defs>
-  </svg>
+  <footer class="page-footer">
+    © <span id="year"></span> Onu Sano®
+  </footer>
 
   <script>
     /* ───────────────────────────────────────────────────────────
        TOOLS — the single source of truth for the launcher.
        To add a tool: append one object here. No other edits needed.
-         name : shown as the card title
-         desc : one-line Estonian description
+         name : shown on the list
+         desc : one-line Estonian description, shown under the list
+                while the name is hovered
          href : path to the tool (relative to this folder)
-         icon : path to the tool's icon image (80×80 tile, relative to this folder)
+         icon : path to the tool's icon image (80×80 tile), shown
+                beside the description
+         shot : 16:9 screenshot shown in the card that follows the
+                cursor — re-shoot it when the tool's look changes
+                (see README → "Tool screenshots")
        ─────────────────────────────────────────────────────────── */
     const TOOLS = [
       {
@@ -288,30 +288,35 @@
         desc: "Laadi video üles, lisa subtiitrid ja tee sellest Instagrami-valmis klipp.",
         href: "as-video-editor/",
         icon: "assets/icons/annestiil.svg",
+        shot: "assets/previews/as-video-editor.jpg",
       },
       {
         name: "Podcast framer",
         desc: "Säti foto bränditud raami ja laadi valmis artikli pilt alla.",
         href: "podcast/",
         icon: "assets/icons/podcast.svg",
+        shot: "assets/previews/podcast.jpg",
       },
       {
         name: "Geenius social",
         desc: "Vali kujundus, lisa sisu ja laadi valmis sotsiaalmeedia pilt alla.",
         href: "geenius-social/",
         icon: "assets/icons/geenius.svg",
+        shot: "assets/previews/geenius-social.jpg",
       },
       {
         name: "Ekspress editorial",
         desc: "Säti foto Ekspressi raami ja laadi valmis pilt alla.",
         href: "ekspress-editorial/",
         icon: "assets/icons/ekspress.svg",
+        shot: "assets/previews/ekspress-editorial.jpg",
       },
       {
         name: "Bänneripigistaja",
         desc: "Laadi bännerid üles, meie pigistame need parajaks.",
         href: "pigistaja/",
         icon: "assets/icons/pigistaja.svg",
+        shot: "assets/previews/pigistaja.jpg",
         delay: 200,   // ms to wait after click before navigating
       },
       {
@@ -319,89 +324,165 @@
         desc: "Vali ruudustik, lisa fotod ja laadi valmis kollaaž alla.",
         href: "collage/",
         icon: "assets/icons/collage.svg",
+        shot: "assets/previews/collage.jpg",
       },
     ];
-
     const grid = document.getElementById("toolGrid");
-    const svgNS = "http://www.w3.org/2000/svg";
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
-    function lineSvg(symbolId) {
-      const svg = document.createElementNS(svgNS, "svg");
-      svg.setAttribute("viewBox", "0 0 24 24");
-      svg.setAttribute("fill", "none");
-      svg.setAttribute("stroke", "currentColor");
-      svg.setAttribute("stroke-width", "2");
-      svg.setAttribute("stroke-linecap", "round");
-      svg.setAttribute("stroke-linejoin", "round");
-      svg.setAttribute("aria-hidden", "true");
-      const use = document.createElementNS(svgNS, "use");
-      use.setAttribute("href", "#" + symbolId);
-      svg.appendChild(use);
-      return svg;
+    for (const [i, tool] of TOOLS.entries()) {
+      const item = document.createElement("a");
+      item.className = "tool";
+      item.href = encodeURI(tool.href);
+      item.textContent = tool.name;
+      item.dataset.i = i;
+      grid.appendChild(item);
     }
 
-    for (const tool of TOOLS) {
-      const card = document.createElement("a");
-      card.className = "tool-card";
-      card.href = encodeURI(tool.href);
+    /* The hovered tool's icon + description, under the list. */
+    const descEl = document.createElement("p");
+    descEl.className = "tool-desc";
+    const descIcon = document.createElement("img");
+    descIcon.alt = "";
+    const descText = document.createElement("span");
+    descEl.append(descIcon, descText);
+    grid.appendChild(descEl);
 
-      // Optional short pause before navigating (a plain left-click only; modified
-      // clicks / new-tab still behave normally).
-      if (tool.delay) {
-        card.addEventListener("click", (e) => {
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-          e.preventDefault();
-          setTimeout(() => { window.location.href = card.href; }, tool.delay);
-        });
+    function showDesc(item) {
+      const tool = TOOLS[item.dataset.i];
+      descText.textContent = tool.desc;
+      descIcon.src = encodeURI(tool.icon);
+      descEl.classList.add("show");
+    }
+    /* Each hover tips the name a fresh random amount, up to ±3° — never
+       twice the same: at least 0.8° so the tilt reads at all, and at least
+       0.5° away from the previous roll. */
+    let lastTilt = 0;
+    function rollTilt(item) {
+      let t;
+      do { t = (Math.random() * 2 - 1) * 3; }
+      while (Math.abs(t) < 0.8 || Math.abs(t - lastTilt) < 0.5);
+      lastTilt = t;
+      item.style.setProperty("--tilt", t.toFixed(2) + "deg");
+    }
+
+    /* Hover and keyboard focus share the same reveal. Leaving one name for
+       the next re-shows in the same tick, so the slot never flickers. */
+    grid.addEventListener("mouseover", (e) => {
+      const item = e.target.closest(".tool");
+      if (item) { rollTilt(item); showDesc(item); showPreview(item, e); }
+    });
+    grid.addEventListener("mouseout", (e) => {
+      if (e.target.closest(".tool")) { descEl.classList.remove("show"); hidePreview(); }
+    });
+    grid.addEventListener("focusin", (e) => {
+      const item = e.target.closest(".tool");
+      if (item) { rollTilt(item); showDesc(item); showPreview(item, e); }
+    });
+    grid.addEventListener("focusout", () => { descEl.classList.remove("show"); hidePreview(); });
+
+    /* ── Site preview — a small 16:9 screenshot of the hovered tool that
+       rides along with the cursor. The shots are stored images, not live
+       pages (assets/previews/ — see README → "Tool screenshots"). */
+    const previewEl   = document.querySelector(".preview");
+    const previewCard = document.querySelector(".preview-card");
+    const previewImg  = previewCard.querySelector("img");
+    const previewW = parseFloat(
+      getComputedStyle(previewEl).getPropertyValue("--preview-w")) || 336;
+    const previewH = previewW * 9 / 16;
+
+    let previewIdx = -1;
+    previewImg.addEventListener("load", () => previewImg.classList.add("ready"));
+
+    /* Where the card wants to be (tx/ty) vs. where it is (px/py): it eases
+       after the cursor rather than sticking rigidly, and leans into the
+       direction of travel. */
+    const OFF_X = 24, OFF_Y = 20;   // gap from the cursor's hot spot
+    let px = 0, py = 0, tx = 0, ty = 0, raf = 0, previewShown = false;
+
+    function aimAt(x, y) {
+      /* Flip to the other side of the cursor near a screen edge. */
+      tx = x + OFF_X + previewW > innerWidth  - 12 ? x - OFF_X - previewW : x + OFF_X;
+      ty = y + OFF_Y + previewH > innerHeight - 12 ? y - OFF_Y - previewH : y + OFF_Y;
+      tx = Math.max(12, tx);
+      ty = Math.max(12, ty);
+    }
+    function follow() {
+      raf = 0;
+      const k  = reduced.matches ? 1 : .22;
+      const dx = tx - px, dy = ty - py;
+      px += dx * k;
+      py += dy * k;
+      previewEl.style.transform =
+        `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0)`;
+      if (!reduced.matches) {
+        const lean = (v, m) => Math.max(-9, Math.min(9, v * m)).toFixed(2) + "deg";
+        previewCard.style.setProperty("--ry", lean(dx,  .12));
+        previewCard.style.setProperty("--rx", lean(dy, -.09));
       }
-
-      const icon = document.createElement("div");
-      icon.className = "tool-icon";
-      const iconImg = document.createElement("img");
-      iconImg.src = encodeURI(tool.icon);
-      iconImg.alt = "";
-      icon.appendChild(iconImg);
-
-      const title = document.createElement("h2");
-      title.className = "tool-title";
-      title.textContent = tool.name;
-
-      const desc = document.createElement("p");
-      desc.className = "tool-desc";
-      desc.textContent = tool.desc;
-
-      const cta = document.createElement("span");
-      cta.className = "tool-cta";
-      cta.append("Ava tööriist");
-      cta.appendChild(lineSvg("ico-arrow"));
-
-      card.append(icon, title, desc, cta);
-      grid.appendChild(card);
+      if (previewShown) raf = requestAnimationFrame(follow);
     }
 
-    /* Trailing dashed "coming soon" tile — a visible promise that the set grows. */
-    const soon = document.createElement("div");
-    soon.className = "tool-card is-soon";
-    soon.setAttribute("aria-hidden", "true");
-    const soonIcon = document.createElement("div");
-    soonIcon.className = "tool-icon";
-    soonIcon.textContent = "+";
-    soonIcon.style.fontSize = "24px";
-    soonIcon.style.fontWeight = "300";
-    const soonTitle = document.createElement("h2");
-    soonTitle.className = "tool-title";
-    soonTitle.textContent = "Tuleb veel";
-    const soonDesc = document.createElement("p");
-    soonDesc.className = "tool-desc";
-    soonDesc.textContent = "Varsti lisandub siia veel kasulikke Onu Sano® tööriistu.";
-    soon.append(soonIcon, soonTitle, soonDesc);
-    grid.appendChild(soon);
+    function showPreview(item, e) {
+      /* Anchor to the cursor — or, when the name was reached by keyboard,
+         to the name's own right edge. */
+      if (e && e.type !== "focusin") aimAt(e.clientX, e.clientY);
+      else {
+        const r = item.getBoundingClientRect();
+        aimAt(r.right + 8, r.top + r.height / 2);
+      }
+      if (!previewShown) {          // appear where the pointer is, no fly-in
+        px = tx; py = ty;
+        previewEl.style.transform = `translate3d(${px}px, ${py}px, 0)`;
+        previewShown = true;
+        previewEl.classList.add("show");
+        if (!raf) raf = requestAnimationFrame(follow);
+      }
+      loadPreview(+item.dataset.i);
+    }
+    function hidePreview() {
+      previewShown = false;         // the follow loop stops on its next frame
+      previewEl.classList.remove("show");
+    }
+    function loadPreview(i) {
+      if (i === previewIdx) return;   // already in the card
+      previewIdx = i;
+      previewImg.classList.remove("ready");
+      previewImg.src = encodeURI(TOOLS[i].shot);
+      if (previewImg.complete) previewImg.classList.add("ready");   // cached
+    }
 
-    /* Name each card so it animates independently in the page transition
-       (staggered down on exit, up on return). Capped to the delays defined
-       in assets/transition.css; any extra cards just ride the root animation. */
-    document.querySelectorAll(".tool-card").forEach((card, i) => {
-      if (i < 12) card.style.viewTransitionName = "vt-card-" + i;
+    /* Warm the cache once the launcher itself has loaded, so the first
+       hover has its shot ready. */
+    addEventListener("load", () => {
+      const warm = () => { for (const t of TOOLS) new Image().src = encodeURI(t.shot); };
+      if ("requestIdleCallback" in window) requestIdleCallback(warm);
+      else setTimeout(warm, 500);
+    });
+
+    addEventListener("mousemove", (e) => {
+      if (previewShown) aimAt(e.clientX, e.clientY);
+    }, { passive: true });
+
+    /* Back to a bfcache-restored launcher: the pointer is nowhere yet. */
+    addEventListener("pageshow", () => {
+      descEl.classList.remove("show");
+      hidePreview();
+    });
+
+    grid.addEventListener("click", (e) => {
+      const item = e.target.closest(".tool");
+      if (!item) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      // Optional short pause before navigating (Bänneripigistaja's splash).
+      const delay = TOOLS[+item.dataset.i].delay;
+      if (delay) { e.preventDefault(); setTimeout(() => { location.href = item.href; }, delay); }
+    });
+
+    /* Name each tool so it animates independently in the page transition
+       (staggered down on exit, up on return — assets/transition.css). */
+    document.querySelectorAll(".tool").forEach((item, i) => {
+      if (i < 12) item.style.viewTransitionName = "vt-card-" + i;
     });
 
     document.getElementById("year").textContent = new Date().getFullYear();
@@ -412,7 +493,6 @@
       if (e.viewTransition) return;
       const root = document.documentElement;
       root.classList.add("intro");
-      // Release the overflow lock once the intro is done so the page can scroll if needed.
       setTimeout(() => root.classList.remove("intro"), 1300);
     });
   </script>

@@ -1,17 +1,21 @@
-# Onu Sano · Tööriistad
+# Onu Sano · DIY
 
 A simple launcher (hub) for the Onu Sano in-house tools. The root `index.html`
-lists every tool as a card; clicking one opens that tool with a page-slide
-transition (incoming tool slides in from the right, reverses on Back).
+lists every tool by name in a minimal centered list — hovering (or keyboard-
+focusing) a name enlarges it, shows its one-line description under the
+list, and floats a small 16:9 screenshot of the tool alongside the
+cursor; clicking opens that tool with a page-slide transition (incoming
+tool slides in from the right, reverses on Back).
 
 ## Structure
 
 ```
-index.html              → the launcher (Onu Sano® Tööriistad)
+index.html              → the launcher (Onu Sano® DIY)
 assets/
   transition.css        → shared page transition (View Transitions API)
   transition.js         → shared transition direction (reverse on Back)
-  icons/                → tool card icons (80×80 tiles)
+  icons/                → tool icons (80×80 tiles; shown by the description)
+  previews/             → tool screenshots (960×540 JPEG; the hover card)
   onu-sano-face.svg, bg-texture.jpg, icon-1024x1024px.png
 as-video-editor/        → each tool lives in its own folder, served as-is
 podcast/
@@ -51,15 +55,36 @@ works both locally and under a project path like `…github.io/tools/`.
 
    ```js
    {
-     name: "My tool",                        // card title
-     desc: "Üherealine eestikeelne kirjeldus.", // Estonian one-liner
-     href: "my-tool/index.html",             // path from the root
-     icon: "assets/icons/my-tool.svg",       // 80×80 tile icon
+     name: "My tool",                        // shown on the list
+     desc: "Üherealine eestikeelne kirjeldus.", // shown under the list on hover
+     href: "my-tool/",                       // path from the root
+     icon: "assets/icons/my-tool.svg",       // 80×80 tile, shown by the description
+     shot: "assets/previews/my-tool.jpg",    // 16:9 shot, shown by the cursor
    },
    ```
 
-   Add the icon to `assets/icons/`. The grid re-flows automatically and the
-   dashed "Tuleb veel" tile stays last.
+   The list grows automatically.
+
+4. **Shoot the preview** — see below.
+
+## Tool screenshots
+
+The card that follows the cursor shows a stored image, not a live page, so
+it needs re-shooting whenever a tool's look changes. With the local server
+running, capture at 16:9 and downscale:
+
+```
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new --hide-scrollbars --window-size=1440,810 \
+  --virtual-time-budget=8000 --screenshot=/tmp/shot.png \
+  http://localhost:8000/my-tool/
+
+sips -Z 960 --setProperty format jpeg --setProperty formatOptions 82 \
+  /tmp/shot.png --out assets/previews/my-tool.jpg
+```
+
+Headless Chrome writes the PNG and then may not exit on its own — kill it
+once the file appears.
 
 ## Local preview
 
