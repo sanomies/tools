@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onu Sano · Hägustaja</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="description" content="Hägustaja — kata näod ringidega ja hägusta või pikselda need.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Onu Sano · Hägustaja">
+<meta property="og:description" content="Hägustaja — kata näod ringidega ja hägusta või pikselda need.">
+<meta property="og:image" content="assets/onusano-og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="assets/onusano-og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Shared page transition — slides the tool in from the right (reversed on Back). -->
+<link rel="stylesheet" href="../assets/transition.css">
+<script src="../assets/transition.js"></script>
+<style>
+  :root {
+    --bg:           #f6f9fa;   /* app base: delfi-lightgray at 50% over white */
+    --card:         #ffffff;   /* card / panel surface */
+    --border:       #ebebeb;   /* canvas card hairline */
+    --border-2:     #dedfe0;   /* floating toolbar hairline */
+    --ink:          #111317;   /* near-black: text + solid fills */
+    --muted:        #708597;   /* delfi-darkgray: secondary text */
+    --track:        #edf2f4;   /* delfi-lightgray: empty well + selected-chip fill */
+    --hover:        #f2f4f6;   /* subtle hover wash on light controls */
+    --accent:       #fa044f;   /* delfi-red: destructive action + selection chrome */
+    --focus:        #000000;   /* keyboard / active focus ring */
+    --shadow-card:  0 4px 5px rgba(0,0,0,0.10);
+    --shadow-canvas:0 4px 10px rgba(0,0,0,0.10);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: "Google Sans Flex", "Google Sans", "Product Sans", "DM Sans",
+                 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    color-scheme: light;
+    background: linear-gradient(rgba(237,242,244,0.5), rgba(237,242,244,0.5)) #fff;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ───── Single centre column: header · canvas · hint · floating toolbar ───── */
+  .main-column {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 36px;
+  }
+
+  .app-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 400;
+  }
+  .brand-face { height: 36px; width: auto; display: block; }
+  .brand-name { font-weight: 700; }
+  .brand-sub  { font-weight: 300; }
+
+  /* ───── Canvas area ───── */
+  .canvas-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 24px 0;
+  }
+
+  /* Empty state — open drop area: no fill, just an animated dashed outline
+     (the Bänneripigistaja marching-ants pattern) waiting for an image. */
+  .empty-well {
+    width: min(720px, 100%);
+    aspect-ratio: 16 / 9;
+    max-height: 100%;
+    background: transparent;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    cursor: pointer;
+    position: relative;
+    outline: none;
+    transition: background 0.3s ease-in-out;
+  }
+  .empty-well:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .empty-well:hover,
+  .empty-well.drag-hover { background: var(--hover); }
+  .well-border {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+  #well-dash {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 3;
+    stroke-dasharray: 8 6;
+  }
+  .empty-well .up-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+    border-radius: 100px;
+    padding: 12px;
+    box-shadow: var(--shadow-card);
+    color: var(--ink);
+    transition: transform 0.15s;
+  }
+  .empty-well:hover .up-circle { transform: translateY(-2px); }
+  .empty-well .up-circle .ico { width: 22px; height: 22px; display: block; }
+  .ew-title { margin: 0; font-size: 15px; font-weight: 500; }
+  .ew-sub   { margin: 0; font-size: 12px; font-weight: 400; color: var(--muted); }
+
+  /* Loaded state — white card with the full-resolution canvas scaled to fit. */
+  .canvas-card {
+    position: relative;
+    background: var(--card);
+    box-shadow: var(--shadow-canvas);
+  }
+  .stage { position: relative; }
+  #board { display: block; touch-action: none; cursor: crosshair; }
+  .stage.drag-hover::after {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 2px dashed #fff;
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px rgba(17,19,23,0.4), inset 0 0 0 1px rgba(17,19,23,0.4);
+    pointer-events: none;
+  }
+
+  /* Circle chrome — visual only; all hit-testing is done in JS on the canvas. */
+  .overlay { position: absolute; inset: 0; pointer-events: none; }
+  .circle-ol {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    border: 1.5px dashed rgba(255,255,255,0.95);
+    box-shadow: 0 0 0 1px rgba(17,19,23,0.45), inset 0 0 0 1px rgba(17,19,23,0.30);
+  }
+  .circle-ol.selected {
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.85), inset 0 0 0 1px rgba(255,255,255,0.55);
+  }
+  .resize-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--accent);
+    box-shadow: var(--shadow-card);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  /* Side handles stretch one axis (circle → oval); the corner one scales both. */
+  .resize-handle.rh-side { width: 11px; height: 11px; }
+
+  /* ───── Per-circle toolbar (blur type · strength · remove) ─────
+     Lives in stage space so it keeps its designed footprint at any canvas zoom;
+     centred under the selected circle, flipped above it when there's no room. */
+  .circle-toolbar {
+    position: absolute;
+    z-index: 20;
+    width: 292px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    box-shadow: var(--shadow-card);
+    padding: 4px;
+    transform: translateX(-50%);
+  }
+  .ct-types {
+    display: flex;
+    gap: 2px;
+    flex: 0 0 auto;
+  }
+  .ct-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    width: 26px;
+    height: 26px;
+    flex: 0 0 auto;
+    border-radius: 100px;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s;
+  }
+  .ct-btn:hover { background: var(--hover); }
+  .ct-btn .ico { width: 15px; height: 15px; display: block; }
+  .ct-btn.selected { background: var(--track); }
+  .ct-btn.selected:hover { background: #e2e9ec; }
+  .ct-btn.ct-del { color: var(--accent); }
+  .ct-btn.ct-del:hover { background: rgba(250,4,79,0.08); }
+  .ct-btn.ct-del .ico { width: 17px; height: 17px; }
+  .ct-label {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    flex: 0 0 auto;
+  }
+  .ct-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--track);
+    outline: none;
+    margin: 0;
+    cursor: pointer;
+  }
+  .ct-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #000;
+    border: none;
+    cursor: pointer;
+  }
+  .ct-slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #000;
+    border: none;
+    cursor: pointer;
+  }
+  .ct-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--track);
+  }
+
+  /* ───── Hint line ───── */
+  .hint-line {
+    flex: 0 0 auto;
+    margin: 0;
+    min-height: 20px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ───── Floating bottom toolbar ───── */
+  .bottom-toolbar {
+    flex: 0 0 auto;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    box-shadow: var(--shadow-card);
+    padding: 6px;
+  }
+  .tool {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    border-radius: 100px;
+    padding: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+  }
+  .tool .ico { width: 18px; height: 18px; display: block; }
+  .tool:hover { background: var(--hover); }
+  .tool:disabled { opacity: 0.4; cursor: default; }
+  .tool:disabled:hover { background: transparent; }
+  .tool.tool-primary {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: var(--shadow-card);
+  }
+  .tool.tool-primary:hover { background: #2a2d33; }
+  .tool.tool-danger { color: var(--accent); }
+  .tool.tool-danger:hover { background: rgba(250,4,79,0.08); }
+  .tool.tool-danger:disabled:hover { background: transparent; }
+
+  #file-input { display: none; }
+
+  /* ───── Focus visibility (keyboard users) ───── */
+  .tool:focus-visible,
+  .ct-btn:focus-visible,
+  .ct-slider:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ───── Compact layouts ───── */
+  @media (max-width: 860px) {
+    .main-column { padding: 20px; }
+    .app-header { font-size: 18px; }
+    .brand-face { height: 28px; }
+    .canvas-area { padding: 16px 0; }
+  }
+
+  /* ───── Reduced motion ───── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <main class="main-column">
+    <h1 class="app-header">
+      <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
+      <span class="brand-name">Onu Sano®</span>
+      <span class="brand-sub">Hägustaja</span>
+    </h1>
+
+    <div class="canvas-area" id="canvas-area">
+      <!-- Empty state: upload well -->
+      <div class="empty-well" id="empty-well" role="button" tabindex="0" aria-label="Laadi pilt üles">
+        <svg class="well-border" aria-hidden="true">
+          <rect id="well-dash" x="2" y="2" rx="14" ry="14"/>
+        </svg>
+        <span class="up-circle">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </span>
+        <p class="ew-title">Drag an image here or click to upload</p>
+        <p class="ew-sub">JPG · PNG · WebP</p>
+      </div>
+
+      <!-- Loaded state: full-res canvas scaled to fit + circle chrome overlay -->
+      <div class="canvas-card hidden" id="canvas-card">
+        <div class="stage" id="stage">
+          <canvas id="board"></canvas>
+          <div class="overlay" id="overlay" aria-hidden="true"></div>
+          <div class="resize-handle hidden" id="handle-uni" aria-hidden="true"></div>
+          <div class="resize-handle rh-side hidden" id="handle-x" aria-hidden="true"></div>
+          <div class="resize-handle rh-side hidden" id="handle-y" aria-hidden="true"></div>
+
+          <!-- Per-circle toolbar: blur type · strength · remove -->
+          <div class="circle-toolbar hidden" id="circle-toolbar">
+            <div class="ct-types" role="radiogroup" aria-label="Hägu tüüp">
+              <button class="ct-btn" id="type-blur" type="button" role="radio" aria-checked="false" title="Sujuv hägu" aria-label="Sujuv hägu">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              </button>
+              <button class="ct-btn" id="type-pixel" type="button" role="radio" aria-checked="false" title="Pikselda" aria-label="Pikselda">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              </button>
+            </div>
+            <span class="ct-label" id="amount-label">Blur amount</span>
+            <input class="ct-slider" id="amount-slider" type="range" min="5" max="100" step="1" value="60" aria-labelledby="amount-label">
+            <button class="ct-btn ct-del" id="circle-delete" type="button" title="Eemalda ring" aria-label="Eemalda ring">
+              <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="hint-line" id="hint">&nbsp;</p>
+
+    <!-- Floating toolbar: upload · add circle · remove image · download -->
+    <div class="bottom-toolbar">
+      <button class="tool tool-primary" id="upload-btn" type="button" title="Laadi pilt üles" aria-label="Laadi pilt üles">
+        <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </button>
+      <button class="tool" id="add-circle-btn" type="button" title="Lisa ring" aria-label="Lisa ring" disabled>
+        <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+      </button>
+      <button class="tool tool-danger" id="remove-image-btn" type="button" title="Eemalda pilt" aria-label="Eemalda pilt" disabled>
+        <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+      </button>
+      <button class="tool" id="download-btn" type="button" title="Laadi pilt alla" aria-label="Laadi pilt alla" disabled>
+        <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+    </div>
+  </main>
+
+  <input type="file" id="file-input" accept="image/*">
+
+  <script>
+  "use strict";
+
+  /* ═══════════════════════ State ═══════════════════════ */
+
+  const area      = document.getElementById("canvas-area");
+  const emptyWell = document.getElementById("empty-well");
+  const card      = document.getElementById("canvas-card");
+  const stage     = document.getElementById("stage");
+  const board     = document.getElementById("board");
+  const overlay   = document.getElementById("overlay");
+  const handleUni = document.getElementById("handle-uni");
+  const handleX   = document.getElementById("handle-x");
+  const handleY   = document.getElementById("handle-y");
+  const toolbar   = document.getElementById("circle-toolbar");
+  const hint      = document.getElementById("hint");
+  const fileInput = document.getElementById("file-input");
+
+  const typeBlurBtn  = document.getElementById("type-blur");
+  const typePixelBtn = document.getElementById("type-pixel");
+  const amountSlider = document.getElementById("amount-slider");
+  const circleDelBtn = document.getElementById("circle-delete");
+
+  const uploadBtn    = document.getElementById("upload-btn");
+  const addCircleBtn = document.getElementById("add-circle-btn");
+  const removeImgBtn = document.getElementById("remove-image-btn");
+  const downloadBtn  = document.getElementById("download-btn");
+
+  const ctx = board.getContext("2d");
+
+  let img = null;            // base image as a canvas (decoded once, fast to redraw)
+  let W = 0, H = 0;          // image size in native pixels
+  let scale = 1;             // native px → screen px
+  let srcMime = "image/png"; // export format follows the source (jpg in → jpg out)
+  let srcStem = "pilt";      // download filename stem
+
+  /* One circle = { x, y, rx, ry, type: "blur"|"pixel", amount: 5..100 } in image
+     coords. rx === ry is a circle; the side handles stretch it into an oval. */
+  let circles = [];
+  let sel = -1;
+  let hover = -1;    // circle under the cursor — its outline previews on hover
+
+  /* New circles copy the previous circle's settings; the last-used toolbar
+     values cover the case where every circle has been deleted since. */
+  let lastType = "blur";
+  let lastAmount = 60;
+
+  function inheritedSettings() {
+    const prev = circles.length ? circles[circles.length - 1] : null;
+    return prev ? { type: prev.type, amount: prev.amount }
+                : { type: lastType, amount: lastAmount };
+  }
+
+  const COS45 = Math.SQRT1_2;
+
+  /* ═══════════════════════ Effects ═══════════════════════ */
+
+  const tmp = document.createElement("canvas");
+  const tctx = tmp.getContext("2d");
+  const grid = document.createElement("canvas");     // mosaic downscale buffer
+  const gctx = grid.getContext("2d");
+
+  /* Soft elliptical mask, applied to whatever is in tmp: fully opaque over the
+     drawn ellipse, fading to nothing across the feather band just outside it —
+     so the effect bleeds past the outline instead of stopping at a hard edge.
+     (cx, cy) is the ellipse centre in tmp coords; (orx, ory) the outer radii
+     including the feather; t0 where the fade starts (inner edge / outer edge). */
+  function featherMask(cx, cy, orx, ory, t0) {
+    tctx.globalCompositeOperation = "destination-in";
+    tctx.save();
+    tctx.translate(cx, cy);
+    tctx.scale(orx, ory);
+    const g = tctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    g.addColorStop(0, "#000");
+    g.addColorStop(Math.min(t0, 0.99), "#000");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    tctx.fillStyle = g;
+    tctx.fillRect(-cx / orx, -cy / ory, tmp.width / orx, tmp.height / ory);
+    tctx.restore();
+    tctx.globalCompositeOperation = "source-over";
+  }
+
+  /* ctx.filter shipped everywhere by 2024 (Safari 18); older Safari falls back
+     to a two-pass downscale/upscale approximation below. */
+  const FILTER_OK = (() => {
+    const c = document.createElement("canvas").getContext("2d");
+    c.filter = "blur(2px)";
+    return c.filter !== "none";
+  })();
+
+  function fallbackBlurRegion(dst, src, sx, sy, sw, sh, radius) {
+    const f = Math.max(2, radius / 1.5);
+    const dw = Math.max(1, Math.round(sw / f));
+    const dh = Math.max(1, Math.round(sh / f));
+    const a = document.createElement("canvas");
+    a.width = dw; a.height = dh;
+    const actx = a.getContext("2d");
+    actx.drawImage(src, sx, sy, sw, sh, 0, 0, dw, dh);
+    const bw = Math.max(1, Math.round(dw / 2));
+    const bh = Math.max(1, Math.round(dh / 2));
+    const b = document.createElement("canvas");
+    b.width = bw; b.height = bh;
+    b.getContext("2d").drawImage(a, 0, 0, dw, dh, 0, 0, bw, bh);
+    actx.clearRect(0, 0, dw, dh);
+    actx.drawImage(b, 0, 0, bw, bh, 0, 0, dw, dh);
+    dst.drawImage(a, 0, 0, dw, dh, 0, 0, sw, sh);
+  }
+
+  function applyEffect(c) {
+    const avgR = (c.rx + c.ry) / 2;
+
+    if (c.type === "pixel") {
+      /* Mosaic: average the ellipse's neighbourhood down to a coarse grid, scale
+         it back up with smoothing off, then feather-mask it over the photo.
+         Strength = fewer, bigger blocks; the soft edge is about one block wide. */
+      const blocks = Math.round(30 - (c.amount / 100) * 25);   // across the diameter
+      const block = Math.max(2, (avgR * 2) / blocks);
+      const feather = Math.max(6, block * 1.2);
+      const orx = c.rx + feather, ory = c.ry + feather;
+      const bx = Math.max(0, Math.floor(c.x - orx));
+      const by = Math.max(0, Math.floor(c.y - ory));
+      const bw = Math.min(W, Math.ceil(c.x + orx)) - bx;
+      const bh = Math.min(H, Math.ceil(c.y + ory)) - by;
+      if (bw <= 0 || bh <= 0) return;
+      const gw = Math.max(1, Math.round(bw / block));
+      const gh = Math.max(1, Math.round(bh / block));
+      grid.width = gw; grid.height = gh;
+      gctx.imageSmoothingEnabled = true;
+      gctx.drawImage(img, bx, by, bw, bh, 0, 0, gw, gh);
+      tmp.width = bw; tmp.height = bh;
+      tctx.imageSmoothingEnabled = false;
+      tctx.drawImage(grid, 0, 0, gw, gh, 0, 0, bw, bh);
+      tctx.imageSmoothingEnabled = true;
+      featherMask(c.x - bx, c.y - by, orx, ory,
+                  (c.rx / orx + c.ry / ory) / 2);
+      ctx.drawImage(tmp, bx, by);
+    } else {
+      /* Smooth blur: blur radius scales with the ellipse so a face-sized circle
+         reads the same on a phone photo and a 4K press photo. The work region is
+         padded by 2× the radius so the feathered edge samples real pixels, and
+         the blur spills past the outline across a feather band. */
+      const radius = Math.max(2, avgR * 0.5 * (c.amount / 100));
+      const feather = Math.max(6, radius * 1.25);
+      const orx = c.rx + feather, ory = c.ry + feather;
+      const pad = Math.ceil(radius * 2);
+      const ex = Math.max(0, Math.floor(c.x - orx) - pad);
+      const ey = Math.max(0, Math.floor(c.y - ory) - pad);
+      const ew = Math.min(W, Math.ceil(c.x + orx) + pad) - ex;
+      const eh = Math.min(H, Math.ceil(c.y + ory) + pad) - ey;
+      if (ew <= 0 || eh <= 0) return;
+      tmp.width = ew; tmp.height = eh;
+      if (FILTER_OK) {
+        tctx.filter = "blur(" + radius + "px)";
+        tctx.drawImage(img, ex, ey, ew, eh, 0, 0, ew, eh);
+        tctx.filter = "none";
+      } else {
+        fallbackBlurRegion(tctx, img, ex, ey, ew, eh, radius);
+      }
+      featherMask(c.x - ex, c.y - ey, orx, ory,
+                  (c.rx / orx + c.ry / ory) / 2);
+      ctx.drawImage(tmp, ex, ey);
+    }
+  }
+
+  /* ═══════════════════════ Rendering ═══════════════════════ */
+
+  let renderQueued = false;
+
+  function requestRender() {
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(() => {
+      renderQueued = false;
+      render();
+      syncChrome();
+    });
+  }
+
+  function render() {
+    if (!img) return;
+    ctx.drawImage(img, 0, 0);
+    for (const c of circles) applyEffect(c);
+  }
+
+  /* Fit the native-resolution canvas into the available area. The canvas keeps
+     its true pixel size; only its CSS size changes, so preview = export. */
+  function layout() {
+    if (!img) return;
+    const rect = area.getBoundingClientRect();
+    const availW = rect.width;
+    const availH = rect.height - 48;                 // canvas-area vertical padding
+    scale = Math.min(availW / W, availH / H, 1);
+    const cssW = Math.max(1, Math.round(W * scale));
+    const cssH = Math.max(1, Math.round(H * scale));
+    board.style.width = cssW + "px";
+    board.style.height = cssH + "px";
+    stage.style.width = cssW + "px";
+    stage.style.height = cssH + "px";
+    syncChrome();
+  }
+
+  /* Keep the DOM chrome (dashed outlines, handle, toolbar) glued to the circles.
+     An applied circle shows no outline — chrome appears only while a circle is
+     selected or hovered, so the deselected view is the clean final result. */
+  function syncChrome() {
+    while (overlay.children.length > circles.length) overlay.lastChild.remove();
+    while (overlay.children.length < circles.length) {
+      const d = document.createElement("div");
+      d.className = "circle-ol";
+      overlay.appendChild(d);
+    }
+    circles.forEach((c, i) => {
+      const d = overlay.children[i];
+      d.style.left = (c.x - c.rx) * scale + "px";
+      d.style.top = (c.y - c.ry) * scale + "px";
+      d.style.width = c.rx * 2 * scale + "px";
+      d.style.height = c.ry * 2 * scale + "px";
+      d.classList.toggle("selected", i === sel);
+      d.classList.toggle("hidden", i !== sel && i !== hover);
+    });
+
+    if (sel >= 0) {
+      const c = circles[sel];
+      handleUni.classList.remove("hidden");
+      handleUni.style.left = (c.x + c.rx * COS45) * scale + "px";
+      handleUni.style.top = (c.y + c.ry * COS45) * scale + "px";
+      handleX.classList.remove("hidden");
+      handleX.style.left = (c.x + c.rx) * scale + "px";
+      handleX.style.top = c.y * scale + "px";
+      handleY.classList.remove("hidden");
+      handleY.style.left = c.x * scale + "px";
+      handleY.style.top = (c.y + c.ry) * scale + "px";
+      placeToolbar();
+    } else {
+      for (const h of [handleUni, handleX, handleY]) h.classList.add("hidden");
+      toolbar.classList.add("hidden");
+    }
+    updateHint();
+  }
+
+  function placeToolbar() {
+    const c = circles[sel];
+    toolbar.classList.remove("hidden");
+    const tw = toolbar.offsetWidth, th = toolbar.offsetHeight;
+    const sw = W * scale, sh = H * scale;
+    let x = c.x * scale;
+    let y = (c.y + c.ry) * scale + 12;
+    if (y + th > sh - 4) y = (c.y - c.ry) * scale - th - 12;  // no room below → flip above
+    x = Math.min(Math.max(x, tw / 2 + 4), Math.max(tw / 2 + 4, sw - tw / 2 - 4));
+    y = Math.min(Math.max(y, 4), Math.max(4, sh - th - 4));
+    toolbar.style.left = x + "px";
+    toolbar.style.top = y + "px";
+  }
+
+  function updateToolbarUI() {
+    if (sel < 0) return;
+    const c = circles[sel];
+    amountSlider.value = c.amount;
+    typeBlurBtn.classList.toggle("selected", c.type === "blur");
+    typeBlurBtn.setAttribute("aria-checked", c.type === "blur");
+    typePixelBtn.classList.toggle("selected", c.type === "pixel");
+    typePixelBtn.setAttribute("aria-checked", c.type === "pixel");
+  }
+
+  function updateHint() {
+    if (!img) { hint.innerHTML = "&nbsp;"; return; }
+    if (sel >= 0) {
+      hint.textContent = "Lohista ringi liigutamiseks · nurgasangast muuda suurust · külgsangadest venita ovaaliks · Delete eemaldab";
+    } else if (circles.length === 0) {
+      hint.textContent = "Klõpsa näol, et lisada hägustav ring — või lohista, et määrata suurus kohe";
+    } else {
+      hint.textContent = "Klõpsa ringil, et muuta selle hägu · klõpsa mujal pildil, et lisada uus ring";
+    }
+  }
+
+  /* ═══════════════════════ Selection ═══════════════════════ */
+
+  function select(i) {
+    sel = i;
+    if (sel >= 0) updateToolbarUI();
+    syncChrome();
+  }
+
+  function removeSelected() {
+    if (sel < 0) return;
+    circles.splice(sel, 1);
+    sel = -1;
+    hover = -1;
+    requestRender();
+  }
+
+  /* ═══════════════════════ Pointer interaction ═══════════════════════ */
+
+  const MIN_R = 8;                                   // image px
+  const defaultR = () => Math.max(24, Math.min(W, H) * 0.09);
+
+  let mode = null;      // "move" | "resize-uni" | "resize-x" | "resize-y" | "create"
+  let grabDX = 0, grabDY = 0;
+  let baseRx = 0, baseRy = 0, baseDist = 1;          // uniform-scale reference
+
+  function toImg(e) {
+    const r = board.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale };
+  }
+
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+
+  /* Topmost circle wins; the selected circle's handles win over everything.
+     Corner handle scales both radii, the side handles stretch one axis. */
+  function hitTest(p) {
+    if (sel >= 0) {
+      const c = circles[sel];
+      const hr = 12 / scale;
+      if (dist(p.x, p.y, c.x + c.rx * COS45, c.y + c.ry * COS45) <= hr) return { kind: "handle-uni" };
+      if (dist(p.x, p.y, c.x + c.rx, c.y) <= hr) return { kind: "handle-x" };
+      if (dist(p.x, p.y, c.x, c.y + c.ry) <= hr) return { kind: "handle-y" };
+    }
+    for (let i = circles.length - 1; i >= 0; i--) {
+      const c = circles[i];
+      const tol = 4 / scale;
+      const nx = (p.x - c.x) / (c.rx + tol);
+      const ny = (p.y - c.y) / (c.ry + tol);
+      if (nx * nx + ny * ny <= 1) return { kind: "circle", index: i };
+    }
+    return { kind: "empty" };
+  }
+
+  stage.addEventListener("pointerdown", (e) => {
+    if (!img || e.button !== 0) return;
+    if (e.target.closest(".circle-toolbar")) return;   // toolbar clicks stay in the toolbar
+    const p = toImg(e);
+    const hit = hitTest(p);
+
+    if (hit.kind === "handle-uni") {
+      mode = "resize-uni";
+      const c = circles[sel];
+      baseRx = c.rx;
+      baseRy = c.ry;
+      baseDist = Math.max(1e-3, dist(p.x, p.y, c.x, c.y));
+    } else if (hit.kind === "handle-x") {
+      mode = "resize-x";
+    } else if (hit.kind === "handle-y") {
+      mode = "resize-y";
+    } else if (hit.kind === "circle") {
+      select(hit.index);
+      mode = "move";
+      const c = circles[sel];
+      grabDX = c.x - p.x;
+      grabDY = c.y - p.y;
+    } else {
+      /* Click on the photo = new circle there. A drag sizes it immediately;
+         a plain click gets a sensible face-sized default on pointerup. */
+      const inh = inheritedSettings();
+      circles.push({
+        x: clamp(p.x, 0, W),
+        y: clamp(p.y, 0, H),
+        rx: MIN_R,
+        ry: MIN_R,
+        type: inh.type,
+        amount: inh.amount,
+      });
+      select(circles.length - 1);
+      mode = "create";
+      requestRender();
+    }
+    try { stage.setPointerCapture(e.pointerId); } catch (_) { /* pointer already gone */ }
+    e.preventDefault();
+  });
+
+  stage.addEventListener("pointermove", (e) => {
+    if (!img) return;
+    const p = toImg(e);
+
+    if (!mode) {
+      const hit = hitTest(p);
+      board.style.cursor =
+        hit.kind === "handle-uni" ? "nwse-resize" :
+        hit.kind === "handle-x" ? "ew-resize" :
+        hit.kind === "handle-y" ? "ns-resize" :
+        hit.kind === "circle" ? "move" : "crosshair";
+      const h = hit.kind === "circle" ? hit.index :
+                hit.kind === "empty" ? -1 : sel;      // over a handle → keep its circle lit
+      if (h !== hover) { hover = h; syncChrome(); }
+      return;
+    }
+
+    const c = circles[sel];
+    if (!c) return;
+    const R_MAX = Math.max(W, H);
+    if (mode === "move") {
+      c.x = clamp(p.x + grabDX, 0, W);
+      c.y = clamp(p.y + grabDY, 0, H);
+    } else if (mode === "resize-x") {
+      c.rx = clamp(Math.abs(p.x - c.x), MIN_R, R_MAX);
+    } else if (mode === "resize-y") {
+      c.ry = clamp(Math.abs(p.y - c.y), MIN_R, R_MAX);
+    } else if (mode === "resize-uni") {
+      const k = dist(p.x, p.y, c.x, c.y) / baseDist;
+      c.rx = clamp(baseRx * k, MIN_R, R_MAX);
+      c.ry = clamp(baseRy * k, MIN_R, R_MAX);
+    } else {                                          // create: starts as a circle
+      c.rx = c.ry = clamp(dist(p.x, p.y, c.x, c.y), MIN_R, R_MAX);
+    }
+    requestRender();
+  });
+
+  function endPointer() {
+    if (mode === "create" && sel >= 0) {
+      const c = circles[sel];
+      if (c.rx < MIN_R * 1.5) c.rx = c.ry = defaultR();   // plain click → default size
+      requestRender();
+    }
+    mode = null;
+  }
+  stage.addEventListener("pointerup", endPointer);
+  stage.addEventListener("pointercancel", endPointer);
+  stage.addEventListener("pointerleave", () => {
+    if (hover !== -1) { hover = -1; syncChrome(); }
+  });
+
+  /* Click on the backdrop around the canvas deselects. */
+  area.addEventListener("pointerdown", (e) => {
+    if (e.target === area) select(-1);
+  });
+
+  /* ═══════════════════════ Keyboard ═══════════════════════ */
+
+  window.addEventListener("keydown", (e) => {
+    if (!img) return;
+    const t = document.activeElement;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+
+    if (e.key === "Escape") { select(-1); return; }
+    if (sel < 0) return;
+
+    const c = circles[sel];
+    const step = (e.shiftKey ? 10 : 1) / scale;
+    let handled = true;
+
+    switch (e.key) {
+      case "Delete":
+      case "Backspace": removeSelected(); break;
+      case "ArrowLeft":  c.x = clamp(c.x - step, 0, W); break;
+      case "ArrowRight": c.x = clamp(c.x + step, 0, W); break;
+      case "ArrowUp":    c.y = clamp(c.y - step, 0, H); break;
+      case "ArrowDown":  c.y = clamp(c.y + step, 0, H); break;
+      case "+":
+      case "=":
+        c.rx = clamp(c.rx + step * 2, MIN_R, Math.max(W, H));
+        c.ry = clamp(c.ry + step * 2, MIN_R, Math.max(W, H));
+        break;
+      case "-":
+        c.rx = clamp(c.rx - step * 2, MIN_R, Math.max(W, H));
+        c.ry = clamp(c.ry - step * 2, MIN_R, Math.max(W, H));
+        break;
+      default: handled = false;
+    }
+    if (handled) {
+      e.preventDefault();
+      requestRender();
+    }
+  });
+
+  /* ═══════════════════════ Circle toolbar ═══════════════════════ */
+
+  function setType(type) {
+    if (sel < 0) return;
+    circles[sel].type = type;
+    lastType = type;
+    updateToolbarUI();
+    requestRender();
+  }
+  typeBlurBtn.addEventListener("click", () => setType("blur"));
+  typePixelBtn.addEventListener("click", () => setType("pixel"));
+
+  amountSlider.addEventListener("input", () => {
+    if (sel < 0) return;
+    circles[sel].amount = +amountSlider.value;
+    lastAmount = +amountSlider.value;
+    requestRender();
+  });
+
+  circleDelBtn.addEventListener("click", removeSelected);
+
+  /* ═══════════════════════ Bottom toolbar ═══════════════════════ */
+
+  uploadBtn.addEventListener("click", () => fileInput.click());
+  emptyWell.addEventListener("click", () => fileInput.click());
+  emptyWell.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); }
+  });
+
+  addCircleBtn.addEventListener("click", () => {
+    if (!img) return;
+    /* Stack from the centre with a small offset so repeated adds stay visible. */
+    const n = circles.length;
+    const off = (n % 5) * 30 / scale;
+    const inh = inheritedSettings();
+    circles.push({
+      x: clamp(W / 2 + off, 0, W),
+      y: clamp(H / 2 + off, 0, H),
+      rx: defaultR(),
+      ry: defaultR(),
+      type: inh.type,
+      amount: inh.amount,
+    });
+    select(circles.length - 1);
+    requestRender();
+  });
+
+  removeImgBtn.addEventListener("click", () => {
+    img = null;
+    circles = [];
+    sel = -1;
+    hover = -1;
+    card.classList.add("hidden");
+    emptyWell.classList.remove("hidden");
+    for (const b of [addCircleBtn, removeImgBtn, downloadBtn]) b.disabled = true;
+    fileInput.value = "";
+    updateHint();
+  });
+
+  downloadBtn.addEventListener("click", () => {
+    if (!img) return;
+    board.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = srcStem + "-hagustatud" + (srcMime === "image/jpeg" ? ".jpg" : ".png");
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }, srcMime, 0.92);
+  });
+
+  /* ═══════════════════════ Loading images ═══════════════════════ */
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files && fileInput.files[0]) loadFile(fileInput.files[0]);
+  });
+
+  function loadFile(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => {
+      URL.revokeObjectURL(url);
+      /* Cap huge press photos so every redraw stays snappy; 4500px is plenty. */
+      const MAX = 4500;
+      const k = Math.min(1, MAX / Math.max(im.naturalWidth, im.naturalHeight));
+      W = Math.max(1, Math.round(im.naturalWidth * k));
+      H = Math.max(1, Math.round(im.naturalHeight * k));
+
+      const base = document.createElement("canvas");
+      base.width = W; base.height = H;
+      base.getContext("2d").drawImage(im, 0, 0, W, H);
+      img = base;
+
+      srcMime = file.type === "image/jpeg" ? "image/jpeg" : "image/png";
+      srcStem = (file.name || "pilt").replace(/\.[^.]+$/, "") || "pilt";
+      circles = [];
+      sel = -1;
+      hover = -1;
+
+      board.width = W;
+      board.height = H;
+      emptyWell.classList.add("hidden");
+      card.classList.remove("hidden");
+      for (const b of [addCircleBtn, removeImgBtn, downloadBtn]) b.disabled = false;
+      layout();
+      requestRender();
+    };
+    im.onerror = () => URL.revokeObjectURL(url);
+    im.src = url;
+  }
+
+  /* Drag & drop — onto the well or straight onto the canvas (replaces the photo). */
+  for (const el of [emptyWell, stage]) {
+    el.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      el.classList.add("drag-hover");
+    });
+    el.addEventListener("dragleave", () => el.classList.remove("drag-hover"));
+    el.addEventListener("drop", (e) => {
+      e.preventDefault();
+      el.classList.remove("drag-hover");
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) loadFile(f);
+    });
+  }
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => e.preventDefault());
+
+  /* Paste an image from the clipboard. */
+  window.addEventListener("paste", (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const f = item.getAsFile();
+        if (f) { loadFile(f); e.preventDefault(); }
+        return;
+      }
+    }
+  });
+
+  /* ═══════════ Animated drop-zone dash (Bänneripigistaja pattern) ═══════════ */
+
+  const wellDash = document.getElementById("well-dash");
+  const WELL_RX = 14;                    // must match rx/ry on the SVG rect
+  const DASH_CYCLE = 14;                 // stroke-dasharray 8 + 6
+  const DASH_SLOW = DASH_CYCLE / 3;      // px/s at rest — one cycle per 3s
+  const DASH_FAST = DASH_CYCLE / 0.7;    // px/s while hovered / dragged over
+  let dashOffset = 0, dashSpeed = DASH_SLOW, dashPrev = null;
+
+  function fitWellDash() {
+    const rw = Math.max(1, emptyWell.clientWidth - 4);
+    const rh = Math.max(1, emptyWell.clientHeight - 4);
+    wellDash.setAttribute("width", rw);
+    wellDash.setAttribute("height", rh);
+    /* Normalise the path to whole dash cycles so the pattern meets itself
+       cleanly at the seam instead of leaving a broken dash. */
+    const perimeter = 2 * (rw + rh) - 8 * WELL_RX + 2 * Math.PI * WELL_RX;
+    wellDash.setAttribute("pathLength", Math.max(1, Math.round(perimeter / DASH_CYCLE)) * DASH_CYCLE);
+  }
+
+  const REDUCED_MOTION = matchMedia("(prefers-reduced-motion: reduce)");
+
+  function tickDash(ts) {
+    if (dashPrev !== null && !emptyWell.classList.contains("hidden") && !REDUCED_MOTION.matches) {
+      const dt = Math.min(0.1, (ts - dashPrev) / 1000);
+      const target = (emptyWell.matches(":hover") || emptyWell.classList.contains("drag-hover"))
+        ? DASH_FAST : DASH_SLOW;
+      dashSpeed += (target - dashSpeed) * Math.min(1, 5 * dt);
+      dashOffset = (dashOffset - dashSpeed * dt) % DASH_CYCLE;
+      wellDash.setAttribute("stroke-dashoffset", dashOffset);
+    }
+    dashPrev = ts;
+    requestAnimationFrame(tickDash);
+  }
+  requestAnimationFrame(tickDash);
+  new ResizeObserver(fitWellDash).observe(emptyWell);
+
+  /* ═══════════════════════ Resize ═══════════════════════ */
+
+  new ResizeObserver(() => layout()).observe(area);
+  </script>
+</body>
+</html>
