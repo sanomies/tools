@@ -26,7 +26,7 @@
     --ink:          #111317;   /* near-black: headings + solid fills */
     --muted:        #708597;   /* delfi-darkgray: secondary text */
     --focus:        #000000;   /* keyboard focus ring */
-    --name-size:    clamp(28px, 5.2vw, 46px);   /* tool name type size */
+    --name-size:    clamp(26px, 4.6vw, 42px);   /* tool name type size */
     --preview-w:    336px;                      /* cursor thumbnail width (16:9) */
   }
 
@@ -211,12 +211,16 @@
   @keyframes os-intro { from { opacity: 0; transform: translateY(18px); } }
   html.intro .app-header   { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) both; }
   html.intro .tools > *    { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) both; }
-  html.intro .tools > *:nth-child(1) { animation-delay: .12s; }
-  html.intro .tools > *:nth-child(2) { animation-delay: .17s; }
-  html.intro .tools > *:nth-child(3) { animation-delay: .22s; }
-  html.intro .tools > *:nth-child(4) { animation-delay: .27s; }
-  html.intro .tools > *:nth-child(5) { animation-delay: .32s; }
-  html.intro .tools > *:nth-child(6) { animation-delay: .37s; }
+  html.intro .tools > *:nth-child(1)  { animation-delay: .12s; }
+  html.intro .tools > *:nth-child(2)  { animation-delay: .17s; }
+  html.intro .tools > *:nth-child(3)  { animation-delay: .22s; }
+  html.intro .tools > *:nth-child(4)  { animation-delay: .27s; }
+  html.intro .tools > *:nth-child(5)  { animation-delay: .32s; }
+  html.intro .tools > *:nth-child(6)  { animation-delay: .37s; }
+  html.intro .tools > *:nth-child(7)  { animation-delay: .42s; }
+  html.intro .tools > *:nth-child(8)  { animation-delay: .47s; }
+  html.intro .tools > *:nth-child(9)  { animation-delay: .52s; }
+  html.intro .tools > *:nth-child(10) { animation-delay: .57s; }
   html.intro .page-footer  { animation: os-intro .5s cubic-bezier(.65, 0, .35, 1) .48s both; }
   @media (prefers-reduced-motion: reduce) {
     html.intro .app-header,
@@ -232,10 +236,15 @@
     .brand-face { height: 51px; }
     .tools { gap: 24px; }
   }
-  /* Short windows: tighten so the whole list stays in view. */
+  /* Shorter windows (13" MacBooks and down): smaller names, tighter list,
+     so every tool stays in view without scrolling. */
+  @media (max-height: 950px) {
+    :root { --name-size: clamp(22px, 3.6vw, 34px); }
+    .tools { gap: 24px; }
+  }
   @media (max-height: 700px) {
-    :root { --name-size: clamp(24px, 4.2vw, 36px); }
-    .tools { gap: 18px; }
+    :root { --name-size: clamp(20px, 3.2vw, 28px); }
+    .tools { gap: 16px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
