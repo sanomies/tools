@@ -72,6 +72,17 @@
   .brand-face { height: 36px; width: auto; display: block; }
   .brand-name { font-weight: 700; }
   .brand-sub  { font-weight: 300; }
+  /* The logo links back to the launcher (same pattern as the sister tools). */
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+  }
+  .brand-face { transform-origin: right center; transition: transform .2s ease; }
+  .app-header:hover .brand-face { transform: rotate(-4deg); }
 
   /* ───── Canvas area ───── */
   .canvas-area {
@@ -350,9 +361,11 @@
 <body>
   <main class="main-column">
     <h1 class="app-header">
-      <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
-      <span class="brand-name">Onu Sano®</span>
-      <span class="brand-sub">Hägustaja</span>
+      <a class="brand-link" href="../" aria-label="Tagasi Onu Sano tööriistadesse">
+        <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
+        <span class="brand-name">Onu Sano®</span>
+        <span class="brand-sub">Hägustaja</span>
+      </a>
     </h1>
 
     <div class="canvas-area" id="canvas-area">
