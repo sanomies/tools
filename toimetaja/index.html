@@ -1,0 +1,2540 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onu Sano · Toimetaja</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="description" content="Toimetaja — 1920×1080 Arvamuse pilt: foto või kollaaž, hägustatud näod, tsitaadimull ja autori nägu ringis.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Onu Sano · Toimetaja">
+<meta property="og:description" content="Toimetaja — 1920×1080 Arvamuse pilt: foto või kollaaž, hägustatud näod, tsitaadimull ja autori nägu ringis.">
+<meta property="og:image" content="assets/onusano-og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="assets/onusano-og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Shared page transition — slides the tool in from the right (reversed on Back). -->
+<link rel="stylesheet" href="../assets/transition.css">
+<script src="../assets/transition.js"></script>
+<style>
+  :root {
+    --bg:           #f6f9fa;   /* app base: delfi-lightgray at 50% over white */
+    --card:         #ffffff;   /* card / panel surface */
+    --border:       #ebebeb;   /* canvas card hairline */
+    --border-2:     #dedfe0;   /* sidebar + floating toolbar hairline */
+    --ink:          #111317;   /* near-black: text + solid fills */
+    --muted:        #708597;   /* delfi-darkgray: secondary text */
+    --track:        #edf2f4;   /* delfi-lightgray: empty well + selected-chip fill */
+    --hover:        #f2f4f6;   /* subtle hover wash on light controls */
+    --accent:       #fa044f;   /* delfi-red: destructive action + selection chrome */
+    --focus:        #000000;   /* keyboard / active focus ring */
+    --shadow-card:  0 4px 5px rgba(0,0,0,0.10);
+    --shadow-canvas:0 4px 10px rgba(0,0,0,0.10);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: "Google Sans Flex", "Google Sans", "Product Sans", "DM Sans",
+                 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    color-scheme: light;
+    background: linear-gradient(rgba(237,242,244,0.5), rgba(237,242,244,0.5)) #fff;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ───── App shell: attached 300px left sidebar (Kollaažer) + centre column (Hägustaja) ───── */
+  .app-shell {
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+  }
+
+  /* ───── Left sidebar (Elements · Format) ───── */
+  .sidebar {
+    flex: 0 0 auto;
+    width: 300px;
+    height: 100%;
+    background: var(--card);
+    border-right: 1px solid var(--border-2);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  /* Centred when there's room, scrollable from the top when there isn't — auto margins
+     collapse to 0 once the content overflows, unlike justify-content: center. */
+  .side-section:first-child { margin-top: auto; }
+  .side-section:last-child  { margin-bottom: auto; }
+  .side-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+  }
+  .side-section.elements { border-bottom: 1px solid var(--border-2); padding-bottom: 20px; }
+  .side-section.formats  { padding-bottom: 28px; }
+  .side-heading {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .side-note {
+    margin: -4px 0 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--muted);
+    text-align: center;
+    max-width: 220px;
+  }
+
+  /* Element gallery — the two Arvamus graphics, drawn by JS with the same painter the
+     canvas uses, so the thumbnail is the real thing at a small size. Click adds one. */
+  .element-list {
+    width: 226px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .element-thumb {
+    appearance: none;
+    border: none;
+    background: transparent;
+    font: inherit;
+    color: var(--ink);
+    padding: 6px 2px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    touch-action: none;       /* the thumb can also be dragged onto the board */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.15s, opacity 0.15s;
+  }
+  .element-thumb:hover { background: var(--hover); }
+  .element-thumb:active { background: var(--track); }
+  .element-thumb:disabled { opacity: 0.4; cursor: default; }
+  .element-thumb:disabled:hover { background: transparent; }
+  .element-thumb .el-preview {
+    width: 56px;
+    height: 56px;
+    display: block;
+  }
+  .element-thumb .el-name {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .element-thumb .el-plus {
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  /* Format — two choices at rest: one 16:9 photo (the default) or a collage. */
+  .mode-list {
+    width: 226px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .mode-chip {
+    appearance: none;
+    border: 1px solid var(--border-2);
+    background: var(--card);
+    font: inherit;
+    color: var(--ink);
+    padding: 10px 8px 9px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  .mode-chip .ico { width: 22px; height: 22px; display: block; }
+  .mode-chip:hover { background: var(--hover); }
+  .mode-chip.selected { background: var(--track); border-color: var(--ink); }
+
+  /* The collage panel unfolds under "Kollaaž" (grid rows 0fr → 1fr animate the height) and
+     is inert while folded, so its buttons are out of the tab order. */
+  .collage-panel {
+    width: 226px;
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    overflow: hidden;
+    transition: grid-template-rows 0.28s ease, opacity 0.2s ease;
+  }
+  .collage-panel.open { grid-template-rows: 1fr; opacity: 1; }
+  .collage-inner {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 4px 4px;    /* room for focus rings inside the clipping panel */
+  }
+  .stroke-block {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-2);
+  }
+
+  /* Format gallery (Kollaažer) — the grid templates, two per row. Thumbs are drawn by JS
+     from the same template table the canvas uses, so the preview always matches the fill
+     order. */
+  .format-list {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .format-thumb {
+    appearance: none;
+    border: none;
+    background: transparent;
+    font: inherit;
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+  .format-thumb:hover { background: var(--hover); }
+  .format-thumb.selected { background: var(--track); }
+  .format-thumb .mini-board {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--muted);
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .format-thumb.selected .mini-board { border-color: var(--ink); }
+  .format-thumb .mini-cell {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    font-size: 10px;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  /* Stroke color — the colour of the seams between collage cells. */
+  .stroke-list { display: flex; align-items: center; gap: 4px; }
+  .stroke-chip {
+    appearance: none;
+    border: none;
+    background: transparent;
+    padding: 8px;
+    border-radius: 16px;
+    cursor: pointer;
+    display: inline-flex;
+    transition: background-color 0.15s;
+  }
+  .stroke-chip:hover { background: var(--hover); }
+  .stroke-chip.selected { background: var(--track); }
+  .stroke-chip .swatch { width: 36px; height: 36px; border-radius: 8px; display: block; }
+  .stroke-chip[data-stroke="#ffffff"] .swatch { background: #fff; border: 1px solid var(--border-2); }
+  .stroke-chip[data-stroke="#000000"] .swatch { background: #000; }
+
+  /* ───── Centre column: header · canvas · hint · floating toolbar ───── */
+  .main-column {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 36px;
+  }
+
+  .app-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 400;
+  }
+  .brand-face { height: 36px; width: auto; display: block; }
+  .brand-name { font-weight: 700; }
+  .brand-sub  { font-weight: 300; }
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+  }
+  .brand-face { transform-origin: right center; transition: transform .2s ease; }
+  .app-header:hover .brand-face { transform: rotate(-4deg); }
+
+  /* ───── Canvas area ───── */
+  .canvas-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 24px 0;
+  }
+
+  /* White card with the full-resolution 1920×1080 board scaled to fit. */
+  .canvas-card {
+    position: relative;
+    background: var(--card);
+    box-shadow: var(--shadow-canvas);
+  }
+  .stage { position: relative; }
+  #board { display: block; touch-action: none; cursor: default; }
+
+  /* Cell chrome — selection (delfi-red, like the sister tools) and the drop / swap target. */
+  .cell-ol {
+    position: absolute;
+    pointer-events: none;
+    box-sizing: border-box;
+    border: 2px solid var(--accent);
+  }
+  .cell-drop {
+    position: absolute;
+    pointer-events: none;
+    box-sizing: border-box;
+    border: 2px dashed var(--ink);
+    border-radius: 8px;
+    background: rgba(17,19,23,0.04);
+  }
+
+  /* Element chrome — visual only; all hit-testing is done in JS on the canvas. */
+  .overlay { position: absolute; inset: 0; pointer-events: none; }
+  .el-ol {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    border: 1.5px dashed rgba(255,255,255,0.95);
+    box-shadow: 0 0 0 1px rgba(17,19,23,0.45), inset 0 0 0 1px rgba(17,19,23,0.30);
+  }
+  .el-ol.selected {
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.85), inset 0 0 0 1px rgba(255,255,255,0.55);
+  }
+  /* A photo being dragged from the desktop over a face ring → that ring lights up. */
+  .el-ol.drop-hover {
+    border: 2px dashed var(--ink);
+    background: rgba(17,19,23,0.06);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.85);
+  }
+  .resize-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--accent);
+    box-shadow: var(--shadow-card);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  /* Blur ellipses (Hägustaja): side handles stretch one axis, the corner one scales both. */
+  .resize-handle.rh-side { width: 11px; height: 11px; }
+
+  /* ───── Floating pill toolbars (per element · per cell) ─────
+     Live in stage space so they keep their designed footprint at any canvas zoom;
+     the element one sits under its element (flipped above when there's no room), the
+     cell one over the cell's bottom edge, as in Kollaažer. */
+  .pill-toolbar {
+    position: absolute;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    box-shadow: var(--shadow-card);
+    padding: 4px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+  .ct-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    width: 26px;
+    height: 26px;
+    flex: 0 0 auto;
+    border-radius: 100px;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s;
+  }
+  .ct-btn:hover { background: var(--hover); }
+  .ct-btn .ico { width: 15px; height: 15px; display: block; }
+  .ct-btn.selected { background: var(--track); }
+  .ct-btn.selected:hover { background: #e2e9ec; }
+  .ct-btn.ct-del { color: var(--accent); }
+  .ct-btn.ct-del:hover { background: rgba(250,4,79,0.08); }
+  .ct-btn.ct-del .ico { width: 17px; height: 17px; }
+  .ct-btn.ct-photo { background: var(--ink); color: #fff; }
+  .ct-btn.ct-photo:hover { background: #2a2d33; }
+  .ct-btn.ct-rotate { background: var(--track); }
+  .ct-btn.ct-rotate:hover { background: #e2e9ec; }
+  .ct-sep { width: 1px; height: 18px; background: var(--border-2); flex: 0 0 auto; }
+  .ct-types { display: flex; gap: 2px; flex: 0 0 auto; }
+  .ct-label {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    flex: 0 0 auto;
+  }
+  .ct-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 0 0 auto;
+    width: 84px;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--track);
+    outline: none;
+    margin: 0;
+    cursor: pointer;
+  }
+  .ct-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #000;
+    border: none;
+    cursor: pointer;
+  }
+  .ct-slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #000;
+    border: none;
+    cursor: pointer;
+  }
+  .ct-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--track);
+  }
+  .ct-slider:disabled { opacity: 0.4; cursor: default; }
+
+  /* ───── Hint line ───── */
+  .hint-line {
+    flex: 0 0 auto;
+    margin: 0;
+    min-height: 20px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    text-align: center;
+  }
+  .hint-line.missed { color: var(--accent); }
+
+  /* ───── Floating bottom toolbar ───── */
+  .bottom-toolbar {
+    flex: 0 0 auto;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    box-shadow: var(--shadow-card);
+    padding: 6px;
+  }
+  .tool {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    border-radius: 100px;
+    padding: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+  }
+  .tool .ico { width: 18px; height: 18px; display: block; }
+  .tool:hover { background: var(--hover); }
+  .tool:disabled { opacity: 0.4; cursor: default; }
+  .tool:disabled:hover { background: transparent; }
+  .tool.tool-primary {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: var(--shadow-card);
+  }
+  .tool.tool-primary:hover { background: #2a2d33; }
+  .tool.tool-danger { color: var(--accent); }
+  .tool.tool-danger:hover { background: rgba(250,4,79,0.08); }
+  .tool.tool-danger:disabled:hover { background: transparent; }
+  .tool.exporting { cursor: progress; }
+
+  #file-input { display: none; }
+
+  /* ───── Drag ghost: the thumbnail that rides the cursor while a photo is carried to another cell ───── */
+  #drag-ghost {
+    position: fixed;
+    z-index: 100;
+    width: 96px;
+    height: 96px;
+    pointer-events: none;
+    transform: translate(-50%, -60%) scale(0.4);
+    transition: transform 0.12s ease-out;
+  }
+  #drag-ghost.lifted { transform: translate(-50%, -60%) scale(1); }
+  #drag-ghost .ghost-img-wrap {
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    border: 2px solid #fff;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+  }
+  #drag-ghost img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* An element carried in from the sidebar floats bare — no card, no border. */
+  #drag-ghost.bare .ghost-img-wrap { border: none; background: transparent; box-shadow: none; border-radius: 0; }
+  #drag-ghost.bare img { object-fit: contain; }
+  #drag-ghost .ghost-badge {
+    position: absolute;
+    right: -8px;
+    bottom: -8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-card);
+  }
+  #drag-ghost .ghost-badge svg { width: 13px; height: 13px; display: block; }
+  body.dragging-move, body.dragging-move * { cursor: grabbing !important; }
+
+  /* ───── Focus visibility (keyboard users) ───── */
+  .tool:focus-visible,
+  .ct-btn:focus-visible,
+  .ct-slider:focus-visible,
+  .element-thumb:focus-visible,
+  .mode-chip:focus-visible,
+  .format-thumb:focus-visible,
+  .stroke-chip:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ───── Compact layouts ───── */
+  @media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      height: auto;
+      flex-direction: row;
+      justify-content: center;
+    }
+    .side-section:first-child { margin-top: 0; }
+    .side-section:last-child  { margin-bottom: 0; }
+    .sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--border-2);
+      overflow-y: visible;
+    }
+    .side-section.elements {
+      border-bottom: none;
+      border-right: 1px solid var(--border-2);
+      padding-bottom: 16px;
+    }
+    .side-section.formats { flex: 1 1 auto; min-width: 0; padding-bottom: 16px; }
+    .side-note { display: none; }
+    .element-list { width: auto; }
+    .mode-list { width: 100%; max-width: 240px; }
+    .collage-panel { width: 100%; }
+    .format-list { display: flex; overflow-x: auto; padding-bottom: 4px; }
+    .format-thumb { flex: 0 0 88px; }
+    .main-column { padding: 20px; }
+    .app-header { font-size: 18px; }
+    .brand-face { height: 28px; }
+    .canvas-area { padding: 16px 0; }
+  }
+
+  /* ───── Reduced motion ───── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ════════════════════════ LEFT SIDEBAR ════════════════════════ -->
+    <aside class="sidebar">
+      <section class="side-section elements" aria-label="Elemendid">
+        <h2 class="side-heading">Elemendid</h2>
+        <div class="element-list">
+          <button class="element-thumb" id="add-quote" type="button" title="Lisa tsitaadimull" aria-label="Lisa tsitaadimull">
+            <canvas class="el-preview" id="thumb-quote" width="144" height="144" aria-hidden="true"></canvas>
+            <span class="el-name"><span class="el-plus">+</span> Tsitaat</span>
+          </button>
+          <button class="element-thumb" id="add-face" type="button" title="Lisa nägu ringis" aria-label="Lisa nägu ringis">
+            <canvas class="el-preview" id="thumb-face" width="144" height="144" aria-hidden="true"></canvas>
+            <span class="el-name"><span class="el-plus">+</span> Nägu</span>
+          </button>
+          <button class="element-thumb" id="add-blur" type="button" title="Lisa hägustav ring" aria-label="Lisa hägustav ring">
+            <canvas class="el-preview" id="thumb-blur" width="144" height="144" aria-hidden="true"></canvas>
+            <span class="el-name"><span class="el-plus">+</span> Hägu</span>
+          </button>
+        </div>
+        <p class="side-note">Näoringi foto keskendatakse näole automaatselt.</p>
+      </section>
+      <section class="side-section formats" aria-label="Formaat">
+        <h2 class="side-heading">Formaat</h2>
+        <div class="mode-list" role="radiogroup" aria-label="Formaat">
+          <button class="mode-chip selected" id="mode-single" type="button" role="radio" aria-checked="true" title="Üks 16:9 pilt" aria-label="Üks pilt">
+            <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="1.5"/></svg>
+            <span>Üks pilt</span>
+          </button>
+          <button class="mode-chip" id="mode-collage" type="button" role="radio" aria-checked="false" aria-expanded="false" aria-controls="collage-panel" title="Kollaaž mitmest fotost" aria-label="Kollaaž">
+            <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="1.5"/><path d="M12 5.5v13"/><path d="M12 12h9.5"/></svg>
+            <span>Kollaaž</span>
+          </button>
+        </div>
+        <!-- Unfolds under "Kollaaž": the ten Kollaažer grids and the seam colour. -->
+        <div class="collage-panel" id="collage-panel" inert>
+          <div class="collage-inner">
+            <div class="format-list" id="format-list" role="radiogroup" aria-label="Kollaaži ruudustik"></div>
+            <div class="stroke-block">
+              <h2 class="side-heading">Joone värv</h2>
+              <div class="stroke-list" role="radiogroup" aria-label="Joone värv">
+                <button class="stroke-chip selected" data-stroke="#ffffff" type="button" role="radio" aria-checked="true" title="Valge joon" aria-label="Valge joon">
+                  <span class="swatch"></span>
+                </button>
+                <button class="stroke-chip" data-stroke="#000000" type="button" role="radio" aria-checked="false" title="Must joon" aria-label="Must joon">
+                  <span class="swatch"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- ════════════════════════ CENTRE COLUMN ════════════════════════ -->
+    <main class="main-column">
+      <h1 class="app-header">
+        <a class="brand-link" href="../" aria-label="Tagasi Onu Sano tööriistadesse">
+          <img class="brand-face" src="assets/onu-sano-face.svg" alt="" aria-hidden="true">
+          <span class="brand-name">Onu Sano®</span>
+          <span class="brand-sub">Toimetaja</span>
+        </a>
+      </h1>
+
+      <div class="canvas-area" id="canvas-area">
+        <!-- The 1920×1080 board at full resolution, scaled to fit, with DOM chrome on top -->
+        <div class="canvas-card" id="canvas-card">
+          <div class="stage" id="stage">
+            <canvas id="board"></canvas>
+            <div class="overlay" id="overlay" aria-hidden="true">
+              <div class="cell-ol hidden" id="cell-ol"></div>
+              <div class="cell-drop hidden" id="cell-drop"></div>
+            </div>
+            <div class="resize-handle hidden" id="handle-uni" aria-hidden="true"></div>
+            <div class="resize-handle rh-side hidden" id="handle-x" aria-hidden="true"></div>
+            <div class="resize-handle rh-side hidden" id="handle-y" aria-hidden="true"></div>
+
+            <!-- Per-element toolbar: face → photo · badge · photo zoom · remove; quote → remove -->
+            <div class="pill-toolbar hidden" id="el-toolbar">
+              <button class="ct-btn ct-photo face-only" id="photo-btn" type="button" title="Vali foto" aria-label="Vali näoringi foto">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              </button>
+              <button class="ct-btn face-only" id="badge-btn" type="button" role="switch" aria-checked="true" title="Tsitaadimärk ringil" aria-label="Tsitaadimärk ringil">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="30 40 110 80" fill="currentColor" aria-hidden="true"><path d="M59.199 88.9219C57.5964 97.7451 54.6614 103.291 52.5366 107.217C51.7083 108.747 53.4009 110.458 54.9135 109.575C72.722 99.2036 80.5188 84.8704 81.4912 72.734C82.3195 62.2721 75.1889 51.4862 64.3669 49.5235C53.545 47.5608 43.1732 54.7454 41.2284 65.5673C39.1757 76.9115 47.4226 87.8055 59.2169 88.9399L59.199 88.9219Z"/><path d="M107.816 88.9219C106.213 97.7451 103.278 103.291 101.154 107.217C100.325 108.747 102.018 110.458 103.53 109.575C121.321 99.2036 129.136 84.8704 130.108 72.734C130.936 62.2721 123.806 51.4862 112.984 49.5235C102.162 47.5608 91.79 54.7454 89.8453 65.5673C87.7926 76.9115 96.0576 87.8055 107.834 88.9399L107.816 88.9219Z"/></svg>
+              </button>
+              <span class="ct-sep face-only" aria-hidden="true"></span>
+              <span class="ct-label face-only" id="zoom-label">Foto</span>
+              <input class="ct-slider face-only" id="zoom-slider" type="range" min="0" max="100" step="1" value="50" aria-labelledby="zoom-label">
+              <!-- Blur ring (Hägustaja): type · strength -->
+              <div class="ct-types blur-only" role="radiogroup" aria-label="Hägu tüüp">
+                <button class="ct-btn" id="type-blur" type="button" role="radio" aria-checked="false" title="Sujuv hägu" aria-label="Sujuv hägu">
+                  <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                </button>
+                <button class="ct-btn" id="type-pixel" type="button" role="radio" aria-checked="false" title="Pikselda" aria-label="Pikselda">
+                  <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </button>
+              </div>
+              <span class="ct-label blur-only" id="amount-label">Tugevus</span>
+              <input class="ct-slider blur-only" id="amount-slider" type="range" min="5" max="100" step="1" value="60" aria-labelledby="amount-label">
+              <button class="ct-btn ct-del" id="el-delete" type="button" title="Eemalda element" aria-label="Eemalda element">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              </button>
+            </div>
+
+            <!-- Per-cell toolbar (Kollaažer 812:758): rotate · size · remove photo -->
+            <div class="pill-toolbar hidden" id="cell-toolbar">
+              <button class="ct-btn ct-rotate" id="rotate-btn" type="button" title="Pööra 90°" aria-label="Pööra 90 kraadi">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.25 7A5.25 5.25 0 1 1 7 1.75c1.47 0 2.876.583 3.932 1.598L12.25 4.667"/><path d="M12.25 1.75v2.917H9.333"/></svg>
+              </button>
+              <span class="ct-label" id="cell-size-label">Suurus</span>
+              <input class="ct-slider" id="cell-size-slider" type="range" min="100" max="800" step="1" value="100" aria-labelledby="cell-size-label">
+              <button class="ct-btn ct-del" id="cell-delete" type="button" title="Eemalda foto" aria-label="Eemalda foto">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="hint-line" id="hint">&nbsp;</p>
+
+      <!-- Floating toolbar: upload · fill cell · remove · download -->
+      <div class="bottom-toolbar">
+        <button class="tool tool-primary" id="upload-btn" type="button" title="Laadi fotod üles" aria-label="Laadi fotod üles">
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </button>
+        <button class="tool" id="fit-btn" type="button" title="Täida lahter" aria-label="Täida lahter" disabled>
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m11.25 11.25 4.5 4.5"/><path d="m11.25 6.75 4.5-4.5"/><path d="M15.75 12v3.75H12"/><path d="M15.75 6V2.25H12"/><path d="M2.25 12v3.75H6"/><path d="m2.25 15.75 4.5-4.5"/><path d="M2.25 6V2.25H6"/><path d="m6.75 6.75-4.5-4.5"/></svg>
+        </button>
+        <button class="tool tool-danger" id="delete-btn" type="button" title="Eemalda valitud" aria-label="Eemalda valitud" disabled>
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </button>
+        <button class="tool" id="download-btn" type="button" title="Laadi PNG alla" aria-label="Laadi PNG alla" disabled>
+          <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*" multiple>
+
+  <!-- Thumbnail that follows the cursor while a photo is carried between cells -->
+  <div id="drag-ghost" class="hidden" aria-hidden="true">
+    <div class="ghost-img-wrap"><img id="drag-ghost-img" alt=""></div>
+    <div class="ghost-badge hidden" id="ghost-badge-swap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+    </div>
+    <div class="ghost-badge hidden" id="ghost-badge-add">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    </div>
+  </div>
+
+  <!-- Face detection: pico.js (MIT) + the vendored "facefinder" cascade, as in the Newsletter tool's Circler. -->
+  <script src="assets/pico.js"></script>
+  <script src="assets/facefinder.js"></script>
+  <script>
+  "use strict";
+
+  /* ═══════════════════════ Design constants (Figma "Delfi Arvamus", 148:2) ═══════════════════════
+     Both graphics are stored as their exported SVG paths and drawn natively on the canvas,
+     so they stay crisp at any size and the shadows scale with the element. All shadow
+     values are the Figma ones (offset / blur-σ / opacity) in the SVG's own px. */
+
+  /* Quote bubble: a 386 px circle (centre 248.93, 225.18 in a 474×457 viewBox), the
+     two comma glyphs, and a tail towards bottom-left. */
+  const QUOTE = {
+    d: 386.2,                       // circle diameter in SVG px → "size" of the element
+    cx: 248.93, cy: 225.18,
+    circle: "M213.563 414.99C318.393 434.521 419.209 365.372 438.74 260.541C458.271 155.711 389.122 54.8954 284.291 35.3643C179.46 15.8332 78.6447 84.9823 59.1137 189.813C39.5826 294.644 108.732 395.459 213.563 414.99Z",
+    tail: "M28 424.576L119.399 336.361L154.081 393.86L28 424.576Z",
+    glyphs: [
+      "M174.355 241.925C165.84 264.284 155.432 277.396 147.94 286.654C145.02 290.263 148.624 295.577 153.022 294.002C204.8 275.501 232.254 241.717 240.735 210.36C248.02 183.324 234.588 151.55 207.163 141.113C179.737 130.677 149.022 144.453 138.633 171.887C127.706 200.638 144.013 233.242 174.393 241.981L174.355 241.925Z",
+      "M301.871 265.684C293.356 288.043 282.947 301.155 275.456 310.413C272.535 314.022 276.139 319.336 280.538 317.761C332.268 299.251 359.77 265.476 368.251 234.118C375.536 207.083 362.104 175.309 334.678 164.872C307.253 154.436 276.538 168.212 266.149 195.646C255.221 224.397 271.576 257.01 301.909 265.74L301.871 265.684Z",
+    ],
+    outer: { dx: -4, dy: 8, sigma: 12, a: 0.55 },        // whole bubble
+    inner: { dx: 0, dy: 7.895, sigma: 6.579, a: 0.35 },  // circle over the tail
+    // Tail corners relative to the circle centre, in units of the diameter (hit-testing).
+    tailTri: [[-0.572, 0.516], [-0.335, 0.288], [-0.245, 0.437]],
+  };
+
+  /* The small quote badge on the face ring: a 144.7 px circle (centre 85.53, 77.63 in a
+     171 viewBox) with the same glyphs. Placed up-right of the face, on the ring. */
+  const BADGE = {
+    d: 144.737, cx: 85.526, cy: 77.632,
+    circle: "M85.5263 150C125.494 150 157.895 117.6 157.895 77.6316C157.895 37.6636 125.494 5.26316 85.5263 5.26316C45.5583 5.26316 13.1579 37.6636 13.1579 77.6316C13.1579 117.6 45.5583 150 85.5263 150Z",
+    glyphs: [
+      "M59.199 88.9219C57.5964 97.7451 54.6614 103.291 52.5366 107.217C51.7083 108.747 53.4009 110.458 54.9135 109.575C72.722 99.2036 80.5188 84.8704 81.4912 72.734C82.3195 62.2721 75.1889 51.4862 64.3669 49.5235C53.545 47.5608 43.1732 54.7454 41.2284 65.5673C39.1757 76.9115 47.4226 87.8055 59.2169 88.9399L59.199 88.9219Z",
+      "M107.816 88.9219C106.213 97.7451 103.278 103.291 101.154 107.217C100.325 108.747 102.018 110.458 103.53 109.575C121.321 99.2036 129.136 84.8704 130.108 72.734C130.936 62.2721 123.806 51.4862 112.984 49.5235C102.162 47.5608 91.79 54.7454 89.8453 65.5673C87.7926 76.9115 96.0576 87.8055 107.834 88.9399L107.816 88.9219Z",
+    ],
+    shadow: { dx: 0, dy: 7.895, sigma: 6.579, a: 0.35 },
+    // Relative to the face: diameter and centre offset, in units of the face photo diameter.
+    rel: 0.2895, ox: 0.3353, oy: -0.3553,
+  };
+
+  /* Face ring: 500 px photo disc, 14 px white stroke outside it, soft shadow below. */
+  const FACE = {
+    ring: 0.028,                                   // × size
+    shadow: { dx: 0, dy: 0.016, sigma: 0.018, a: 0.6 },   // × size
+  };
+
+  /* Element defaults as fractions of the board (measured off the 1920×1080 frame). */
+  const DEFAULTS = {
+    quote: { x: 0.3375, y: 0.5, size: 0.3576 },
+    face:  { x: 0.7219, y: 0.5, size: 0.463 },
+    blur:  { x: 0.5,    y: 0.5 },                   // radius comes from BLUR_R()
+  };
+  /* Blur rings (Hägustaja): an ellipse {x, y, rx, ry, type: "blur"|"pixel", amount: 5..100}
+     that blurs or pixelates the photo under it with a feathered edge. */
+  const MIN_R = 8;
+  const BLUR_R = () => Math.max(24, Math.min(BOARD_W, BOARD_H) * 0.09);
+  const MIN_SIZE_F = 0.08, MAX_SIZE_F = 1.5;       // × board height
+
+  /* ═══════════════════════ Collage board (Kollaažer) ═══════════════════════
+     A fixed 1920×1080 board split into cells by a template. The first template is one
+     full-bleed cell — the default: a single 16:9 photo with the two graphics on top. */
+  const BOARD_W = 1920, BOARD_H = 1080;
+  const GAP = 5;              // seam width between cells (measured off the Figma sample)
+  const CELL_MAX_ZOOM = 8;
+  const EPS = 0.001;
+  const MAX_CELLS = 5;
+  // Cell rects as [x, y, w, h] fractions of the board. Order = fill / numbering order.
+  const TEMPLATES = [
+    { id: "1",              cells: [[0,0,1,1]] },
+    { id: "2-cols",         cells: [[0,0,1/2,1],[1/2,0,1/2,1]] },
+    { id: "2-rows",         cells: [[0,0,1,1/2],[0,1/2,1,1/2]] },
+    { id: "3-cols",         cells: [[0,0,1/3,1],[1/3,0,1/3,1],[2/3,0,1/3,1]] },
+    { id: "1-top-2-bottom", cells: [[0,0,1,1/2],[0,1/2,1/2,1/2],[1/2,1/2,1/2,1/2]] },
+    { id: "1-left-2-right", cells: [[0,0,1/2,1],[1/2,0,1/2,1/2],[1/2,1/2,1/2,1/2]] },
+    { id: "4-cols",         cells: [[0,0,1/4,1],[1/4,0,1/4,1],[2/4,0,1/4,1],[3/4,0,1/4,1]] },
+    { id: "2x2",            cells: [[0,0,1/2,1/2],[0,1/2,1/2,1/2],[1/2,0,1/2,1/2],[1/2,1/2,1/2,1/2]] },
+    { id: "1-left-3-right", cells: [[0,0,1/2,1],[1/2,0,1/2,1/3],[1/2,1/3,1/2,1/3],[1/2,2/3,1/2,1/3]] },
+    { id: "5-cols",         cells: [[0,0,1/5,1],[1/5,0,1/5,1],[2/5,0,1/5,1],[3/5,0,1/5,1],[4/5,0,1/5,1]] },
+    { id: "3-left-2-right", cells: [[0,0,1/2,1/3],[0,1/3,1/2,1/3],[0,2/3,1/2,1/3],[1/2,0,1/2,1/2],[1/2,1/2,1/2,1/2]] },
+  ];
+
+  const PHOTO_MAX = 4000;     // cap for a cell photo's long edge (8× zoom into a 1920 board still has pixels)
+  const SPRITE_MAX = 4096;    // element sprites above this are rendered smaller and upscaled
+
+  /* ═══════════════════════ Face detection (pico.js) ═══════════════════════
+     Ported from the Newsletter tool's Circler — two passes: a cheap sweep proposes
+     candidates, a dense local rescan confirms them (pico's raw cluster score alone
+     misses half of ordinary portraits). See newsletter/README.md for the measurements. */
+  const SOURCE_MAX = 2000;    // long edge kept per face photo
+  const DETECT_MAX = 640;     // long edge used for detection
+  const MIN_FACE_FRAC = 0.06;
+  const CLUSTER_IOU = 0.2;
+  const SWEEP_SHIFT = 0.1, SWEEP_SCALE = 1.1, SWEEP_MIN = 0.5, MAX_CANDIDATES = 8;
+  const CONFIRM_SHIFT = 0.02, CONFIRM_SCALE = 1.05, CONFIRM_MIN = 60;
+  const DROP = 0.12;                       // pico's window sits high on the head
+  const ZOOM_MIN = 1.3, ZOOM_MAX = 3.4;    // crop side as a multiple of the window
+
+  let classify = null;
+  function getClassifier() {
+    if (!classify) {
+      const raw = atob(window.PICO_FACEFINDER_B64);
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      classify = pico.unpack_cascade(bytes);
+    }
+    return classify;
+  }
+
+  /* Returns {x, y, size} in source pixels, or null if nobody is found. */
+  function detectFace(source) {
+    const k = Math.min(1, DETECT_MAX / Math.max(source.width, source.height));
+    const w = Math.max(1, Math.round(source.width * k));
+    const h = Math.max(1, Math.round(source.height * k));
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const cx = c.getContext("2d", { willReadFrequently: true });
+    cx.imageSmoothingQuality = "high";
+    cx.drawImage(source, 0, 0, w, h);
+    const rgba = cx.getImageData(0, 0, w, h).data;
+    const grey = new Uint8Array(w * h);
+    for (let i = 0, p = 0; i < grey.length; i++, p += 4) {
+      grey[i] = (rgba[p] * 0.299 + rgba[p + 1] * 0.587 + rgba[p + 2] * 0.114) | 0;
+    }
+    const image = { pixels: grey, nrows: h, ncols: w, ldim: w };
+    const shortEdge = Math.min(w, h);
+
+    let cands = pico.run_cascade(image, getClassifier(), {
+      shiftfactor: SWEEP_SHIFT,
+      minsize: Math.max(20, Math.round(shortEdge * MIN_FACE_FRAC)),
+      maxsize: shortEdge,
+      scalefactor: SWEEP_SCALE,
+    });
+    cands = pico.cluster_detections(cands, CLUSTER_IOU).filter(d => d[3] > SWEEP_MIN);
+    if (!cands.length) return null;
+    cands.sort((a, b) => b[3] - a[3]);
+    cands = cands.slice(0, MAX_CANDIDATES);
+
+    const confirmed = cands.filter(d => confirmScore(image, d) >= CONFIRM_MIN);
+    if (!confirmed.length) return null;
+    confirmed.sort((a, b) => b[2] - a[2]);      // biggest face = the subject
+    const [row, col, size] = confirmed[0];
+    return { x: col / k, y: (row + DROP * size) / k, size: size / k };
+  }
+
+  function confirmScore(image, det) {
+    const [row, col, size] = det;
+    const half = size * 0.9;
+    const r0 = Math.max(0, Math.round(row - half));
+    const c0 = Math.max(0, Math.round(col - half));
+    const r1 = Math.min(image.nrows, Math.round(row + half));
+    const c1 = Math.min(image.ncols, Math.round(col + half));
+    const h = r1 - r0, w = c1 - c0;
+    if (h < 8 || w < 8) return 0;
+    const dets = pico.run_cascade(
+      { pixels: image.pixels.subarray(r0 * image.ldim + c0), nrows: h, ncols: w, ldim: image.ldim },
+      getClassifier(),
+      {
+        shiftfactor: CONFIRM_SHIFT,
+        minsize: Math.max(8, Math.round(size * 0.85)),
+        maxsize: Math.max(9, Math.round(size * 1.20)),
+        scalefactor: CONFIRM_SCALE,
+      }
+    );
+    let sum = 0;
+    for (const d of dets) if (d[3] > 0) sum += d[3];
+    return sum;
+  }
+
+  /* The square of the face photo that fills the ring: centred on the face, sized by the
+     photo zoom (right = tighter), kept inside the image. Near an edge it shrinks rather
+     than slides so the face stays centred; sliding is the last resort. (Circler logic.) */
+  function faceCrop(p) {
+    const W = p.src.width, H = p.src.height;
+    const maxSide = Math.min(W, H);
+    if (!p.face) {
+      const tightest = maxSide * (ZOOM_MIN / ZOOM_MAX);
+      const side = maxSide - (p.zoom / 100) * (maxSide - tightest);
+      let cx = W / 2 + p.offX, cy = H / 2 + p.offY;
+      cx = Math.min(Math.max(cx, side / 2), W - side / 2);
+      cy = Math.min(Math.max(cy, side / 2), H - side / 2);
+      return { x: cx - side / 2, y: cy - side / 2, side };
+    }
+    const zf = ZOOM_MAX - (p.zoom / 100) * (ZOOM_MAX - ZOOM_MIN);
+    const cx0 = p.face.x + p.offX;
+    const cy0 = p.face.y + p.offY;
+    const ideal = Math.min(p.face.size * zf, maxSide);
+    const centred = 2 * Math.min(cx0, W - cx0, cy0, H - cy0);
+    const tightest = p.face.size * 1.15;
+    let side;
+    if (centred >= ideal)         side = ideal;
+    else if (centred >= tightest) side = centred;
+    else                          side = ideal;
+    const cx = Math.min(Math.max(cx0, side / 2), W - side / 2);
+    const cy = Math.min(Math.max(cy0, side / 2), H - side / 2);
+    return { x: cx - side / 2, y: cy - side / 2, side };
+  }
+
+  /* ═══════════════════════ Element painters ═══════════════════════
+     Each paints one element with the context origin at the element's centre and one unit
+     = one board pixel. `dev` is the context's device scale: canvas shadows ignore the
+     transform, so their px are multiplied by it. `editor` draws the empty-ring placeholder
+     (never exported). */
+
+  const pathCache = new Map();
+  const P = d => { let p = pathCache.get(d); if (!p) { p = new Path2D(d); pathCache.set(d, p); } return p; };
+
+  function setShadow(ctx, s, k) {
+    ctx.shadowColor = "rgba(0,0,0," + s.a + ")";
+    ctx.shadowOffsetX = s.dx * k;
+    ctx.shadowOffsetY = s.dy * k;
+    ctx.shadowBlur = s.sigma * 2 * k;           // canvas blur ≈ 2σ
+  }
+  function noShadow(ctx) {
+    ctx.shadowColor = "rgba(0,0,0,0)";
+    ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+  }
+
+  function paintQuote(ctx, el, dev) {
+    const k = el.size / QUOTE.d;
+    ctx.save();
+    ctx.scale(k, k);
+    ctx.translate(-QUOTE.cx, -QUOTE.cy);
+    ctx.fillStyle = "#fff";
+    // 1. the whole bubble (circle ∪ tail) casts the outer shadow
+    const union = new Path2D(QUOTE.circle);
+    union.addPath(P(QUOTE.tail));
+    setShadow(ctx, QUOTE.outer, k * dev);
+    ctx.fill(union);
+    // 2. the circle's own softer shadow falls onto the tail; 3. the tail sits on top
+    setShadow(ctx, QUOTE.inner, k * dev);
+    ctx.fill(P(QUOTE.circle));
+    noShadow(ctx);
+    ctx.fill(P(QUOTE.tail));
+    // 4. the glyphs
+    ctx.fillStyle = "#000";
+    for (const g of QUOTE.glyphs) ctx.fill(P(g));
+    ctx.restore();
+  }
+
+  function paintBadge(ctx, size, dev) {
+    const d = BADGE.rel * size;
+    const k = d / BADGE.d;
+    ctx.save();
+    ctx.translate(BADGE.ox * size, BADGE.oy * size);
+    ctx.scale(k, k);
+    ctx.translate(-BADGE.cx, -BADGE.cy);
+    ctx.fillStyle = "#fff";
+    setShadow(ctx, BADGE.shadow, k * dev);
+    ctx.fill(P(BADGE.circle));
+    noShadow(ctx);
+    ctx.fillStyle = "#000";
+    for (const g of BADGE.glyphs) ctx.fill(P(g));
+    ctx.restore();
+  }
+
+  const UPLOAD_GLYPH = "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12";
+
+  function paintFace(ctx, el, dev, editor) {
+    const s = el.size, r = s / 2;
+    // ring + shadow
+    ctx.save();
+    ctx.fillStyle = "#fff";
+    setShadow(ctx, FACE.shadow, s * dev);
+    ctx.beginPath();
+    ctx.arc(0, 0, r + FACE.ring * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // photo disc
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.clip();
+    if (el.photo) {
+      const c = faceCrop(el.photo);
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(el.photo.src, c.x, c.y, c.side, c.side, -r, -r, s, s);
+    } else if (editor === "thumb") {
+      // gallery thumbnail: a quiet silhouette
+      ctx.fillStyle = "#edf2f4";
+      ctx.fillRect(-r, -r, s, s);
+      ctx.fillStyle = "#c3ced7";
+      ctx.beginPath(); ctx.arc(0, -0.12 * s, 0.17 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0.62 * s, 0.42 * s, 0, Math.PI * 2); ctx.fill();
+    } else if (editor) {
+      // empty ring on the board: the sister tools' upload affordance
+      ctx.fillStyle = "#edf2f4";
+      ctx.fillRect(-r, -r, s, s);
+      ctx.fillStyle = "#fff";
+      ctx.shadowColor = "rgba(0,0,0,0.10)";
+      ctx.shadowOffsetY = 0.008 * s; ctx.shadowBlur = 0.01 * s * dev;
+      ctx.beginPath(); ctx.arc(0, 0, 0.14 * s, 0, Math.PI * 2); ctx.fill();
+      noShadow(ctx);
+      ctx.save();
+      const g = 0.15 * s;
+      ctx.scale(g / 24, g / 24);
+      ctx.translate(-12, -12);
+      ctx.strokeStyle = "#111317";
+      ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.stroke(P(UPLOAD_GLYPH));
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(-r, -r, s, s);
+    }
+    ctx.restore();
+    if (el.badge) paintBadge(ctx, s, dev);
+  }
+
+  function paintElement(ctx, el, dev, editor) {
+    if (el.kind === "quote") paintQuote(ctx, el, dev);
+    else paintFace(ctx, el, dev, editor);
+  }
+
+  /* Element sprites: a moved element only re-blits its cached rendering; the cache is
+     rebuilt when anything that changes its look changes (size, badge, photo) or when the
+     display scale changes. Sprites are rendered at device resolution (`s` device px per
+     board px) and blitted 1:1 on whole device pixels, so the vectors stay razor sharp. */
+  const SPRITE_HALF = 0.95;   // × size — covers the tail, the badge and both shadows
+  function spriteKey(el, k) {
+    const p = el.photo;
+    return [el.kind, Math.round(el.size), el.badge ? 1 : 0, k.toFixed(3),
+            p ? [p.id, p.zoom, Math.round(p.offX), Math.round(p.offY)].join(",") : "-"].join("|");
+  }
+  function spriteFor(el, s) {
+    const half = el.size * SPRITE_HALF;
+    const k = Math.min(s, SPRITE_MAX / (half * 2));
+    const key = spriteKey(el, k);
+    if (el.sprite && el.spriteKey === key) return el.sprite;
+    const S = Math.max(2, Math.ceil(half * 2 * k));
+    const c = (el.sprite && el.sprite.canvas) || document.createElement("canvas");
+    c.width = S; c.height = S;
+    const sctx = c.getContext("2d");
+    sctx.setTransform(k, 0, 0, k, S / 2, S / 2);
+    paintElement(sctx, el, k, true);
+    el.sprite = { canvas: c, S, k };
+    el.spriteKey = key;
+    return el.sprite;
+  }
+
+  /* ═══════════════════════ State ═══════════════════════ */
+
+  const area      = document.getElementById("canvas-area");
+  const stage     = document.getElementById("stage");
+  const board     = document.getElementById("board");
+  const overlay   = document.getElementById("overlay");
+  const cellOl    = document.getElementById("cell-ol");
+  const cellDrop  = document.getElementById("cell-drop");
+  const handleUni = document.getElementById("handle-uni");
+  const handleX   = document.getElementById("handle-x");
+  const handleY   = document.getElementById("handle-y");
+  const toolbar   = document.getElementById("el-toolbar");
+  const cellToolbar = document.getElementById("cell-toolbar");
+  const hint      = document.getElementById("hint");
+  const fileInput = document.getElementById("file-input");
+  const formatList = document.getElementById("format-list");
+  const strokeChips = Array.from(document.querySelectorAll(".stroke-chip"));
+  const modeSingle  = document.getElementById("mode-single");
+  const modeCollage = document.getElementById("mode-collage");
+  const collagePanel = document.getElementById("collage-panel");
+
+  const addQuoteBtn = document.getElementById("add-quote");
+  const addFaceBtn  = document.getElementById("add-face");
+  const addBlurBtn  = document.getElementById("add-blur");
+  const photoBtn    = document.getElementById("photo-btn");
+  const badgeBtn    = document.getElementById("badge-btn");
+  const zoomSlider  = document.getElementById("zoom-slider");
+  const elDelBtn    = document.getElementById("el-delete");
+  const faceOnly    = Array.from(toolbar.querySelectorAll(".face-only"));
+  const blurOnly    = Array.from(toolbar.querySelectorAll(".blur-only"));
+  const typeBlurBtn  = document.getElementById("type-blur");
+  const typePixelBtn = document.getElementById("type-pixel");
+  const amountSlider = document.getElementById("amount-slider");
+  const rotateBtn   = document.getElementById("rotate-btn");
+  const cellSizeSlider = document.getElementById("cell-size-slider");
+  const cellDelBtn  = document.getElementById("cell-delete");
+
+  const uploadBtn   = document.getElementById("upload-btn");
+  const fitBtn      = document.getElementById("fit-btn");
+  const deleteBtn   = document.getElementById("delete-btn");
+  const downloadBtn = document.getElementById("download-btn");
+
+  const dragGhost    = document.getElementById("drag-ghost");
+  const dragGhostImg = document.getElementById("drag-ghost-img");
+  const ghostBadgeSwap = document.getElementById("ghost-badge-swap");
+  const ghostBadgeAdd  = document.getElementById("ghost-badge-add");
+
+  const ctx = board.getContext("2d");
+
+  const W = BOARD_W, H = BOARD_H;   // board size in px
+  let scale = 1;                    // board px → CSS px
+  let dpr = 1;                      // CSS px → device px (the canvas backing store follows it)
+  let tplIndex = 0;          // 0 = one 16:9 photo · 1… = a collage grid
+  let lastCollage = 1;       // the grid "Kollaaž" reopens with
+  let stroke = "#ffffff";
+
+  /* One slot per possible cell. Slots beyond the current template's cell count keep their
+     photo, so switching formats back and forth never loses one.
+     Slot: { img, nw, nh, zoom, offX, offY, rot, thumb } — zoom is relative to cover-fit,
+     offX/offY pan the photo from the cell centre in board px, rot ∈ {0, 90, 180, 270}. */
+  const slots = new Array(MAX_CELLS).fill(null);
+
+  /* One element = { kind: "quote"|"face", x, y, size (circle diameter), badge, photo } or a
+     blur ring { kind: "blur", x, y, rx, ry, type, amount }, all in board px.
+     photo = { id, src, face, zoom: 0..100, offX, offY } in source px.
+     A removed element keeps a `dying` timestamp while it shrinks and fades away. */
+  let els = [];
+  let lastType = "blur", lastAmount = 60;   // new blur rings copy the previous ring's settings
+  const radii = el => el.kind === "blur" ? { rx: el.rx, ry: el.ry } : { rx: el.size / 2, ry: el.size / 2 };
+  const isGraphic = el => el.kind !== "blur";
+  let sel = -1;              // selected element
+  let selCell = -1;          // selected cell (never together with sel)
+  let hover = -1;            // element under the cursor
+  let dropTarget = null;     // file drag from the desktop: { kind: "face"|"cell", i } | null
+  let photoSeq = 0;
+
+  const COS45 = Math.SQRT1_2;
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+
+  /* ═══════════════════════ Cell geometry (Kollaažer) ═══════════════════════ */
+
+  const tpl = () => TEMPLATES[tplIndex];
+  const cellCount = () => tpl().cells.length;
+
+  // Cell rect in board px: seams only between cells, never along the outer edge.
+  function cellRect(i) {
+    const [fx, fy, fw, fh] = tpl().cells[i];
+    const l = fx * W + (fx > EPS ? GAP / 2 : 0);
+    const t = fy * H + (fy > EPS ? GAP / 2 : 0);
+    const r = (fx + fw) * W - (fx + fw < 1 - EPS ? GAP / 2 : 0);
+    const b = (fy + fh) * H - (fy + fh < 1 - EPS ? GAP / 2 : 0);
+    return { x: l, y: t, w: r - l, h: b - t };
+  }
+
+  // Where the photo lands inside its cell (cell-local px): cover-fit × zoom, panned by
+  // offX/offY. bx/by/bw/bh is the rotated bounding box; iw/ih the unrotated image size.
+  function imageLayout(slot, rect) {
+    const swapped = slot.rot % 180 !== 0;
+    const ew = swapped ? slot.nh : slot.nw;
+    const eh = swapped ? slot.nw : slot.nh;
+    const base = Math.max(rect.w / ew, rect.h / eh);
+    const bw = ew * base * slot.zoom;
+    const bh = eh * base * slot.zoom;
+    const maxX = (bw - rect.w) / 2, maxY = (bh - rect.h) / 2;
+    slot.offX = clamp(slot.offX, -maxX, maxX);
+    slot.offY = clamp(slot.offY, -maxY, maxY);
+    return {
+      bx: (rect.w - bw) / 2 + slot.offX,
+      by: (rect.h - bh) / 2 + slot.offY,
+      bw, bh,
+      iw: slot.nw * base * slot.zoom,
+      ih: slot.nh * base * slot.zoom,
+    };
+  }
+
+  function cellAt(p) {
+    for (let i = 0; i < cellCount(); i++) {
+      const r = cellRect(i);
+      if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) return i;
+    }
+    return -1;
+  }
+
+  /* ═══════════════════════ Blur effects (Hägustaja) ═══════════════════════
+     Rings sample `base` — the cells composited at board resolution — and paint the treated
+     region back onto the board with a soft elliptical mask, so the effect bleeds a little
+     past the outline instead of stopping at a hard edge. */
+
+  const base = document.createElement("canvas");
+  base.width = W; base.height = H;
+  const bctx = base.getContext("2d");
+  const tmp = document.createElement("canvas");
+  const tctx = tmp.getContext("2d");
+  const grid = document.createElement("canvas");     // mosaic downscale buffer
+  const gctx = grid.getContext("2d");
+
+  /* (cx, cy) ellipse centre in tmp coords; (orx, ory) outer radii incl. the feather;
+     t0 where the fade starts (inner edge / outer edge). */
+  function featherMask(cx, cy, orx, ory, t0) {
+    tctx.globalCompositeOperation = "destination-in";
+    tctx.save();
+    tctx.translate(cx, cy);
+    tctx.scale(orx, ory);
+    const g = tctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    g.addColorStop(0, "#000");
+    g.addColorStop(Math.min(t0, 0.99), "#000");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    tctx.fillStyle = g;
+    tctx.fillRect(-cx / orx, -cy / ory, tmp.width / orx, tmp.height / ory);
+    tctx.restore();
+    tctx.globalCompositeOperation = "source-over";
+  }
+
+  /* ctx.filter shipped everywhere by 2024 (Safari 18); older Safari falls back to a
+     two-pass downscale/upscale approximation. */
+  const FILTER_OK = (() => {
+    const c = document.createElement("canvas").getContext("2d");
+    c.filter = "blur(2px)";
+    return c.filter !== "none";
+  })();
+
+  function fallbackBlurRegion(dst, src, sx, sy, sw, sh, radius) {
+    const f = Math.max(2, radius / 1.5);
+    const dw = Math.max(1, Math.round(sw / f));
+    const dh = Math.max(1, Math.round(sh / f));
+    const a = document.createElement("canvas");
+    a.width = dw; a.height = dh;
+    const actx = a.getContext("2d");
+    actx.drawImage(src, sx, sy, sw, sh, 0, 0, dw, dh);
+    const bw = Math.max(1, Math.round(dw / 2));
+    const bh = Math.max(1, Math.round(dh / 2));
+    const b = document.createElement("canvas");
+    b.width = bw; b.height = bh;
+    b.getContext("2d").drawImage(a, 0, 0, dw, dh, 0, 0, bw, bh);
+    actx.clearRect(0, 0, dw, dh);
+    actx.drawImage(b, 0, 0, bw, bh, 0, 0, dw, dh);
+    dst.drawImage(a, 0, 0, dw, dh, 0, 0, sw, sh);
+  }
+
+  /* Paint one ring's effect from `base` onto `dst` (board coordinates). */
+  function applyEffect(dst, c) {
+    const avgR = (c.rx + c.ry) / 2;
+    if (c.type === "pixel") {
+      /* Mosaic: average the neighbourhood down to a coarse grid, scale it back up with
+         smoothing off, then feather-mask it. Strength = fewer, bigger blocks. */
+      const blocks = Math.round(30 - (c.amount / 100) * 25);
+      const block = Math.max(2, (avgR * 2) / blocks);
+      const feather = Math.max(6, block * 1.2);
+      const orx = c.rx + feather, ory = c.ry + feather;
+      const bx = Math.max(0, Math.floor(c.x - orx));
+      const by = Math.max(0, Math.floor(c.y - ory));
+      const bw = Math.min(W, Math.ceil(c.x + orx)) - bx;
+      const bh = Math.min(H, Math.ceil(c.y + ory)) - by;
+      if (bw <= 0 || bh <= 0) return;
+      const gw = Math.max(1, Math.round(bw / block));
+      const gh = Math.max(1, Math.round(bh / block));
+      grid.width = gw; grid.height = gh;
+      gctx.imageSmoothingEnabled = true;
+      gctx.drawImage(base, bx, by, bw, bh, 0, 0, gw, gh);
+      tmp.width = bw; tmp.height = bh;
+      tctx.imageSmoothingEnabled = false;
+      tctx.drawImage(grid, 0, 0, gw, gh, 0, 0, bw, bh);
+      tctx.imageSmoothingEnabled = true;
+      featherMask(c.x - bx, c.y - by, orx, ory, (c.rx / orx + c.ry / ory) / 2);
+      dst.drawImage(tmp, bx, by);
+    } else {
+      /* Smooth blur: the radius scales with the ellipse so a face-sized ring reads the same
+         at any size; the work region is padded so the feathered edge samples real pixels. */
+      const radius = Math.max(2, avgR * 0.5 * (c.amount / 100));
+      const feather = Math.max(6, radius * 1.25);
+      const orx = c.rx + feather, ory = c.ry + feather;
+      const pad = Math.ceil(radius * 2);
+      const ex = Math.max(0, Math.floor(c.x - orx) - pad);
+      const ey = Math.max(0, Math.floor(c.y - ory) - pad);
+      const ew = Math.min(W, Math.ceil(c.x + orx) + pad) - ex;
+      const eh = Math.min(H, Math.ceil(c.y + ory) + pad) - ey;
+      if (ew <= 0 || eh <= 0) return;
+      tmp.width = ew; tmp.height = eh;
+      if (FILTER_OK) {
+        tctx.filter = "blur(" + radius + "px)";
+        tctx.drawImage(base, ex, ey, ew, eh, 0, 0, ew, eh);
+        tctx.filter = "none";
+      } else {
+        fallbackBlurRegion(tctx, base, ex, ey, ew, eh, radius);
+      }
+      featherMask(c.x - ex, c.y - ey, orx, ory, (c.rx / orx + c.ry / ory) / 2);
+      dst.drawImage(tmp, ex, ey);
+    }
+  }
+
+  /* ═══════════════════════ Rendering ═══════════════════════ */
+
+  let renderQueued = false;
+  function requestRender() {
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(() => {
+      renderQueued = false;
+      render();
+      syncChrome();
+    });
+  }
+
+  function paintCell(c, i, forExport) {
+    const rect = cellRect(i);
+    const slot = slots[i];
+    c.save();
+    c.beginPath();
+    c.rect(rect.x, rect.y, rect.w, rect.h);
+    c.clip();
+    if (slot) {
+      const lay = imageLayout(slot, rect);
+      c.imageSmoothingQuality = "high";
+      c.translate(rect.x + lay.bx + lay.bw / 2, rect.y + lay.by + lay.bh / 2);
+      c.rotate(slot.rot * Math.PI / 180);
+      c.drawImage(slot.img, -lay.iw / 2, -lay.ih / 2, lay.iw, lay.ih);
+    } else if (forExport) {
+      c.fillStyle = "#fff";                      // empty cells export as plain white
+      c.fillRect(rect.x, rect.y, rect.w, rect.h);
+    } else {
+      /* Empty-slot affordance (Kollaažer, Figma 814:1055): delfi-lightgray well with a
+         small white circular upload button. Sized in screen px, so drawn in board px ÷ scale. */
+      c.fillStyle = "#edf2f4";
+      c.fillRect(rect.x, rect.y, rect.w, rect.h);
+      const k = 1 / scale;
+      const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
+      c.fillStyle = "#fff";
+      c.shadowColor = "rgba(0,0,0,0.10)";
+      c.shadowOffsetY = 4; c.shadowBlur = 5;
+      c.beginPath(); c.arc(cx, cy, 17 * k, 0, Math.PI * 2); c.fill();
+      noShadow(c);
+      c.translate(cx, cy);
+      c.scale(18 * k / 24, 18 * k / 24);
+      c.translate(-12, -12);
+      c.strokeStyle = "#111317";
+      c.lineWidth = 2; c.lineCap = "round"; c.lineJoin = "round";
+      c.stroke(P(UPLOAD_GLYPH));
+    }
+    c.restore();
+  }
+
+  const DIE_MS = 220;         // a removed element shrinks and fades out over this long
+
+  /* `c` is in board coordinates (1920×1080). For the export that is the identity transform;
+     on screen the board is scaled by `s` = scale × dpr device px per board px. */
+  const dieEase = el => { const t = Math.min(1, (performance.now() - el.dying) / DIE_MS); return t * t; };
+
+  function paintBoard(c, forExport, s) {
+    c.fillStyle = stroke;
+    c.fillRect(0, 0, W, H);
+    for (let i = 0; i < cellCount(); i++) paintCell(c, i, forExport);
+
+    /* Blur rings sit between the photos and the graphics: composite the cells once at board
+       resolution, then paint each ring's treated region over the board. */
+    const rings = els.filter(el => el.kind === "blur" && !(forExport && el.dying));
+    if (rings.length) {
+      bctx.setTransform(1, 0, 0, 1, 0, 0);
+      bctx.fillStyle = stroke;
+      bctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < cellCount(); i++) paintCell(bctx, i, forExport);
+      for (const el of rings) {
+        c.save();
+        if (el.dying) c.globalAlpha = 1 - dieEase(el);
+        applyEffect(c, el);
+        c.restore();
+      }
+    }
+
+    for (const el of els) {
+      if (el.kind === "blur") continue;
+      if (forExport) {
+        if (el.dying) continue;
+        c.save();
+        c.translate(el.x, el.y);
+        paintElement(c, el, 1, false);
+        c.restore();
+        continue;
+      }
+      const sp = spriteFor(el, s);
+      const side = sp.S * s / sp.k;                          // sprite size in device px (= sp.S unless capped)
+      c.save();
+      c.setTransform(1, 0, 0, 1, 0, 0);                      // blit in device px
+      if (el.dying) {
+        const e = dieEase(el);                               // ease in: lingers, then goes
+        const k = 1 - 0.3 * e;
+        c.globalAlpha = 1 - e;
+        c.translate(el.x * s, el.y * s);
+        c.scale(k, k);
+        c.drawImage(sp.canvas, -side / 2, -side / 2, side, side);
+      } else {
+        // whole device pixels: a 1:1 blit at a fractional offset would resample and soften the edges
+        c.drawImage(sp.canvas, Math.round(el.x * s - side / 2), Math.round(el.y * s - side / 2), side, side);
+      }
+      c.restore();
+    }
+  }
+
+  function render() {
+    const nowDpr = window.devicePixelRatio || 1;
+    if (nowDpr !== dpr) { layout(); return; }                // moved to another screen
+    const s = scale * dpr;
+    ctx.setTransform(s, 0, 0, s, 0, 0);
+    paintBoard(ctx, false, s);
+  }
+
+  /* Fit the board into the available area. Board coordinates stay 1920×1080 everywhere
+     (chrome, hit-testing, export); only the on-screen scale and backing store change. */
+  function layout() {
+    const rect = area.getBoundingClientRect();
+    const availW = rect.width;
+    const availH = rect.height - 48;
+    scale = Math.min(availW / W, availH / H, 1);
+    dpr = window.devicePixelRatio || 1;
+    const cssW = Math.max(1, Math.round(W * scale));
+    const cssH = Math.max(1, Math.round(H * scale));
+    board.style.width = cssW + "px";
+    board.style.height = cssH + "px";
+    // Backing store at device resolution: the board is drawn through a scale transform, so
+    // photos and vectors are rasterised for this screen instead of stretched from 1920 px.
+    board.width = Math.max(1, Math.round(cssW * dpr));
+    board.height = Math.max(1, Math.round(cssH * dpr));
+    stage.style.width = cssW + "px";
+    stage.style.height = cssH + "px";
+    requestRender();                 // the empty-cell glyph is sized in screen px
+  }
+
+  /* DOM chrome (outlines, handle, toolbars) glued to the board. Element outlines show
+     only for the selected / hovered / drop-targeted element, so the idle view is clean. */
+  function syncChrome() {
+    while (overlay.children.length - 2 > els.length) overlay.lastChild.remove();
+    while (overlay.children.length - 2 < els.length) {
+      const d = document.createElement("div");
+      d.className = "el-ol";
+      overlay.appendChild(d);
+    }
+    els.forEach((el, i) => {
+      const d = overlay.children[i + 2];
+      const { rx, ry } = radii(el);
+      d.style.left = (el.x - rx) * scale + "px";
+      d.style.top = (el.y - ry) * scale + "px";
+      d.style.width = rx * 2 * scale + "px";
+      d.style.height = ry * 2 * scale + "px";
+      const isDrop = !!dropTarget && dropTarget.kind === "face" && dropTarget.i === i;
+      d.classList.toggle("selected", i === sel);
+      d.classList.toggle("drop-hover", isDrop);
+      d.classList.toggle("hidden", !!el.dying || (i !== sel && i !== hover && !isDrop));
+    });
+
+    placeCellBox(cellOl, selCell);
+    placeCellBox(cellDrop, dropTarget && dropTarget.kind === "cell" ? dropTarget.i : swapTarget);
+
+    if (sel >= 0) {
+      const el = els[sel];
+      const { rx, ry } = radii(el);
+      handleUni.classList.remove("hidden");
+      handleUni.style.left = (el.x + rx * COS45) * scale + "px";
+      handleUni.style.top = (el.y + ry * COS45) * scale + "px";
+      const ring = el.kind === "blur";                 // side handles stretch a ring into an oval
+      handleX.classList.toggle("hidden", !ring);
+      handleY.classList.toggle("hidden", !ring);
+      if (ring) {
+        handleX.style.left = (el.x + rx) * scale + "px";
+        handleX.style.top = el.y * scale + "px";
+        handleY.style.left = el.x * scale + "px";
+        handleY.style.top = (el.y + ry) * scale + "px";
+      }
+      placeToolbar();
+    } else {
+      for (const h of [handleUni, handleX, handleY]) h.classList.add("hidden");
+      toolbar.classList.add("hidden");
+    }
+    placeCellToolbar();
+    updateHint();
+  }
+
+  function placeCellBox(box, i) {
+    if (i < 0 || i >= cellCount()) { box.classList.add("hidden"); return; }
+    const r = cellRect(i);
+    const inset = box === cellDrop ? 6 : 0;
+    box.classList.remove("hidden");
+    box.style.left = r.x * scale + inset + "px";
+    box.style.top = r.y * scale + inset + "px";
+    box.style.width = r.w * scale - inset * 2 + "px";
+    box.style.height = r.h * scale - inset * 2 + "px";
+  }
+
+  // The rotate / size / remove pill floats over the selected cell's bottom edge.
+  function placeCellToolbar() {
+    const slot = selCell >= 0 && selCell < cellCount() ? slots[selCell] : null;
+    cellToolbar.classList.toggle("hidden", !slot || carrying);
+    if (!slot) return;
+    cellSizeSlider.value = Math.round(slot.zoom * 100);
+    const rect = cellRect(selCell);
+    const half = cellToolbar.offsetWidth / 2 + 6;
+    const cx = (rect.x + rect.w / 2) * scale;
+    cellToolbar.style.left = clamp(cx, half, Math.max(half, W * scale - half)) + "px";
+    cellToolbar.style.top = Math.max(4, (rect.y + rect.h) * scale - 16 - cellToolbar.offsetHeight) + "px";
+  }
+
+  function placeToolbar() {
+    const el = els[sel];
+    const { ry } = radii(el);
+    toolbar.classList.remove("hidden");
+    const tw = toolbar.offsetWidth, th = toolbar.offsetHeight;
+    const sw = W * scale, sh = H * scale;
+    let x = el.x * scale;
+    let y = (el.y + ry) * scale + 12;
+    if (y + th > sh - 4) y = (el.y - ry) * scale - th - 12;
+    x = clamp(x, tw / 2 + 4, Math.max(tw / 2 + 4, sw - tw / 2 - 4));
+    y = clamp(y, 4, Math.max(4, sh - th - 4));
+    toolbar.style.left = x + "px";
+    toolbar.style.top = y + "px";
+  }
+
+  function updateToolbarUI() {
+    if (sel < 0) return;
+    const el = els[sel];
+    const isFace = el.kind === "face", isBlur = el.kind === "blur";
+    for (const n of faceOnly) n.classList.toggle("hidden", !isFace);
+    for (const n of blurOnly) n.classList.toggle("hidden", !isBlur);
+    if (isBlur) {
+      amountSlider.value = el.amount;
+      typeBlurBtn.classList.toggle("selected", el.type === "blur");
+      typeBlurBtn.setAttribute("aria-checked", String(el.type === "blur"));
+      typePixelBtn.classList.toggle("selected", el.type === "pixel");
+      typePixelBtn.setAttribute("aria-checked", String(el.type === "pixel"));
+    }
+    if (isFace) {
+      badgeBtn.classList.toggle("selected", !!el.badge);
+      badgeBtn.setAttribute("aria-checked", String(!!el.badge));
+      zoomSlider.disabled = !el.photo;
+      zoomSlider.value = el.photo ? el.photo.zoom : 50;
+    }
+  }
+
+  let hintOverride = null;   // transient message (e.g. "no face found"), cleared on next change
+  function updateHint() {
+    hint.classList.toggle("missed", !!(hintOverride && hintOverride.missed));
+    if (hintOverride) { hint.textContent = hintOverride.text; return; }
+    const multi = cellCount() > 1;
+    if (sel >= 0) {
+      const el = els[sel];
+      if (el.kind === "blur") {
+        hint.textContent = "Lohista ringi liigutamiseks · nurgasangast muuda suurust · külgsangadest venita ovaaliks · Delete eemaldab";
+      } else if (el.kind === "quote") {
+        hint.textContent = "Lohista liigutamiseks · nurgasangast või kerimisrattaga muuda suurust · Delete eemaldab";
+      } else if (!el.photo) {
+        hint.textContent = "Klõpsa kaameranupul või lohista foto ringile — nägu keskendatakse automaatselt";
+      } else {
+        hint.textContent = "Lohista liigutamiseks · nurgasangast muuda suurust · ratas suumib fotot · ⌥-lohistus nihutab fotot · topeltklõps keskendab näole";
+      }
+    } else if (selCell >= 0 && slots[selCell]) {
+      hint.textContent = "Lohista fotot paigutamiseks · ratas suumib · topeltklõps taastab"
+        + (multi ? " · lohista teise lahtrisse, et fotod vahetada" : "");
+    } else if (!slots.slice(0, cellCount()).some(Boolean)) {
+      hint.textContent = multi
+        ? "Klõpsa lahtril, et lisada foto (või lohista mitu korraga)"
+        : "Klõpsa pildil, et lisada foto";
+    } else {
+      hint.textContent = "Klõpsa fotol, et seda paigutada · klõpsa elemendil, et seda muuta";
+    }
+  }
+  function flash(text, missed) {
+    hintOverride = { text, missed };
+    updateHint();
+    setTimeout(() => { if (hintOverride && hintOverride.text === text) { hintOverride = null; updateHint(); } }, 3500);
+  }
+
+  /* ═══════════════════════ Selection ═══════════════════════ */
+
+  let swapTarget = -1;       // cell lit up as the swap target while a photo is carried
+  let carrying = false;      // a photo is being carried to another cell (ghost visible)
+
+  function syncTools() {
+    const slot = selCell >= 0 ? slots[selCell] : null;
+    fitBtn.disabled = !slot;
+    deleteBtn.disabled = !(sel >= 0 || slot);
+    downloadBtn.disabled = !(els.length || slots.slice(0, cellCount()).some(Boolean));
+  }
+  function select(i) {
+    sel = i;
+    if (i >= 0) { selCell = -1; updateToolbarUI(); }
+    syncTools();
+    syncChrome();
+  }
+  function selectCell(i) {
+    selCell = i;
+    if (i >= 0) sel = -1;
+    syncTools();
+    syncChrome();
+  }
+  function deselect() { sel = -1; selCell = -1; syncTools(); syncChrome(); }
+
+  function removeSelected() {
+    if (sel >= 0) removeElement(sel);
+  }
+
+  /* Removal is animated: the element is deselected at once, shrinks and fades for DIE_MS,
+     then leaves the list. While dying it is drawn but no longer hit-tested or exported. */
+  let dyingLoop = false;
+  function removeElement(i) {
+    const el = els[i];
+    if (!el || el.dying) return;
+    el.dying = performance.now();
+    if (sel === i) sel = -1;
+    hover = -1;
+    syncTools();
+    syncChrome();
+    if (dyingLoop) return;
+    dyingLoop = true;
+    const step = () => {
+      const now = performance.now();
+      let live = false;
+      for (let k = els.length - 1; k >= 0; k--) {
+        const e = els[k];
+        if (!e.dying) continue;
+        if (now - e.dying >= DIE_MS) {
+          els.splice(k, 1);
+          if (sel > k) sel--;
+          if (hover > k) hover--;
+        } else live = true;
+      }
+      render();
+      syncChrome();
+      if (live) requestAnimationFrame(step);
+      else { dyingLoop = false; syncTools(); }
+    };
+    requestAnimationFrame(step);
+  }
+
+  function makeElement(kind, x, y) {
+    const el = { kind, x: clamp(x, 0, W), y: clamp(y, 0, H), sprite: null, spriteKey: "" };
+    if (kind === "blur") {
+      const prev = els.slice().reverse().find(e => e.kind === "blur" && !e.dying);
+      const r = BLUR_R();
+      Object.assign(el, { rx: r, ry: r, type: prev ? prev.type : lastType, amount: prev ? prev.amount : lastAmount });
+    } else {
+      Object.assign(el, { size: DEFAULTS[kind].size * H, badge: true, photo: null });
+    }
+    return el;
+  }
+
+  /* New elements land where the Figma puts them; repeats step diagonally so they stay visible. */
+  function addElement(kind) {
+    const d = DEFAULTS[kind];
+    const n = els.filter(e => e.kind === kind).length;
+    const off = (n % 5) * 0.05 * H;
+    els.push(makeElement(kind, d.x * W + off, d.y * H + off));
+    select(els.length - 1);
+    requestRender();
+    if (kind === "face") {           // straight into the picker — the ring is nothing without a face
+      pending = { kind: "face", i: els.length - 1 };
+      fileInput.click();
+    }
+  }
+  addQuoteBtn.addEventListener("click", () => { if (!consumeDragClick()) addElement("quote"); });
+  addFaceBtn.addEventListener("click", () => { if (!consumeDragClick()) addElement("face"); });
+  addBlurBtn.addEventListener("click", () => { if (!consumeDragClick()) addElement("blur"); });
+
+  /* ═══════════════════════ Dragging an element in from the sidebar ═══════════════════════
+     Press a thumb and move: a bare ghost of the graphic rides the cursor; as soon as it is
+     over the board the real element appears under the pointer and follows it, leaving again
+     if the pointer leaves. Release on the board keeps it (a face ring then opens the picker);
+     release elsewhere discards it. A plain click still adds at the default spot. */
+  let sideDrag = null;       // { kind, btn, id, x0, y0, started, placing }
+  let dragClick = false;     // the click that follows a completed drag is swallowed
+  function consumeDragClick() { const c = dragClick; dragClick = false; return c; }
+
+  for (const [btn, kind] of [[addQuoteBtn, "quote"], [addFaceBtn, "face"], [addBlurBtn, "blur"]]) {
+    btn.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      dragClick = false;
+      sideDrag = { kind, btn, id: e.pointerId, x0: e.clientX, y0: e.clientY, started: false, placing: -1 };
+    });
+  }
+  window.addEventListener("pointermove", (e) => {
+    if (!sideDrag || e.pointerId !== sideDrag.id) return;
+    if (!sideDrag.started) {
+      if (Math.hypot(e.clientX - sideDrag.x0, e.clientY - sideDrag.y0) < 6) return;
+      sideDrag.started = true;
+      try { sideDrag.btn.setPointerCapture(e.pointerId); } catch (_) { /* fine */ }
+      dragGhostImg.src = document.getElementById("thumb-" + sideDrag.kind).toDataURL();
+      ghostBadgeSwap.classList.add("hidden");
+      ghostBadgeAdd.classList.remove("hidden");
+      dragGhost.classList.add("bare");
+      dragGhost.classList.remove("hidden");
+      requestAnimationFrame(() => dragGhost.classList.add("lifted"));
+      document.body.classList.add("dragging-move");
+    }
+    positionGhost(e);
+    const r = board.getBoundingClientRect();
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (inside) {
+      const p = toBoard(e);
+      if (sideDrag.placing < 0) {
+        els.push(makeElement(sideDrag.kind, p.x, p.y));
+        sideDrag.placing = els.length - 1;
+        dragGhost.classList.add("hidden");
+      } else {
+        const el = els[sideDrag.placing];
+        el.x = clamp(p.x, 0, W);
+        el.y = clamp(p.y, 0, H);
+      }
+      requestRender();
+    } else if (sideDrag.placing >= 0) {
+      els.splice(sideDrag.placing, 1);
+      sideDrag.placing = -1;
+      dragGhost.classList.remove("hidden");
+      requestRender();
+    }
+  });
+  function endSideDrag(e) {
+    if (!sideDrag || e.pointerId !== sideDrag.id) return;
+    const d = sideDrag;
+    sideDrag = null;
+    if (!d.started) return;                       // a plain click — the click handler adds it
+    dragClick = true;
+    hideGhost();
+    dragGhost.classList.remove("bare");
+    ghostBadgeAdd.classList.add("hidden");
+    if (d.placing >= 0) {
+      select(d.placing);
+      if (els[d.placing].kind === "face") {
+        pending = { kind: "face", i: d.placing };
+        fileInput.click();
+      }
+    }
+    syncTools();
+    requestRender();
+  }
+  window.addEventListener("pointerup", endSideDrag);
+  window.addEventListener("pointercancel", endSideDrag);
+
+  /* ═══════════════════════ Hit-testing ═══════════════════════ */
+
+  const triSign = (px, py, a, b) => (px - b[0]) * (a[1] - b[1]) - (a[0] - b[0]) * (py - b[1]);
+  function pointInTri(px, py, a, b, c) {
+    const s1 = triSign(px, py, a, b), s2 = triSign(px, py, b, c), s3 = triSign(px, py, c, a);
+    const neg = s1 < 0 || s2 < 0 || s3 < 0, pos = s1 > 0 || s2 > 0 || s3 > 0;
+    return !(neg && pos);
+  }
+
+  /* The circle, plus the badge (face) or the tail (quote); blur rings are ellipses. */
+  function hitElement(el, p) {
+    const dx = p.x - el.x, dy = p.y - el.y;
+    if (el.kind === "blur") {
+      const tol = 4 / scale;
+      const nx = dx / (el.rx + tol), ny = dy / (el.ry + tol);
+      return nx * nx + ny * ny <= 1;
+    }
+    const s = el.size, r = s / 2;
+    if (dx * dx + dy * dy <= (r * 1.04) ** 2) return true;
+    if (el.kind === "face") {
+      return !!el.badge && dist(dx, dy, BADGE.ox * s, BADGE.oy * s) <= BADGE.rel * s / 2;
+    }
+    const [a, b, c] = QUOTE.tailTri.map(([tx, ty]) => [tx * s, ty * s]);
+    return pointInTri(dx, dy, a, b, c);
+  }
+
+  /* Elements float above the cells: the selected one's handles win over all, then the graphics
+     (quote, face) which sit above the blur rings, then the rings — topmost first within each. */
+  function hitTest(p) {
+    if (sel >= 0) {
+      const el = els[sel];
+      const { rx, ry } = radii(el);
+      const hr = 12 / scale;
+      if (dist(p.x, p.y, el.x + rx * COS45, el.y + ry * COS45) <= hr) return { kind: "handle" };
+      if (el.kind === "blur") {
+        if (dist(p.x, p.y, el.x + rx, el.y) <= hr) return { kind: "handle-x" };
+        if (dist(p.x, p.y, el.x, el.y + ry) <= hr) return { kind: "handle-y" };
+      }
+      // The selected element stays reachable where it overlaps others (a ring under a quote).
+      if (!el.dying && hitElement(el, p)) return { kind: "el", index: sel };
+    }
+    for (const pass of [isGraphic, el => !isGraphic(el)]) {
+      for (let i = els.length - 1; i >= 0; i--) {
+        if (!els[i].dying && pass(els[i]) && hitElement(els[i], p)) return { kind: "el", index: i };
+      }
+    }
+    return { kind: "empty" };
+  }
+
+  /* ═══════════════════════ Pointer interaction ═══════════════════════ */
+
+  let mode = null;          // "move" | "resize" | "resize-x" | "resize-y" | "pan-photo" | "cell" | "none"
+  let grabDX = 0, grabDY = 0;
+  let baseSize = 0, baseRx = 0, baseRy = 0, baseDist = 1;
+  const R_MAX = Math.max(W, H);
+  let prevX = 0, prevY = 0, moved = false;
+  let gCell = -1, gStartOffX = 0, gStartOffY = 0;   // the cell gesture
+
+  function toBoard(e) {
+    const r = board.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale };
+  }
+  const minSize = () => MIN_SIZE_F * H;
+  const maxSize = () => MAX_SIZE_F * H;
+
+  function cursorFor(hit, e, p) {
+    if (hit.kind === "handle") return "nwse-resize";
+    if (hit.kind === "handle-x") return "ew-resize";
+    if (hit.kind === "handle-y") return "ns-resize";
+    if (hit.kind === "el") {
+      const el = els[hit.index];
+      return (e.altKey && el.kind === "face" && el.photo) ? "grab" : "move";
+    }
+    const c = cellAt(p);
+    if (c < 0) return "default";
+    return slots[c] ? "move" : "pointer";
+  }
+
+  stage.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest(".pill-toolbar")) return;
+    const p = toBoard(e);
+    const hit = hitTest(p);
+    prevX = e.clientX; prevY = e.clientY; moved = false;
+
+    if (hit.kind === "handle") {
+      mode = "resize";
+      const el = els[sel];
+      baseSize = el.size; baseRx = el.rx; baseRy = el.ry;
+      baseDist = Math.max(1e-3, dist(p.x, p.y, el.x, el.y));
+    } else if (hit.kind === "handle-x") {
+      mode = "resize-x";
+    } else if (hit.kind === "handle-y") {
+      mode = "resize-y";
+    } else if (hit.kind === "el") {
+      select(hit.index);
+      const el = els[sel];
+      if (e.altKey && el.kind === "face" && el.photo) {
+        mode = "pan-photo";                 // ⌥-drag reframes the photo inside the ring
+      } else {
+        mode = "move";
+        grabDX = el.x - p.x;
+        grabDY = el.y - p.y;
+      }
+    } else {
+      const c = cellAt(p);
+      if (c >= 0) {
+        selectCell(c);
+        mode = "cell";                      // pan the photo · click an empty cell · carry to another cell
+        gCell = c;
+        const s = slots[c];
+        gStartOffX = s ? s.offX : 0;
+        gStartOffY = s ? s.offY : 0;
+      } else {
+        mode = "none";                      // a still click on a seam deselects
+      }
+    }
+    board.style.cursor = mode === "pan-photo" ? "grabbing" : cursorFor(hit, e, p);
+    try { stage.setPointerCapture(e.pointerId); } catch (_) { /* pointer already gone */ }
+    e.preventDefault();
+  });
+
+  stage.addEventListener("pointermove", (e) => {
+    const p = toBoard(e);
+    if (!mode) {
+      const hit = hitTest(p);
+      board.style.cursor = cursorFor(hit, e, p);
+      const h = hit.kind === "el" ? hit.index : hit.kind === "empty" ? -1 : sel;
+      if (h !== hover) { hover = h; syncChrome(); }
+      return;
+    }
+    const dxs = (e.clientX - prevX) / scale;
+    const dys = (e.clientY - prevY) / scale;
+    prevX = e.clientX; prevY = e.clientY;
+    if (dxs !== 0 || dys !== 0) moved = true;
+
+    if (mode === "cell") { cellDrag(e, p, dxs, dys); return; }
+    if (mode === "none") return;
+
+    const el = els[sel];
+    if (!el) return;
+    if (mode === "move") {
+      el.x = clamp(p.x + grabDX, 0, W);
+      el.y = clamp(p.y + grabDY, 0, H);
+    } else if (mode === "resize") {
+      const k = dist(p.x, p.y, el.x, el.y) / baseDist;
+      if (el.kind === "blur") {
+        el.rx = clamp(baseRx * k, MIN_R, R_MAX);
+        el.ry = clamp(baseRy * k, MIN_R, R_MAX);
+      } else {
+        el.size = clamp(baseSize * k, minSize(), maxSize());
+      }
+    } else if (mode === "resize-x") {
+      el.rx = clamp(Math.abs(p.x - el.x), MIN_R, R_MAX);
+    } else if (mode === "resize-y") {
+      el.ry = clamp(Math.abs(p.y - el.y), MIN_R, R_MAX);
+    } else if (mode === "pan-photo" && el.photo) {
+      const f = faceCrop(el.photo).side / el.size;   // source px per board px
+      el.photo.offX -= dxs * f;
+      el.photo.offY -= dys * f;
+    }
+    requestRender();
+  });
+
+  /* Dragging inside a cell pans its photo. Crossing into another cell lifts the photo for a
+     rearrange: the crop snaps back, a thumbnail rides the cursor, the target cell lights up.
+     Coming back home puts it down and the pan resumes. (Kollaažer.) */
+  function cellDrag(e, p, dxs, dys) {
+    const slot = slots[gCell];
+    if (!slot) return;
+    const over = cellAt(p);
+    if (carrying) {
+      positionGhost(e);
+      if (over === gCell) exitCarry(); else { setSwapTarget(over); return; }
+    }
+    slot.offX += dxs;
+    slot.offY += dys;
+    if (over >= 0 && over !== gCell) { enterCarry(e); setSwapTarget(over); }
+    requestRender();
+  }
+  function enterCarry(e) {
+    const slot = slots[gCell];
+    carrying = true;
+    slot.offX = gStartOffX; slot.offY = gStartOffY;
+    dragGhostImg.src = slot.thumb;
+    positionGhost(e);
+    dragGhost.classList.remove("hidden");
+    requestAnimationFrame(() => dragGhost.classList.add("lifted"));
+    document.body.classList.add("dragging-move");
+    requestRender();
+  }
+  function exitCarry() {
+    carrying = false;
+    hideGhost();
+    setSwapTarget(-1);
+    requestRender();
+  }
+  function hideGhost() {
+    dragGhost.classList.add("hidden");
+    dragGhost.classList.remove("lifted");
+    document.body.classList.remove("dragging-move");
+  }
+  function positionGhost(e) {
+    dragGhost.style.left = e.clientX + "px";
+    dragGhost.style.top = e.clientY + "px";
+  }
+  function setSwapTarget(i) {
+    if (swapTarget === i) return;
+    swapTarget = i;
+    ghostBadgeSwap.classList.toggle("hidden", !(i >= 0 && slots[i]));
+    ghostBadgeAdd.classList.toggle("hidden", !(i >= 0 && !slots[i]));
+    syncChrome();
+  }
+
+  function endPointer(e) {
+    if (mode === "cell") {
+      const target = swapTarget;
+      if (carrying) { carrying = false; hideGhost(); }
+      setSwapTarget(-1);
+      const slot = slots[gCell];
+      if (slot && target >= 0) {
+        // Released over another cell → rearrange: undo this drag's pan, swap the two slots.
+        slot.offX = gStartOffX; slot.offY = gStartOffY;
+        const tmp = slots[target];
+        slots[target] = slots[gCell];
+        slots[gCell] = tmp;
+        selectCell(target);
+      } else if (!slot && !moved) {
+        pending = { kind: "cell", i: gCell };       // a click on an empty cell opens the picker
+        fileInput.click();
+      }
+      syncTools();
+      requestRender();
+    } else if (mode === "none" && !moved) {
+      deselect();
+    }
+    mode = null;
+    const p = toBoard(e);
+    board.style.cursor = cursorFor(hitTest(p), e, p);
+  }
+  stage.addEventListener("pointerup", endPointer);
+  stage.addEventListener("pointercancel", endPointer);
+  stage.addEventListener("pointerleave", () => {
+    if (hover !== -1) { hover = -1; syncChrome(); }
+  });
+
+  /* Click on the backdrop around the board deselects. */
+  area.addEventListener("pointerdown", (e) => {
+    if (e.target === area) deselect();
+  });
+
+  /* Wheel: over a face with a photo it zooms the photo; over any other element it resizes it;
+     over a cell it zooms the cell's photo, anchored on the cursor (Kollaažer). */
+  stage.addEventListener("wheel", (e) => {
+    if (e.target.closest(".pill-toolbar")) return;
+    e.preventDefault();
+    const p = toBoard(e);
+    const hit = hitTest(p);
+    const dir = e.deltaY < 0 ? 1 : -1;
+    if (hit.kind === "el" || hit.kind.startsWith("handle")) {
+      const i = hit.kind === "el" ? hit.index : sel;
+      const el = els[i];
+      const f = dir > 0 ? 1.05 : 1 / 1.05;
+      if (el.kind === "face" && el.photo) {
+        el.photo.zoom = clamp(el.photo.zoom + dir * 4, 0, 100);
+      } else if (el.kind === "blur") {
+        el.rx = clamp(el.rx * f, MIN_R, R_MAX);
+        el.ry = clamp(el.ry * f, MIN_R, R_MAX);
+      } else {
+        el.size = clamp(el.size * f, minSize(), maxSize());
+      }
+      if (sel !== i) select(i); else updateToolbarUI();
+    } else {
+      const c = cellAt(p);
+      const slot = c >= 0 ? slots[c] : null;
+      if (!slot) return;
+      const rect = cellRect(c);
+      const px = p.x - rect.x, py = p.y - rect.y;
+      const before = imageLayout(slot, rect);
+      const fx = (px - before.bx) / before.bw;
+      const fy = (py - before.by) / before.bh;
+      slot.zoom = clamp(slot.zoom * (dir > 0 ? 1.08 : 1 / 1.08), 1, CELL_MAX_ZOOM);
+      const swapped = slot.rot % 180 !== 0;
+      const ew = swapped ? slot.nh : slot.nw, eh = swapped ? slot.nw : slot.nh;
+      const base = Math.max(rect.w / ew, rect.h / eh);
+      const nbw = ew * base * slot.zoom, nbh = eh * base * slot.zoom;
+      slot.offX = (px - fx * nbw) - (rect.w - nbw) / 2;
+      slot.offY = (py - fy * nbh) - (rect.h - nbh) / 2;
+      if (selCell !== c) selectCell(c);
+    }
+    requestRender();
+  }, { passive: false });
+
+  /* Double-click: a face snaps back to its detected centre; a cell photo to its cover fit. */
+  stage.addEventListener("dblclick", (e) => {
+    if (e.target.closest(".pill-toolbar")) return;
+    const p = toBoard(e);
+    const hit = hitTest(p);
+    if (hit.kind === "el") {
+      const el = els[hit.index];
+      if (el.kind === "face" && el.photo) {
+        el.photo.offX = 0; el.photo.offY = 0;
+        el.photo.zoom = el.photo.face ? 50 : 0;
+        updateToolbarUI();
+        requestRender();
+      }
+    } else if (hit.kind === "empty") {
+      const c = cellAt(p);
+      if (c >= 0 && slots[c]) resetSlot(c);
+    }
+  });
+
+  /* ═══════════════════════ Cell photo actions (Kollaažer) ═══════════════════════ */
+
+  function resetSlot(i) {
+    const slot = slots[i];
+    if (!slot) return;
+    slot.zoom = 1; slot.offX = 0; slot.offY = 0;   // keeps rotation — content orientation, not framing
+    requestRender();
+  }
+  // Zoom around the cell centre, dragging the pan along so the framed point stays framed.
+  function setZoom(i, zoom) {
+    const slot = slots[i];
+    if (!slot) return;
+    const z = clamp(zoom, 1, CELL_MAX_ZOOM);
+    const ratio = z / slot.zoom;
+    slot.offX *= ratio;
+    slot.offY *= ratio;
+    slot.zoom = z;
+    requestRender();
+  }
+  function rotateSlot(i) {
+    const slot = slots[i];
+    if (!slot) return;
+    slot.rot = (slot.rot + 90) % 360;
+    const { offX, offY } = slot;
+    slot.offX = -offY;                             // spin the pan with the photo
+    slot.offY = offX;
+    requestRender();
+  }
+  function clearSlot(i) {
+    if (!slots[i]) return;
+    slots[i] = null;
+    syncTools();
+    requestRender();
+  }
+
+  /* ═══════════════════════ Keyboard ═══════════════════════ */
+
+  window.addEventListener("keydown", (e) => {
+    const t = document.activeElement;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+    if (e.key === "Escape") { deselect(); return; }
+
+    if (sel >= 0) {
+      const el = els[sel];
+      const step = (e.shiftKey ? 10 : 1) / scale;
+      let handled = true;
+      switch (e.key) {
+        case "Delete":
+        case "Backspace": removeSelected(); break;
+        case "ArrowLeft":  el.x = clamp(el.x - step, 0, W); break;
+        case "ArrowRight": el.x = clamp(el.x + step, 0, W); break;
+        case "ArrowUp":    el.y = clamp(el.y - step, 0, H); break;
+        case "ArrowDown":  el.y = clamp(el.y + step, 0, H); break;
+        case "+":
+        case "=":
+          if (el.kind === "blur") { el.rx = clamp(el.rx + step * 2, MIN_R, R_MAX); el.ry = clamp(el.ry + step * 2, MIN_R, R_MAX); }
+          else el.size = clamp(el.size + step * 4, minSize(), maxSize());
+          break;
+        case "-":
+          if (el.kind === "blur") { el.rx = clamp(el.rx - step * 2, MIN_R, R_MAX); el.ry = clamp(el.ry - step * 2, MIN_R, R_MAX); }
+          else el.size = clamp(el.size - step * 4, minSize(), maxSize());
+          break;
+        default: handled = false;
+      }
+      if (handled) {
+        e.preventDefault();
+        if (sel >= 0) updateToolbarUI();
+        requestRender();
+      }
+      return;
+    }
+
+    const slot = selCell >= 0 ? slots[selCell] : null;
+    if (!slot) return;
+    const step = e.shiftKey ? 1 : 10;
+    if (e.key === "ArrowLeft")       slot.offX -= step;
+    else if (e.key === "ArrowRight") slot.offX += step;
+    else if (e.key === "ArrowUp")    slot.offY -= step;
+    else if (e.key === "ArrowDown")  slot.offY += step;
+    else if (e.key === "+" || e.key === "=") setZoom(selCell, slot.zoom * 1.08);
+    else if (e.key === "-")          setZoom(selCell, slot.zoom / 1.08);
+    else if (e.key === "r" || e.key === "R") rotateSlot(selCell);
+    else if (e.key === "Delete" || e.key === "Backspace") clearSlot(selCell);
+    else return;
+    e.preventDefault();
+    requestRender();
+  });
+
+  /* ═══════════════════════ Pill toolbars ═══════════════════════ */
+
+  photoBtn.addEventListener("click", () => {
+    if (sel < 0) return;
+    pending = { kind: "face", i: sel };
+    fileInput.click();
+  });
+  badgeBtn.addEventListener("click", () => {
+    if (sel < 0) return;
+    els[sel].badge = !els[sel].badge;
+    updateToolbarUI();
+    requestRender();
+  });
+  zoomSlider.addEventListener("input", () => {
+    if (sel < 0 || !els[sel].photo) return;
+    els[sel].photo.zoom = +zoomSlider.value;
+    requestRender();
+  });
+  elDelBtn.addEventListener("click", removeSelected);
+
+  function setBlurType(type) {
+    if (sel < 0 || els[sel].kind !== "blur") return;
+    els[sel].type = type;
+    lastType = type;
+    updateToolbarUI();
+    requestRender();
+  }
+  typeBlurBtn.addEventListener("click", () => setBlurType("blur"));
+  typePixelBtn.addEventListener("click", () => setBlurType("pixel"));
+  amountSlider.addEventListener("input", () => {
+    if (sel < 0 || els[sel].kind !== "blur") return;
+    els[sel].amount = +amountSlider.value;
+    lastAmount = +amountSlider.value;
+    requestRender();
+  });
+
+  rotateBtn.addEventListener("click", () => { if (selCell >= 0) rotateSlot(selCell); });
+  cellSizeSlider.addEventListener("input", () => { if (selCell >= 0) setZoom(selCell, +cellSizeSlider.value / 100); });
+  cellDelBtn.addEventListener("click", () => { if (selCell >= 0) clearSlot(selCell); });
+
+  /* ═══════════════════════ Format gallery + stroke colour ═══════════════════════ */
+
+  /* The gallery lists the collage grids only (TEMPLATES[1…]); "Üks pilt" is TEMPLATES[0]. */
+  function buildFormatList() {
+    TEMPLATES.forEach((t, ti) => {
+      if (ti === 0) return;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.tpl = ti;
+      btn.className = "format-thumb" + (ti === tplIndex ? " selected" : "");
+      btn.setAttribute("role", "radio");
+      btn.setAttribute("aria-checked", ti === tplIndex ? "true" : "false");
+      const label = "Kollaaž " + t.id.replaceAll("-", " ");
+      btn.setAttribute("aria-label", label);
+      btn.title = label;
+      const mini = document.createElement("div");
+      mini.className = "mini-board";
+      t.cells.forEach(([fx, fy, fw, fh], ci) => {
+        const c = document.createElement("div");
+        c.className = "mini-cell";
+        c.style.left   = (fx * 100) + "%";
+        c.style.top    = (fy * 100) + "%";
+        c.style.width  = (fw * 100) + "%";
+        c.style.height = (fh * 100) + "%";
+        c.textContent = ci + 1;
+        mini.appendChild(c);
+      });
+      btn.appendChild(mini);
+      btn.addEventListener("click", () => setTemplate(ti));
+      formatList.appendChild(btn);
+    });
+  }
+  function setTemplate(ti) {
+    if (ti === tplIndex) return;
+    tplIndex = ti;
+    if (ti > 0) lastCollage = ti;
+    selCell = -1;
+    syncFormatUI();
+    syncTools();
+    requestRender();
+  }
+
+  /* Mode chips, the folded/unfolded collage panel and the gallery selection follow tplIndex. */
+  function syncFormatUI() {
+    const collage = tplIndex > 0;
+    modeSingle.classList.toggle("selected", !collage);
+    modeSingle.setAttribute("aria-checked", String(!collage));
+    modeCollage.classList.toggle("selected", collage);
+    modeCollage.setAttribute("aria-checked", String(collage));
+    modeCollage.setAttribute("aria-expanded", String(collage));
+    collagePanel.classList.toggle("open", collage);
+    collagePanel.inert = !collage;
+    Array.from(formatList.children).forEach((b) => {
+      const on = +b.dataset.tpl === tplIndex;
+      b.classList.toggle("selected", on);
+      b.setAttribute("aria-checked", on ? "true" : "false");
+    });
+  }
+  modeSingle.addEventListener("click", () => setTemplate(0));
+  modeCollage.addEventListener("click", () => setTemplate(lastCollage));   // opens on the last grid used
+
+  strokeChips.forEach(chip => {
+    chip.addEventListener("click", () => {
+      stroke = chip.dataset.stroke;
+      strokeChips.forEach(c => {
+        const on = c === chip;
+        c.classList.toggle("selected", on);
+        c.setAttribute("aria-checked", on ? "true" : "false");
+      });
+      requestRender();
+    });
+  });
+
+  /* ═══════════════════════ Loading images ═══════════════════════ */
+
+  let pending = null;   // where the next picked file(s) go: { kind: "face"|"cell", i } · null = auto
+
+  fileInput.addEventListener("change", () => {
+    const files = Array.from(fileInput.files || []);
+    const target = pending;
+    pending = null;
+    fileInput.value = "";
+    if (files.length) routeFiles(files, target);
+  });
+
+  /* Auto: the selected face ring takes the first file; otherwise files go into the selected
+     cell and then the empty cells in numbering order. */
+  function routeFiles(files, target) {
+    const imgs = files.filter(f => f && f.type.startsWith("image/"));
+    if (!imgs.length) { flash("See ei ole pildifail", true); return Promise.resolve(); }
+    let t = target;
+    if (!t) {
+      t = (sel >= 0 && els[sel].kind === "face") ? { kind: "face", i: sel } : { kind: "cell", i: selCell };
+    }
+    if (t.kind === "face" && els[t.i] && els[t.i].kind === "face" && !els[t.i].dying) return setFacePhoto(els[t.i], imgs[0]);
+    return assignFiles(imgs, t.kind === "cell" ? t.i : -1);
+  }
+
+  function assignFiles(files, target) {
+    const n = cellCount();
+    const dest = [];
+    if (target >= 0 && target < n) dest.push(target);
+    for (let i = 0; i < n && dest.length < files.length; i++) {
+      if (!slots[i] && i !== target) dest.push(i);
+    }
+    if (!dest.length) {
+      flash("Kõik lahtrid on täis — vali lahter, mille foto asendada", true);
+      return Promise.resolve();
+    }
+    const jobs = files.slice(0, dest.length).map((f, k) => loadSlot(f, dest[k]));
+    selectCell(dest[0]);
+    return Promise.all(jobs);
+  }
+
+  /* createImageBitmap honours EXIF orientation and is the fast path; fall back to <img>. */
+  async function decode(file) {
+    if (window.createImageBitmap) {
+      try { return await createImageBitmap(file, { imageOrientation: "from-image" }); }
+      catch (_) { /* fall through */ }
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      return await new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = () => reject(new Error("decode failed"));
+        im.src = url;
+      });
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+  }
+
+  function toCanvas(bmp, maxEdge) {
+    const bw = bmp.width || bmp.naturalWidth, bh = bmp.height || bmp.naturalHeight;
+    const k = Math.min(1, maxEdge / Math.max(bw, bh));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(bw * k));
+    c.height = Math.max(1, Math.round(bh * k));
+    const cx = c.getContext("2d");
+    cx.imageSmoothingQuality = "high";
+    cx.drawImage(bmp, 0, 0, c.width, c.height);
+    if (bmp.close) bmp.close();
+    return c;
+  }
+
+  // 96 px cover crop for the drag ghost.
+  function makeThumb(img) {
+    const t = document.createElement("canvas");
+    t.width = 96; t.height = 96;
+    const k = Math.max(96 / img.width, 96 / img.height);
+    const w = img.width * k, h = img.height * k;
+    t.getContext("2d").drawImage(img, (96 - w) / 2, (96 - h) / 2, w, h);
+    return t.toDataURL("image/jpeg", 0.8);
+  }
+
+  async function loadSlot(file, idx) {
+    let bmp;
+    try { bmp = await decode(file); }
+    catch (_) { flash("Seda faili ei õnnestunud avada", true); return; }
+    const img = toCanvas(bmp, PHOTO_MAX);
+    slots[idx] = { img, nw: img.width, nh: img.height, zoom: 1, offX: 0, offY: 0, rot: 0, thumb: makeThumb(img) };
+    syncTools();
+    requestRender();
+  }
+
+  /* A face photo: decode, find the face, frame the ring on it. */
+  async function setFacePhoto(el, file) {
+    let bmp;
+    try { bmp = await decode(file); }
+    catch (_) { flash("Seda faili ei õnnestunud avada", true); return; }
+    const src = toCanvas(bmp, SOURCE_MAX);
+    hintOverride = { text: "Otsin nägu…" };
+    updateHint();
+    await new Promise(r => setTimeout(r, 30));       // let the hint paint before the ~150 ms scan
+    let face = null;
+    try { face = detectFace(src); } catch (err) { console.error("Face detection failed:", err); }
+    hintOverride = null;
+    if (!els.includes(el) || el.dying) return;        // removed while we were looking
+    el.photo = { id: ++photoSeq, src, face, zoom: face ? 50 : 0, offX: 0, offY: 0 };
+    if (els[sel] === el) updateToolbarUI();
+    syncTools();
+    requestRender();
+    if (!face) flash("Nägu ei leitud — foto keskendati. ⌥-lohistusega saad seda nihutada.", true);
+  }
+
+  /* ═══════════════════════ Drag & drop · paste ═══════════════════════ */
+
+  function setDropTarget(t) {
+    const same = (!t && !dropTarget) || (t && dropTarget && t.kind === dropTarget.kind && t.i === dropTarget.i);
+    if (same) return;
+    dropTarget = t;
+    syncChrome();
+  }
+  stage.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const p = toBoard(e);
+    const hit = hitTest(p);
+    if (hit.kind === "el" && els[hit.index].kind === "face") {
+      setDropTarget({ kind: "face", i: hit.index });
+    } else {
+      const c = cellAt(p);
+      setDropTarget(c >= 0 ? { kind: "cell", i: c } : null);
+    }
+  });
+  stage.addEventListener("dragleave", () => setDropTarget(null));
+  stage.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const t = dropTarget;
+    setDropTarget(null);
+    const files = e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+    if (files.length) routeFiles(files, t);
+  });
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => e.preventDefault());
+
+  /* Paste goes into the selected face ring, otherwise into the selected / first empty cell. */
+  window.addEventListener("paste", (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const f = item.getAsFile();
+        if (f) { routeFiles([f], null); e.preventDefault(); }
+        return;
+      }
+    }
+  });
+
+  /* ═══════════════════════ Bottom toolbar ═══════════════════════ */
+
+  uploadBtn.addEventListener("click", () => { pending = null; fileInput.click(); });
+  fitBtn.addEventListener("click", () => { if (selCell >= 0) resetSlot(selCell); });
+  deleteBtn.addEventListener("click", () => {
+    if (sel >= 0) removeSelected();
+    else if (selCell >= 0) clearSlot(selCell);
+  });
+
+  function exportPNG() {
+    const out = document.createElement("canvas");
+    out.width = W; out.height = H;
+    paintBoard(out.getContext("2d"), true, 1);
+    return out;
+  }
+  downloadBtn.addEventListener("click", () => {
+    if (downloadBtn.disabled) return;
+    downloadBtn.disabled = true;
+    downloadBtn.classList.add("exporting");
+    exportPNG().toBlob((blob) => {
+      if (blob) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "onusano-toimetaja-" + tpl().id + "-1920x1080.png";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      }
+      downloadBtn.classList.remove("exporting");
+      syncTools();
+    }, "image/png");
+  });
+
+  /* ═══════════════════════ Sidebar thumbnails ═══════════════════════ */
+
+  /* Blur ring thumb: a dashed ring over a soft grey mosaic (the Hägustaja launcher icon). */
+  function paintBlurThumb(c, S) {
+    const r = 0.36 * S;
+    c.save();
+    c.translate(S / 2, S / 2);
+    c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.clip();
+    const n = 5, b = (2 * r) / n;
+    const shades = [0.80, 0.90, 0.72, 0.94, 0.84, 0.76, 0.88];
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      const v = Math.round(255 * shades[(i * 3 + j * 5) % shades.length]);
+      c.fillStyle = "rgb(" + v + "," + v + "," + v + ")";
+      c.fillRect(-r + i * b, -r + j * b, b + 0.5, b + 0.5);
+    }
+    c.restore();
+    c.save();
+    c.translate(S / 2, S / 2);
+    c.setLineDash([0.075 * S, 0.055 * S]);
+    c.lineWidth = 0.035 * S;
+    c.lineCap = "round";
+    c.strokeStyle = "#111317";
+    c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.stroke();
+    c.restore();
+  }
+
+  function paintThumb(canvas, kind) {
+    const S = Math.round(56 * (window.devicePixelRatio || 1));   // shown at 56 CSS px
+    canvas.width = S; canvas.height = S;
+    const c = canvas.getContext("2d");
+    if (kind === "blur") { paintBlurThumb(c, S); return; }
+    const el = { kind, size: S * (kind === "quote" ? 0.56 : 0.5), badge: true, photo: null };
+    c.save();
+    // Centre the whole composite, not the circle: the quote's tail reaches 0.572 × size to the
+    // left (circle 0.5), so the bubble shifts right by half the difference; the face ring with
+    // its badge is symmetric, only the shadow hangs below.
+    if (kind === "quote") c.translate(S / 2 + 0.036 * el.size, S / 2 - 0.008 * el.size);
+    else c.translate(S / 2, S / 2 - 0.01 * el.size);
+    paintElement(c, el, 1, "thumb");
+    c.restore();
+  }
+
+  /* ═══════════════════════ Boot ═══════════════════════ */
+
+  buildFormatList();
+  syncFormatUI();
+  paintThumb(document.getElementById("thumb-quote"), "quote");
+  paintThumb(document.getElementById("thumb-face"), "face");
+  paintThumb(document.getElementById("thumb-blur"), "blur");
+  syncTools();
+  layout();
+  new ResizeObserver(() => layout()).observe(area);
+
+  /* Debug hooks (console / tests). */
+  window.__toimetaja = {
+    get els() { return els; }, get slots() { return slots; }, get sel() { return sel; }, get selCell() { return selCell; },
+    addElement, detectFace, routeFiles, setTemplate,
+    exportPNG: () => exportPNG().toDataURL("image/png"),
+  };
+  </script>
+</body>
+</html>
