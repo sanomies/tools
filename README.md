@@ -16,6 +16,7 @@ assets/
 as-video-editor/        → each tool lives in its own folder, served as-is
 podcast/
 geenius-social/
+toimetaja/              → Toimetaja: quote bubble + face ring over a photo or collage (has its own README)
 ```
 
 Served as a static site (e.g. GitHub Pages). All links are relative, so it
