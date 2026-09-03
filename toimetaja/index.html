@@ -189,16 +189,6 @@
     gap: 12px;
     padding: 6px 4px 4px;    /* room for focus rings inside the clipping panel */
   }
-  .stroke-block {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    margin-top: 4px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border-2);
-  }
 
   /* Format gallery (Kollaažer) — the grid templates, two per row. Thumbs are drawn by JS
      from the same template table the canvas uses, so the preview always matches the fill
@@ -242,24 +232,6 @@
     line-height: 1;
     color: var(--ink);
   }
-
-  /* Stroke color — the colour of the seams between collage cells. */
-  .stroke-list { display: flex; align-items: center; gap: 4px; }
-  .stroke-chip {
-    appearance: none;
-    border: none;
-    background: transparent;
-    padding: 8px;
-    border-radius: 16px;
-    cursor: pointer;
-    display: inline-flex;
-    transition: background-color 0.15s;
-  }
-  .stroke-chip:hover { background: var(--hover); }
-  .stroke-chip.selected { background: var(--track); }
-  .stroke-chip .swatch { width: 36px; height: 36px; border-radius: 8px; display: block; }
-  .stroke-chip[data-stroke="#ffffff"] .swatch { background: #fff; border: 1px solid var(--border-2); }
-  .stroke-chip[data-stroke="#000000"] .swatch { background: #000; }
 
   /* ───── Centre column: header · canvas · hint · floating toolbar ───── */
   .main-column {
@@ -558,8 +530,7 @@
   .ct-slider:focus-visible,
   .element-thumb:focus-visible,
   .mode-chip:focus-visible,
-  .format-thumb:focus-visible,
-  .stroke-chip:focus-visible {
+  .format-thumb:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
@@ -642,21 +613,10 @@
             <span>Kollaaž</span>
           </button>
         </div>
-        <!-- Unfolds under "Kollaaž": the ten Kollaažer grids and the seam colour. -->
+        <!-- Unfolds under "Kollaaž": the ten Kollaažer grids. -->
         <div class="collage-panel open" id="collage-panel">
           <div class="collage-inner">
             <div class="format-list" id="format-list" role="radiogroup" aria-label="Kollaaži ruudustik"></div>
-            <div class="stroke-block">
-              <h2 class="side-heading">Joone värv</h2>
-              <div class="stroke-list" role="radiogroup" aria-label="Joone värv">
-                <button class="stroke-chip selected" data-stroke="#ffffff" type="button" role="radio" aria-checked="true" title="Valge joon" aria-label="Valge joon">
-                  <span class="swatch"></span>
-                </button>
-                <button class="stroke-chip" data-stroke="#000000" type="button" role="radio" aria-checked="false" title="Must joon" aria-label="Must joon">
-                  <span class="swatch"></span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -1117,7 +1077,6 @@
   const hint      = document.getElementById("hint");
   const fileInput = document.getElementById("file-input");
   const formatList = document.getElementById("format-list");
-  const strokeChips = Array.from(document.querySelectorAll(".stroke-chip"));
   const modeSingle  = document.getElementById("mode-single");
   const modeCollage = document.getElementById("mode-collage");
   const collagePanel = document.getElementById("collage-panel");
@@ -1155,7 +1114,7 @@
   let dpr = 1;                      // CSS px → device px (the canvas backing store follows it)
   let tplIndex = 1;          // 0 = one 16:9 photo · 1… = a collage grid (starts on the first grid)
   let lastCollage = 1;       // the grid "Kollaaž" reopens with
-  let stroke = "#ffffff";
+  const stroke = "#ffffff";  // seam colour between collage cells — always white
 
   /* One slot per possible cell. Slots beyond the current template's cell count keep their
      photo, so switching formats back and forth never loses one.
@@ -2215,7 +2174,7 @@
   cellSizeSlider.addEventListener("input", () => { if (selCell >= 0) setZoom(selCell, +cellSizeSlider.value / 100); });
   cellDelBtn.addEventListener("click", () => { if (selCell >= 0) clearSlot(selCell); });
 
-  /* ═══════════════════════ Format gallery + stroke colour ═══════════════════════ */
+  /* ═══════════════════════ Format gallery ═══════════════════════ */
 
   /* The gallery lists the collage grids only (TEMPLATES[1…]); "Üks pilt" is TEMPLATES[0]. */
   function buildFormatList() {
@@ -2275,18 +2234,6 @@
   }
   modeSingle.addEventListener("click", () => setTemplate(0));
   modeCollage.addEventListener("click", () => setTemplate(lastCollage));   // opens on the last grid used
-
-  strokeChips.forEach(chip => {
-    chip.addEventListener("click", () => {
-      stroke = chip.dataset.stroke;
-      strokeChips.forEach(c => {
-        const on = c === chip;
-        c.classList.toggle("selected", on);
-        c.setAttribute("aria-checked", on ? "true" : "false");
-      });
-      requestRender();
-    });
-  });
 
   /* ═══════════════════════ Loading images ═══════════════════════ */
 
