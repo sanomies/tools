@@ -141,7 +141,7 @@
     color: var(--muted);
   }
 
-  /* Format — two choices at rest: one 16:9 photo (the default) or a collage. */
+  /* Format — two choices at rest: one 16:9 photo or a collage (the default). */
   .mode-list {
     width: 226px;
     display: grid;
@@ -633,17 +633,17 @@
       <section class="side-section formats" aria-label="Formaat">
         <h2 class="side-heading">Formaat</h2>
         <div class="mode-list" role="radiogroup" aria-label="Formaat">
-          <button class="mode-chip selected" id="mode-single" type="button" role="radio" aria-checked="true" title="Üks 16:9 pilt" aria-label="Üks pilt">
+          <button class="mode-chip" id="mode-single" type="button" role="radio" aria-checked="false" title="Üks 16:9 pilt" aria-label="Üks pilt">
             <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="1.5"/></svg>
             <span>Üks pilt</span>
           </button>
-          <button class="mode-chip" id="mode-collage" type="button" role="radio" aria-checked="false" aria-expanded="false" aria-controls="collage-panel" title="Kollaaž mitmest fotost" aria-label="Kollaaž">
+          <button class="mode-chip selected" id="mode-collage" type="button" role="radio" aria-checked="true" aria-expanded="true" aria-controls="collage-panel" title="Kollaaž mitmest fotost" aria-label="Kollaaž">
             <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="1.5"/><path d="M12 5.5v13"/><path d="M12 12h9.5"/></svg>
             <span>Kollaaž</span>
           </button>
         </div>
         <!-- Unfolds under "Kollaaž": the ten Kollaažer grids and the seam colour. -->
-        <div class="collage-panel" id="collage-panel" inert>
+        <div class="collage-panel open" id="collage-panel">
           <div class="collage-inner">
             <div class="format-list" id="format-list" role="radiogroup" aria-label="Kollaaži ruudustik"></div>
             <div class="stroke-block">
@@ -822,7 +822,7 @@
 
   /* ═══════════════════════ Collage board (Kollaažer) ═══════════════════════
      A fixed 1920×1080 board split into cells by a template. The first template is one
-     full-bleed cell — the default: a single 16:9 photo with the two graphics on top. */
+     full-bleed cell (a single 16:9 photo); the board opens on the first collage grid. */
   const BOARD_W = 1920, BOARD_H = 1080;
   const GAP = 5;              // seam width between cells (measured off the Figma sample)
   const CELL_MAX_ZOOM = 8;
@@ -1153,7 +1153,7 @@
   const W = BOARD_W, H = BOARD_H;   // board size in px
   let scale = 1;                    // board px → CSS px
   let dpr = 1;                      // CSS px → device px (the canvas backing store follows it)
-  let tplIndex = 0;          // 0 = one 16:9 photo · 1… = a collage grid
+  let tplIndex = 1;          // 0 = one 16:9 photo · 1… = a collage grid (starts on the first grid)
   let lastCollage = 1;       // the grid "Kollaaž" reopens with
   let stroke = "#ffffff";
 

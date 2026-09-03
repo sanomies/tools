@@ -11,12 +11,12 @@ between cells), the blur rings are Hägustaja's (blur or mosaic, feathered edge,
 side handles to stretch into an oval), the elements float on it like
 Hägustaja's circles (drag, corner handle, per-element toolbar), and the face is
 centred automatically with the Newsletter tool's Circler detector. Default
-format: one full-bleed 16:9 cell.
+format: a collage (the first grid, two columns).
 
 ## Using it
 
-- **Format** — two chips: *Üks pilt* (one full-bleed 16:9 photo, the default)
-  and *Kollaaž*. Picking *Kollaaž* switches to the last grid used and unfolds the
+- **Format** — two chips: *Üks pilt* (one full-bleed 16:9 photo) and *Kollaaž*
+  (the default). Picking *Kollaaž* switches to the last grid used and unfolds the
   gallery of all ten Kollaažer grids plus *Joone värv* (white or black seams);
   *Üks pilt* folds them away again. Photos stay in their slots when you switch
   back and forth.
