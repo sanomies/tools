@@ -802,6 +802,9 @@
     { id: "5-cols",         cells: [[0,0,1/5,1],[1/5,0,1/5,1],[2/5,0,1/5,1],[3/5,0,1/5,1],[4/5,0,1/5,1]] },
     { id: "3-left-2-right", cells: [[0,0,1/2,1/3],[0,1/3,1/2,1/3],[0,2/3,1/2,1/3],[1/2,0,1/2,1/2],[1/2,1/2,1/2,1/2]] },
   ];
+  // The grid the board grows to when a batch of photos doesn't fit the current one, by photo count
+  // (see assignFiles). Picked for cell shape: 2×2 over four strips, 3 + 2 over five strips.
+  const BATCH_GRID = { 2: "2-cols", 3: "3-cols", 4: "2x2", 5: "3-left-2-right" };
 
   const PHOTO_MAX = 4000;     // cap for a cell photo's long edge (8× zoom into a 1920 board still has pixels)
   const SPRITE_MAX = 4096;    // element sprites above this are rendered smaller and upscaled
@@ -1558,7 +1561,7 @@
     } else if (!slots.slice(0, cellCount()).some(Boolean)) {
       hint.textContent = multi
         ? "Klõpsa lahtril, et lisada foto (või lohista mitu korraga)"
-        : "Klõpsa pildil, et lisada foto";
+        : "Klõpsa pildil, et lisada foto (või lohista mitu korraga — tekib kollaaž)";
     } else {
       hint.textContent = "Klõpsa fotol, et seda paigutada · klõpsa elemendil, et seda muuta";
     }
@@ -2247,30 +2250,61 @@
     if (files.length) routeFiles(files, target);
   });
 
-  /* Auto: the selected face ring takes the first file; otherwise files go into the selected
-     cell and then the empty cells in numbering order. */
+  /* Which files go where — one or many, in the order the OS hands them over. An explicit target
+     (the cell dropped on or clicked, a face ring dropped on or picked from its toolbar) takes the
+     first file, the rest spill into the empty cells in numbering order, growing the grid when it
+     runs out of room. Auto (upload button, paste): a single file follows the selection — the face
+     ring, else the selected cell — while a batch only ever adds: it fills empty cells and never
+     replaces the selected photo. A face ring holds one photo. */
   function routeFiles(files, target) {
     const imgs = files.filter(f => f && f.type.startsWith("image/"));
     if (!imgs.length) { flash("See ei ole pildifail", true); return Promise.resolve(); }
     let t = target;
     if (!t) {
-      t = (sel >= 0 && els[sel].kind === "face") ? { kind: "face", i: sel } : { kind: "cell", i: selCell };
+      const one = imgs.length === 1;
+      t = one && sel >= 0 && els[sel].kind === "face" ? { kind: "face", i: sel } : { kind: "cell", i: one ? selCell : -1 };
     }
-    if (t.kind === "face" && els[t.i] && els[t.i].kind === "face" && !els[t.i].dying) return setFacePhoto(els[t.i], imgs[0]);
-    return assignFiles(imgs, t.kind === "cell" ? t.i : -1);
+    if (t.kind === "face") {
+      const el = els[t.i];
+      if (!(el && el.kind === "face" && !el.dying)) return assignFiles(imgs, -1);   // ring gone meanwhile
+      const ring = setFacePhoto(el, imgs[0]);
+      return imgs.length > 1 ? Promise.all([ring, assignFiles(imgs.slice(1), -1)]) : ring;
+    }
+    return assignFiles(imgs, t.i);
   }
 
+  /* Files → cells. The target cell (if any) takes the first file, the rest spill into the empty
+     cells in numbering order. A batch is never cut short: when the grid runs out of room it grows
+     to BATCH_GRID for the number of photos it will then hold. Photos already on the board keep
+     their cells — slots are indexed by cell number, so a bigger grid simply shows more of them
+     (a photo an earlier, bigger grid left hidden in one of those cells is replaced). Above
+     MAX_CELLS the surplus is left out and the hint says how many. A single photo onto a full grid
+     still asks which one to replace. */
   function assignFiles(files, target) {
-    const n = cellCount();
+    let n = cellCount();
     const dest = [];
     if (target >= 0 && target < n) dest.push(target);
     for (let i = 0; i < n && dest.length < files.length; i++) {
       if (!slots[i] && i !== target) dest.push(i);
     }
+    let grown = false;
+    if (dest.length < files.length && files.length > 1) {
+      const need = n + files.length - dest.length;       // the current grid plus the files that didn't fit
+      const ti = TEMPLATES.findIndex(t => t.id === BATCH_GRID[Math.min(need, MAX_CELLS)]);
+      if (ti >= 0 && TEMPLATES[ti].cells.length > n) {
+        setTemplate(ti);
+        for (let i = n; i < cellCount() && dest.length < files.length; i++) dest.push(i);
+        n = cellCount();
+        grown = true;
+      }
+    }
     if (!dest.length) {
       flash("Kõik lahtrid on täis — vali lahter, mille foto asendada", true);
       return Promise.resolve();
     }
+    const left = files.length - dest.length;
+    if (left > 0) flash("Kollaaži mahub kuni " + MAX_CELLS + " fotot — " + left + (left === 1 ? " foto" : " fotot") + " jäi välja", true);
+    else if (grown) flash("Valiti " + n + " fotoga ruudustik");
     const jobs = files.slice(0, dest.length).map((f, k) => loadSlot(f, dest[k]));
     selectCell(dest[0]);
     return Promise.all(jobs);
@@ -2378,17 +2412,24 @@
   window.addEventListener("dragover", (e) => e.preventDefault());
   window.addEventListener("drop", (e) => e.preventDefault());
 
-  /* Paste goes into the selected face ring, otherwise into the selected / first empty cell. */
+  /* Paste routes every image on the clipboard (a screenshot, or files copied in the Finder) like
+     a drop: a single one into the selected face ring, otherwise into the cells. One copied image
+     can arrive as several representations (Safari: image.tiff + image.png) — items sharing a name
+     stem count as one, and the non-TIFF one wins since browsers can't decode TIFF. */
   window.addEventListener("paste", (e) => {
     const items = e.clipboardData && e.clipboardData.items;
     if (!items) return;
+    const byStem = new Map();
     for (const item of items) {
-      if (item.type.startsWith("image/")) {
-        const f = item.getAsFile();
-        if (f) { routeFiles([f], null); e.preventDefault(); }
-        return;
-      }
+      if (item.kind !== "file" || !item.type.startsWith("image/")) continue;
+      const f = item.getAsFile();
+      if (!f) continue;
+      const stem = f.name.replace(/\.[^.]*$/, "").toLowerCase();
+      const prev = byStem.get(stem);
+      if (!prev || (prev.type === "image/tiff" && f.type !== "image/tiff")) byStem.set(stem, f);
     }
+    const files = Array.from(byStem.values());
+    if (files.length) { e.preventDefault(); routeFiles(files, null); }
   });
 
   /* ═══════════════════════ Bottom toolbar ═══════════════════════ */

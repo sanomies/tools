@@ -20,17 +20,28 @@ format: a collage (the first grid, two columns).
   gallery of all ten Kollaažer grids (the seams are always white); *Üks pilt*
   folds it away again. Photos stay in their slots when you switch back and
   forth.
-- **Photos** — click an empty cell, or upload / drop / paste. The first file goes
-  to the target (or selected) cell, the rest spill into the empty cells in
-  numbering order. Drag to pan, wheel to zoom (anchored on the cursor), rotate
-  from the cell toolbar or `r`, double-click or *Täida lahter* to reset. Drag a
-  photo across into another cell to swap the two.
+- **Photos** — click an empty cell, or upload / drop / paste any number at once.
+  The first file goes to the cell you dropped it on or clicked (a single file from
+  the upload button goes to the selected cell), the rest spill into the empty
+  cells in numbering order — and when the grid runs out of room it grows to the
+  grid for that many photos (`BATCH_GRID`: two columns, three columns, 2×2,
+  3 + 2), so four photos dropped onto *Üks pilt* come out as a four-photo
+  collage. Several files from the upload button or the clipboard only ever add:
+  they fill empty cells and never replace the selected photo. Photos already on
+  the board keep their cells. A collage holds at most five photos; the hint says
+  how many were left out. A single photo onto a full grid still asks which cell
+  to replace. Drag to pan, wheel to zoom (anchored on the cursor), rotate from
+  the cell toolbar or `r`, double-click or *Täida lahter* to reset. Drag a photo
+  across into another cell to swap the two.
 - **Elements** — click *Tsitaat*, *Nägu* or *Hägu* in the sidebar, or drag one straight
   onto the board where you want it. Drag to move; resize
   with the corner handle, the wheel or `+`/`-`; arrows nudge, `Delete` removes
   (the element shrinks and fades out). The face ring
   opens the file picker straight away; a photo can also be dropped onto a ring,
-  or pasted while the ring is selected.
+  or pasted while the ring is selected. A ring holds one photo: if several files
+  land on it, the first becomes the face and the rest go into the cells. The
+  upload button with several files always fills the cells, even with a ring
+  selected.
 - **Blur ring (Hägu)** — an ellipse that blurs or pixelates the photo under it,
   with a soft edge that bleeds a little past the outline. Corner handle scales,
   the side handles stretch it into an oval, the toolbar switches blur / mosaic
@@ -74,6 +85,7 @@ photo, fully offline.
 | `PHOTO_MAX` | `4000` | long edge kept per cell photo |
 | `GAP` | `5` | seam width between cells, board px |
 | `CELL_MAX_ZOOM` | `8` | how far a cell photo can be zoomed in |
+| `MAX_CELLS` / `BATCH_GRID` | `5` / 2-cols · 3-cols · 2x2 · 3-left-2-right | most photos in a collage; the grid a batch grows the board to, by count |
 | `SOURCE_MAX` | `2000` | long edge kept per face photo |
 | `DETECT_MAX` | `640` | long edge used for detection |
 | `CONFIRM_MIN` | `60` | face confirmation threshold |
