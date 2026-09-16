@@ -483,6 +483,149 @@
 
   #file-input { display: none; }
 
+  /* ───── Pool ("Pildipank"): a filmstrip under the toolbar, as wide as the board — photos parked
+     here, dragged onto the board. One outlined row: "+" tile · label (empty state) · tiles · Tühjenda. ───── */
+  .pool {
+    flex: 0 0 auto;
+    width: 100%;               /* layout() sets the board's CSS width here */
+    max-width: 100%;
+    min-width: 0;
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 8px 2px 8px;
+    border-radius: 12px;
+    background: var(--card);
+    outline: 1px solid rgba(17,19,23,0.22);   /* frames the strip as an area of its own */
+    outline-offset: -1px;
+    transition: background-color 0.15s;
+  }
+  /* Files dragged from the desktop over the strip → it lights up as the drop zone. */
+  .pool.drop-hover { background: var(--track); outline: 2px dashed var(--ink); outline-offset: -2px; }
+  .pool-empty {
+    flex: 0 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 0 6px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .pool.has-items .pool-empty { display: none; }
+  .pool-empty-title {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .pool-empty-note { font-size: 11px; line-height: 1.3; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+  .pool-list {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;              /* room for the × badge that pokes out of a tile */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+  }
+  .pool-item { position: relative; flex: 0 0 64px; width: 64px; height: 64px; }
+  .pool-thumb, .pool-add {
+    appearance: none;
+    font: inherit;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .pool-thumb {
+    border: none;
+    background: var(--track);
+    overflow: hidden;
+    touch-action: none;       /* the tile is dragged onto the board */
+    box-shadow: inset 0 0 0 1px rgba(17,19,23,0.06);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .pool-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; transition: opacity 0.15s; }
+  .pool-thumb:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.16); }
+  .pool-thumb:active { transform: none; }
+  /* Already on the board: dimmed with a tick. It stays in the pool so it can be swapped back in. */
+  .pool-item.used .pool-thumb img { opacity: 0.45; }
+  .pool-used {
+    position: absolute;
+    left: 5px;
+    bottom: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .pool-item.used .pool-used { display: flex; }
+  .pool-used svg { width: 10px; height: 10px; display: block; }
+  .pool-x {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-card);
+    opacity: 0;
+    transition: opacity 0.15s, background-color 0.15s;
+  }
+  .pool-item:hover .pool-x, .pool-x:focus-visible { opacity: 1; }
+  .pool-x:hover { background: var(--accent); }
+  .pool-x svg { width: 10px; height: 10px; display: block; }
+  .pool-add {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    margin: 6px 0;
+    border: 2px dashed var(--border-2);
+    background: transparent;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .pool-add:hover { background: var(--hover); border-color: var(--muted); color: var(--ink); }
+  .pool-add svg { width: 22px; height: 22px; display: block; }
+  .pool-clear {
+    flex: 0 0 auto;
+    appearance: none;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 100px;
+    transition: color 0.15s, background-color 0.15s;
+  }
+  .pool-clear:hover { color: var(--accent); background: var(--hover); }
+
   /* ───── Drag ghost: the thumbnail that rides the cursor while a photo is carried to another cell ───── */
   #drag-ghost {
     position: fixed;
@@ -530,7 +673,11 @@
   .ct-slider:focus-visible,
   .element-thumb:focus-visible,
   .mode-chip:focus-visible,
-  .format-thumb:focus-visible {
+  .format-thumb:focus-visible,
+  .pool-thumb:focus-visible,
+  .pool-add:focus-visible,
+  .pool-x:focus-visible,
+  .pool-clear:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
@@ -564,6 +711,8 @@
     .format-list { display: flex; overflow-x: auto; padding-bottom: 4px; }
     .format-thumb { flex: 0 0 88px; }
     .main-column { padding: 20px; }
+    .pool { margin-top: 12px; }
+    .pool-empty-note { display: none; }
     .app-header { font-size: 18px; }
     .brand-face { height: 28px; }
     .canvas-area { padding: 16px 0; }
@@ -704,6 +853,20 @@
           <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </button>
       </div>
+
+      <!-- Pool: photos parked here, dragged onto a cell or a face ring when needed; also a drop zone. -->
+      <section class="pool" id="pool-section" aria-label="Pildipank">
+        <button class="pool-add" id="pool-add" type="button" title="Lisa fotod pildipanka" aria-label="Lisa fotod pildipanka">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        </button>
+        <!-- Shown while the pool is empty; the tiles take its place. -->
+        <div class="pool-empty" id="pool-empty">
+          <span class="pool-empty-title">Pildipank</span>
+          <span class="pool-empty-note">Lohista fotod siia · siit lahtrisse või näoringile</span>
+        </div>
+        <div class="pool-list" id="pool-list" role="list"></div>
+        <button class="pool-clear hidden" id="pool-clear" type="button" title="Tühjenda pildipank">Tühjenda</button>
+      </section>
     </main>
   </div>
 
@@ -1079,6 +1242,10 @@
   const cellToolbar = document.getElementById("cell-toolbar");
   const hint      = document.getElementById("hint");
   const fileInput = document.getElementById("file-input");
+  const poolSection = document.getElementById("pool-section");
+  const poolList    = document.getElementById("pool-list");
+  const poolAddBtn  = document.getElementById("pool-add");
+  const poolClear   = document.getElementById("pool-clear");
   const formatList = document.getElementById("format-list");
   const modeSingle  = document.getElementById("mode-single");
   const modeCollage = document.getElementById("mode-collage");
@@ -1137,6 +1304,9 @@
   let selCell = -1;          // selected cell (never together with sel)
   let hover = -1;            // element under the cursor
   let dropTarget = null;     // file drag from the desktop: { kind: "face"|"cell", i } | null
+  const pool = [];           // parked photos: { id, file, key, thumb, w, h } — only the File handle and a thumbnail
+  let poolSeq = 0;
+  const POOL_THUMB = 160;    // pool tile thumbnail edge, px (tiles show at ~71 CSS px)
   let photoSeq = 0;
 
   const COS45 = Math.SQRT1_2;
@@ -1421,6 +1591,7 @@
     const cssH = Math.max(1, Math.round(H * scale));
     board.style.width = cssW + "px";
     board.style.height = cssH + "px";
+    poolSection.style.width = cssW + "px";     // the pool strip runs the width of the board
     // Backing store at device resolution: the board is drawn through a scale transform, so
     // photos and vectors are rasterised for this screen instead of stretched from 1920 px.
     board.width = Math.max(1, Math.round(cssW * dpr));
@@ -1559,9 +1730,7 @@
       hint.textContent = "Lohista fotot paigutamiseks · ratas suumib · topeltklõps taastab"
         + (multi ? " · lohista teise lahtrisse, et fotod vahetada" : "");
     } else if (!slots.slice(0, cellCount()).some(Boolean)) {
-      hint.textContent = multi
-        ? "Klõpsa lahtril, et lisada foto (või lohista mitu korraga)"
-        : "Klõpsa pildil, et lisada foto (või lohista mitu korraga — tekib kollaaž)";
+      hint.textContent = "\u00a0";                 // an empty board explains itself — no hint
     } else {
       hint.textContent = "Klõpsa fotol, et seda paigutada · klõpsa elemendil, et seda muuta";
     }
@@ -1582,6 +1751,7 @@
     fitBtn.disabled = !slot;
     deleteBtn.disabled = !(sel >= 0 || slot);
     downloadBtn.disabled = !(els.length || slots.slice(0, cellCount()).some(Boolean));
+    syncPoolUsed();
   }
   function select(i) {
     sel = i;
@@ -1654,10 +1824,7 @@
     els.push(makeElement(kind, d.x * W + off, d.y * H + off));
     select(els.length - 1);
     requestRender();
-    if (kind === "face") {           // straight into the picker — the ring is nothing without a face
-      pending = { kind: "face", i: els.length - 1 };
-      fileInput.click();
-    }
+    // A face ring starts empty: its hint points to the camera button, a drop or the pool.
   }
   addQuoteBtn.addEventListener("click", () => { if (!consumeDragClick()) addElement("quote"); });
   addFaceBtn.addEventListener("click", () => { if (!consumeDragClick()) addElement("face"); });
@@ -1666,8 +1833,8 @@
   /* ═══════════════════════ Dragging an element in from the sidebar ═══════════════════════
      Press a thumb and move: a bare ghost of the graphic rides the cursor; as soon as it is
      over the board the real element appears under the pointer and follows it, leaving again
-     if the pointer leaves. Release on the board keeps it (a face ring then opens the picker);
-     release elsewhere discards it. A plain click still adds at the default spot. */
+     if the pointer leaves. Release on the board keeps it; release elsewhere discards it. A plain
+     click still adds at the default spot. */
   let sideDrag = null;       // { kind, btn, id, x0, y0, started, placing }
   let dragClick = false;     // the click that follows a completed drag is swallowed
   function consumeDragClick() { const c = dragClick; dragClick = false; return c; }
@@ -1724,18 +1891,188 @@
     hideGhost();
     dragGhost.classList.remove("bare");
     ghostBadgeAdd.classList.add("hidden");
-    if (d.placing >= 0) {
-      select(d.placing);
-      if (els[d.placing].kind === "face") {
-        pending = { kind: "face", i: d.placing };
-        fileInput.click();
-      }
-    }
+    if (d.placing >= 0) select(d.placing);
     syncTools();
     requestRender();
   }
   window.addEventListener("pointerup", endSideDrag);
   window.addEventListener("pointercancel", endSideDrag);
+
+  /* ═══════════════════════ Pool (Pildipank) ═══════════════════════
+     Photos parked in the strip under the toolbar. The "+" tile or a drop onto the strip decodes each file once
+     for a small thumbnail and keeps only the File handle, so the pool stays cheap however many
+     photos sit in it. Placing one — drag onto a cell or a face ring, or click for the selected
+     spot — runs the ordinary file path, so a pool photo is decoded exactly like a picked one.
+     Photos stay in the pool after use, marked with a tick; × removes one, Tühjenda all. */
+  const poolKey = f => f.name + "|" + f.size + "|" + f.lastModified;
+  const poolById = id => pool.find(p => p.id === +id);
+
+  async function addToPool(files) {
+    const imgs = files.filter(f => f && f.type.startsWith("image/"));
+    if (!imgs.length) { flash("See ei ole pildifail", true); return; }
+    const fresh = imgs.filter(f => !pool.some(p => p.key === poolKey(f)));
+    if (!fresh.length) { flash("Need fotod on pildipangas juba"); return; }
+    hintOverride = { text: "Laen " + fresh.length + (fresh.length === 1 ? " foto" : " fotot") + " pildipanka…" };
+    updateHint();
+    let failed = 0;
+    for (const f of fresh) {
+      let bmp;
+      try { bmp = await decode(f); } catch (_) { failed++; continue; }
+      const w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight;
+      const thumb = makeThumb(bmp, POOL_THUMB);
+      if (bmp.close) bmp.close();
+      const p = { id: ++poolSeq, file: f, key: poolKey(f), thumb, w, h };
+      pool.push(p);
+      poolList.appendChild(makeTile(p));
+      syncPoolState();
+    }
+    hintOverride = null;
+    updateHint();
+    if (failed) flash(failed === 1 ? "Ühte faili ei õnnestunud avada" : failed + " faili ei õnnestunud avada", true);
+  }
+  function removeFromPool(id) {
+    const k = pool.findIndex(p => p.id === id);
+    if (k < 0) return;
+    pool.splice(k, 1);
+    renderPool();
+  }
+  function clearPool() {
+    if (!pool.length) return;
+    pool.length = 0;
+    renderPool();
+  }
+
+  /* A pool photo counts as used while it sits in a visible cell or a face ring. */
+  function poolUsed(p) {
+    return slots.slice(0, cellCount()).some(s => s && s.file === p.file)
+      || els.some(el => !el.dying && el.photo && el.photo.file === p.file);
+  }
+  const SVG_TICK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const SVG_X    = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>';
+
+  /* One tile: the thumbnail button, the used tick and the × — appended after the "+" tile. */
+  function makeTile(p) {
+    const item = document.createElement("div");
+    item.className = "pool-item" + (poolUsed(p) ? " used" : "");
+    item.dataset.id = p.id;
+    item.setAttribute("role", "listitem");
+    const b = document.createElement("button");
+    b.className = "pool-thumb";
+    b.type = "button";
+    b.title = p.file.name + " · " + p.w + "×" + p.h;
+    b.setAttribute("aria-label", p.file.name + " — klõps paneb valitud kohta, lohista lahtrisse või näoringile");
+    const im = document.createElement("img");
+    im.src = p.thumb;
+    im.alt = "";
+    im.draggable = false;
+    b.appendChild(im);
+    const tick = document.createElement("span");
+    tick.className = "pool-used";
+    tick.innerHTML = SVG_TICK;
+    const x = document.createElement("button");
+    x.className = "pool-x";
+    x.type = "button";
+    x.title = "Eemalda pildipangast";
+    x.setAttribute("aria-label", "Eemalda " + p.file.name + " pildipangast");
+    x.innerHTML = SVG_X;
+    item.append(b, tick, x);
+    return item;
+  }
+  /* Empty → the label shows; with photos → tiles and Tühjenda. */
+  function syncPoolState() {
+    poolSection.classList.toggle("has-items", pool.length > 0);
+    poolClear.classList.toggle("hidden", !pool.length);
+  }
+  /* Full rebuild (after a remove / clear); adding appends tiles one by one so a batch loading in
+     doesn't redraw the tiles already there. The used state alone is toggled by syncPoolUsed. */
+  function renderPool() {
+    poolList.replaceChildren();
+    for (const p of pool) poolList.appendChild(makeTile(p));
+    syncPoolState();
+  }
+  function syncPoolUsed() {
+    for (const item of poolList.querySelectorAll(".pool-item")) {
+      const p = poolById(item.dataset.id);
+      item.classList.toggle("used", !!p && poolUsed(p));
+    }
+  }
+
+  poolAddBtn.addEventListener("click", () => { pending = { kind: "pool" }; fileInput.click(); });
+  poolClear.addEventListener("click", clearPool);
+  poolList.addEventListener("click", (e) => {
+    const x = e.target.closest(".pool-x");
+    if (x) { removeFromPool(+x.closest(".pool-item").dataset.id); return; }
+    const b = e.target.closest(".pool-thumb");
+    if (!b) return;
+    if (poolClick) { poolClick = false; return; }        // the click that follows a completed drag
+    const p = poolById(b.closest(".pool-item").dataset.id);
+    if (p) routeFiles([p.file], null);                   // a single file: the selected ring / cell, else the first empty cell
+  });
+
+  /* Files dragged from the desktop onto the section go into the pool, not onto the board. */
+  poolSection.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    poolSection.classList.add("drop-hover");
+  });
+  poolSection.addEventListener("dragleave", (e) => {
+    if (!e.relatedTarget || !poolSection.contains(e.relatedTarget)) poolSection.classList.remove("drop-hover");
+  });
+  poolSection.addEventListener("drop", (e) => {
+    e.preventDefault();
+    poolSection.classList.remove("drop-hover");
+    const files = e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+    if (files.length) addToPool(files);
+  });
+
+  /* Dragging a tile onto the board: the photo thumbnail rides the cursor, the cell or face ring
+     under it lights up like a desktop drop target, and release places it there. Release
+     anywhere else cancels. A plain click is left to the click handler above. */
+  let poolDrag = null;       // { item, btn, id, x0, y0, started }
+  let poolClick = false;
+  poolList.addEventListener("pointerdown", (e) => {
+    const btn = e.target.closest(".pool-thumb");
+    if (!btn || e.button !== 0) return;
+    const item = poolById(btn.closest(".pool-item").dataset.id);
+    if (!item) return;
+    poolClick = false;
+    poolDrag = { item, btn, id: e.pointerId, x0: e.clientX, y0: e.clientY, started: false };
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!poolDrag || e.pointerId !== poolDrag.id) return;
+    if (!poolDrag.started) {
+      if (Math.hypot(e.clientX - poolDrag.x0, e.clientY - poolDrag.y0) < 6) return;
+      poolDrag.started = true;
+      try { poolDrag.btn.setPointerCapture(e.pointerId); } catch (_) { /* fine */ }
+      dragGhostImg.src = poolDrag.item.thumb;
+      ghostBadgeSwap.classList.add("hidden");
+      ghostBadgeAdd.classList.add("hidden");
+      dragGhost.classList.remove("hidden");
+      requestAnimationFrame(() => dragGhost.classList.add("lifted"));
+      document.body.classList.add("dragging-move");
+      hintOverride = { text: "Lase lahti lahtri või näoringi kohal" };
+      updateHint();
+    }
+    positionGhost(e);
+    setDropTarget(dropTargetAt(e));
+    ghostBadgeAdd.classList.toggle("hidden", !dropTarget);
+  });
+  function endPoolDrag(e) {
+    if (!poolDrag || e.pointerId !== poolDrag.id) return;
+    const d = poolDrag;
+    poolDrag = null;
+    if (!d.started) return;
+    poolClick = true;
+    hideGhost();
+    ghostBadgeAdd.classList.add("hidden");
+    const t = dropTarget;
+    setDropTarget(null);
+    hintOverride = null;
+    updateHint();
+    if (t) routeFiles([d.item.file], t);
+  }
+  window.addEventListener("pointerup", endPoolDrag);
+  window.addEventListener("pointercancel", endPoolDrag);
 
   /* ═══════════════════════ Hit-testing ═══════════════════════ */
 
@@ -2257,6 +2594,7 @@
      ring, else the selected cell — while a batch only ever adds: it fills empty cells and never
      replaces the selected photo. A face ring holds one photo. */
   function routeFiles(files, target) {
+    if (target && target.kind === "pool") return addToPool(files);
     const imgs = files.filter(f => f && f.type.startsWith("image/"));
     if (!imgs.length) { flash("See ei ole pildifail", true); return Promise.resolve(); }
     let t = target;
@@ -2342,13 +2680,15 @@
     return c;
   }
 
-  // 96 px cover crop for the drag ghost.
-  function makeThumb(img) {
+  // Square cover crop: 96 px for the drag ghost, POOL_THUMB for a pool tile.
+  function makeThumb(img, size = 96) {
     const t = document.createElement("canvas");
-    t.width = 96; t.height = 96;
-    const k = Math.max(96 / img.width, 96 / img.height);
+    t.width = size; t.height = size;
+    const k = Math.max(size / img.width, size / img.height);
     const w = img.width * k, h = img.height * k;
-    t.getContext("2d").drawImage(img, (96 - w) / 2, (96 - h) / 2, w, h);
+    const cx = t.getContext("2d");
+    cx.imageSmoothingQuality = "high";
+    cx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
     return t.toDataURL("image/jpeg", 0.8);
   }
 
@@ -2357,7 +2697,7 @@
     try { bmp = await decode(file); }
     catch (_) { flash("Seda faili ei õnnestunud avada", true); return; }
     const img = toCanvas(bmp, PHOTO_MAX);
-    slots[idx] = { img, nw: img.width, nh: img.height, zoom: 1, offX: 0, offY: 0, rot: 0, thumb: makeThumb(img) };
+    slots[idx] = { img, nw: img.width, nh: img.height, zoom: 1, offX: 0, offY: 0, rot: 0, thumb: makeThumb(img), file };
     syncTools();
     requestRender();
   }
@@ -2375,7 +2715,7 @@
     try { face = detectFace(src); } catch (err) { console.error("Face detection failed:", err); }
     hintOverride = null;
     if (!els.includes(el) || el.dying) return;        // removed while we were looking
-    el.photo = { id: ++photoSeq, src, face, zoom: face ? 50 : 0, offX: 0, offY: 0 };
+    el.photo = { id: ++photoSeq, src, face, zoom: face ? 50 : 0, offX: 0, offY: 0, file };
     if (els[sel] === el) updateToolbarUI();
     syncTools();
     requestRender();
@@ -2390,16 +2730,19 @@
     dropTarget = t;
     syncChrome();
   }
-  stage.addEventListener("dragover", (e) => {
-    e.preventDefault();
+  /* What a photo let go at this pointer position lands in: a face ring, a cell, or nothing. */
+  function dropTargetAt(e) {
+    const r = board.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return null;
     const p = toBoard(e);
     const hit = hitTest(p);
-    if (hit.kind === "el" && els[hit.index].kind === "face") {
-      setDropTarget({ kind: "face", i: hit.index });
-    } else {
-      const c = cellAt(p);
-      setDropTarget(c >= 0 ? { kind: "cell", i: c } : null);
-    }
+    if (hit.kind === "el" && els[hit.index].kind === "face") return { kind: "face", i: hit.index };
+    const c = cellAt(p);
+    return c >= 0 ? { kind: "cell", i: c } : null;
+  }
+  stage.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    setDropTarget(dropTargetAt(e));
   });
   stage.addEventListener("dragleave", () => setDropTarget(null));
   stage.addEventListener("drop", (e) => {
@@ -2520,7 +2863,8 @@
   /* Debug hooks (console / tests). */
   window.__toimetaja = {
     get els() { return els; }, get slots() { return slots; }, get sel() { return sel; }, get selCell() { return selCell; },
-    addElement, detectFace, routeFiles, setTemplate,
+    get pool() { return pool; },
+    addElement, detectFace, routeFiles, setTemplate, addToPool,
     exportPNG: () => exportPNG().toDataURL("image/png"),
   };
   </script>
