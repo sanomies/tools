@@ -319,6 +319,8 @@
     border: 2px solid var(--accent);
     box-shadow: 0 0 0 1px rgba(255,255,255,0.85), inset 0 0 0 1px rgba(255,255,255,0.55);
   }
+  /* Reframe mode: the selected ring's outline goes dashed — a drag now slides the photo, not the ring. */
+  .el-ol.selected.reframe { border-style: dashed; }
   /* A photo being dragged from the desktop over a face ring → that ring lights up. */
   .el-ol.drop-hover {
     border: 2px dashed var(--ink);
@@ -338,6 +340,26 @@
   }
   /* Blur ellipses (Hägustaja): side handles stretch one axis, the corner one scales both. */
   .resize-handle.rh-side { width: 11px; height: 11px; }
+  /* Reframe mode: the photo carries the Podcast tool's selection chrome — an accent box with
+     eight square handles; drag the box to slide the photo, a handle to scale it. Visual only,
+     like the rest of the chrome: hit-testing is done in JS on the canvas. */
+  .photo-chrome { position: absolute; border: 2px solid var(--accent); box-sizing: border-box; pointer-events: none; }
+  .photo-chrome .ph {
+    position: absolute;
+    width: 12px; height: 12px;
+    background: #fff;
+    border: 2px solid var(--accent);
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  }
+  .photo-chrome .ph[data-corner="nw"] { left: -7px;  top: -7px; }
+  .photo-chrome .ph[data-corner="ne"] { right: -7px; top: -7px; }
+  .photo-chrome .ph[data-corner="sw"] { left: -7px;  bottom: -7px; }
+  .photo-chrome .ph[data-corner="se"] { right: -7px; bottom: -7px; }
+  .photo-chrome .ph[data-corner="n"]  { top: -7px;    left: 50%; transform: translateX(-50%); }
+  .photo-chrome .ph[data-corner="s"]  { bottom: -7px; left: 50%; transform: translateX(-50%); }
+  .photo-chrome .ph[data-corner="w"]  { left: -7px;   top: 50%;  transform: translateY(-50%); }
+  .photo-chrome .ph[data-corner="e"]  { right: -7px;  top: 50%;  transform: translateY(-50%); }
 
   /* ───── Floating pill toolbars (per element · per cell) ─────
      Live in stage space so they keep their designed footprint at any canvas zoom;
@@ -382,6 +404,9 @@
   .ct-btn.ct-del .ico { width: 17px; height: 17px; }
   .ct-btn.ct-photo { background: var(--ink); color: #fff; }
   .ct-btn.ct-photo:hover { background: #2a2d33; }
+  .ct-btn.ct-mode.selected { background: var(--ink); color: #fff; }     /* an active mode reads as "on" */
+  .ct-btn.ct-mode.selected:hover { background: #2a2d33; }
+  .ct-btn:disabled { opacity: 0.4; cursor: default; background: transparent; }
   .ct-btn.ct-rotate { background: var(--track); }
   .ct-btn.ct-rotate:hover { background: #e2e9ec; }
   .ct-sep { width: 1px; height: 18px; background: var(--border-2); flex: 0 0 auto; }
@@ -793,8 +818,13 @@
             <div class="resize-handle hidden" id="handle-uni" aria-hidden="true"></div>
             <div class="resize-handle rh-side hidden" id="handle-x" aria-hidden="true"></div>
             <div class="resize-handle rh-side hidden" id="handle-y" aria-hidden="true"></div>
+            <!-- Reframe mode: the photo's selection chrome (Podcast tool) -->
+            <div class="photo-chrome hidden" id="photo-chrome" aria-hidden="true">
+              <div class="ph" data-corner="nw"></div><div class="ph" data-corner="n"></div><div class="ph" data-corner="ne"></div><div class="ph" data-corner="e"></div>
+              <div class="ph" data-corner="se"></div><div class="ph" data-corner="s"></div><div class="ph" data-corner="sw"></div><div class="ph" data-corner="w"></div>
+            </div>
 
-            <!-- Per-element toolbar: face → photo · badge · photo zoom · remove; quote → remove -->
+            <!-- Per-element toolbar: face → photo · badge · reframe · recentre · remove; quote → remove -->
             <div class="pill-toolbar hidden" id="el-toolbar">
               <button class="ct-btn ct-photo face-only" id="photo-btn" type="button" title="Vali foto" aria-label="Vali näoringi foto">
                 <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -802,9 +832,12 @@
               <button class="ct-btn face-only" id="badge-btn" type="button" role="switch" aria-checked="true" title="Tsitaadimärk ringil" aria-label="Tsitaadimärk ringil">
                 <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="30 40 110 80" fill="currentColor" aria-hidden="true"><path d="M59.199 88.9219C57.5964 97.7451 54.6614 103.291 52.5366 107.217C51.7083 108.747 53.4009 110.458 54.9135 109.575C72.722 99.2036 80.5188 84.8704 81.4912 72.734C82.3195 62.2721 75.1889 51.4862 64.3669 49.5235C53.545 47.5608 43.1732 54.7454 41.2284 65.5673C39.1757 76.9115 47.4226 87.8055 59.2169 88.9399L59.199 88.9219Z"/><path d="M107.816 88.9219C106.213 97.7451 103.278 103.291 101.154 107.217C100.325 108.747 102.018 110.458 103.53 109.575C121.321 99.2036 129.136 84.8704 130.108 72.734C130.936 62.2721 123.806 51.4862 112.984 49.5235C102.162 47.5608 91.79 54.7454 89.8453 65.5673C87.7926 76.9115 96.0576 87.8055 107.834 88.9399L107.816 88.9219Z"/></svg>
               </button>
-              <span class="ct-sep face-only" aria-hidden="true"></span>
-              <span class="ct-label face-only" id="zoom-label">Foto</span>
-              <input class="ct-slider face-only" id="zoom-slider" type="range" min="0" max="100" step="1" value="50" aria-labelledby="zoom-label">
+              <button class="ct-btn ct-mode face-only" id="reframe-btn" type="button" role="switch" aria-checked="false" title="Nihuta fotot ringis" aria-label="Nihuta fotot ringis">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
+              </button>
+              <button class="ct-btn face-only" id="centre-btn" type="button" title="Keskenda näole" aria-label="Keskenda näole">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+              </button>
               <!-- Blur ring (Hägustaja): type · strength -->
               <div class="ct-types blur-only" role="radiogroup" aria-label="Hägu tüüp">
                 <button class="ct-btn" id="type-blur" type="button" role="radio" aria-checked="false" title="Sujuv hägu" aria-label="Sujuv hägu">
@@ -983,7 +1016,9 @@
   const SWEEP_SHIFT = 0.1, SWEEP_SCALE = 1.1, SWEEP_MIN = 0.5, MAX_CANDIDATES = 8;
   const CONFIRM_SHIFT = 0.02, CONFIRM_SCALE = 1.05, CONFIRM_MIN = 60;
   const DROP = 0.12;                       // pico's window sits high on the head
-  const ZOOM_MIN = 1.3, ZOOM_MAX = 3.4;    // crop side as a multiple of the window
+  const ZOOM_MIN = 1.3;         // tightest crop: side in face sizes (slider at 100)
+  const ZOOM_AUTO = 2.35;       // the auto-frame's window, in face sizes (Circler's default)
+  const FACELESS_TIGHT = 0.25;  // tightest crop without a face: fraction of the short edge
 
   let classify = null;
   function getClassifier() {
@@ -1056,33 +1091,111 @@
     return sum;
   }
 
-  /* The square of the face photo that fills the ring: centred on the face, sized by the
-     photo zoom (right = tighter), kept inside the image. Near an edge it shrinks rather
-     than slides so the face stays centred; sliding is the last resort. (Circler logic.) */
+  /* The ring's crop is a square of the face photo. Its size runs with the photo zoom from the
+     whole short edge (slider at 0) down to ZOOM_MIN faces (at 100), geometrically so every step
+     feels the same; the slider always has effect over its whole range. The window is centred
+     on the face (or the photo) plus the manual shift, and slides to stay inside the photo. */
+  function cropRange(p) {
+    const loose = Math.min(p.src.width, p.src.height);
+    const tight = Math.min(loose, p.face ? p.face.size * ZOOM_MIN : loose * FACELESS_TIGHT);
+    return { loose, tight };
+  }
+  function cropSide(p) {
+    const { loose, tight } = cropRange(p);
+    return loose * Math.pow(tight / loose, p.zoom / 100);
+  }
+  function zoomFor(p, side) {                       // the slider value that gives this crop side
+    const { loose, tight } = cropRange(p);
+    if (tight >= loose) return 0;
+    return clamp(100 * Math.log(side / loose) / Math.log(tight / loose), 0, 100);
+  }
   function faceCrop(p) {
     const W = p.src.width, H = p.src.height;
-    const maxSide = Math.min(W, H);
-    if (!p.face) {
-      const tightest = maxSide * (ZOOM_MIN / ZOOM_MAX);
-      const side = maxSide - (p.zoom / 100) * (maxSide - tightest);
-      let cx = W / 2 + p.offX, cy = H / 2 + p.offY;
-      cx = Math.min(Math.max(cx, side / 2), W - side / 2);
-      cy = Math.min(Math.max(cy, side / 2), H - side / 2);
-      return { x: cx - side / 2, y: cy - side / 2, side };
-    }
-    const zf = ZOOM_MAX - (p.zoom / 100) * (ZOOM_MAX - ZOOM_MIN);
-    const cx0 = p.face.x + p.offX;
-    const cy0 = p.face.y + p.offY;
-    const ideal = Math.min(p.face.size * zf, maxSide);
-    const centred = 2 * Math.min(cx0, W - cx0, cy0, H - cy0);
-    const tightest = p.face.size * 1.15;
-    let side;
-    if (centred >= ideal)         side = ideal;
-    else if (centred >= tightest) side = centred;
-    else                          side = ideal;
-    const cx = Math.min(Math.max(cx0, side / 2), W - side / 2);
-    const cy = Math.min(Math.max(cy0, side / 2), H - side / 2);
+    const side = cropSide(p);
+    const bx = p.face ? p.face.x : W / 2, by = p.face ? p.face.y : H / 2;
+    const cx = Math.min(Math.max(bx + p.offX, side / 2), W - side / 2);
+    const cy = Math.min(Math.max(by + p.offY, side / 2), H - side / 2);
     return { x: cx - side / 2, y: cy - side / 2, side };
+  }
+
+  /* Where the slider starts: the auto-frame, a window ZOOM_AUTO faces wide centred on the face.
+     Near an edge it shrinks rather than slides so the face stays centred; sliding is the last
+     resort. (Circler logic — it only picks the default now, the slider goes past it either way.) */
+  function autoZoom(p) {
+    if (!p.face) return 0;
+    const W = p.src.width, H = p.src.height;
+    const ideal = Math.min(p.face.size * ZOOM_AUTO, Math.min(W, H));
+    const centred = 2 * Math.min(p.face.x, W - p.face.x, p.face.y, H - p.face.y);
+    const tightest = p.face.size * 1.15;
+    const side = centred >= ideal ? ideal : centred >= tightest ? centred : ideal;
+    return zoomFor(p, side);
+  }
+
+  /* After a manual shift or zoom: fold the edge clamp back into the offsets, so a drag that
+     ran past the edge doesn't have to be undone before the photo moves again. */
+  function settlePhoto(p) {
+    const c = faceCrop(p);
+    const bx = p.face ? p.face.x : p.src.width / 2;
+    const by = p.face ? p.face.y : p.src.height / 2;
+    p.offX = c.x + c.side / 2 - bx;
+    p.offY = c.y + c.side / 2 - by;
+  }
+  function recentrePhoto(p) {
+    p.offX = 0; p.offY = 0;
+    p.zoom = p.zoom0 || 0;
+  }
+
+  /* The whole face photo laid out at the ring's crop scale, in board px: what reframe mode
+     shows through around the ring, and what a reframe drag grabs. */
+  function ghostRect(el) {
+    const c = faceCrop(el.photo);
+    const k = el.size / c.side;                          // board px per source px
+    const r = el.size / 2;
+    return { x: el.x - r - c.x * k, y: el.y - r - c.y * k, w: el.photo.src.width * k, h: el.photo.src.height * k };
+  }
+  const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+  const PH_CORNERS = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+  const PH_CURSOR = { nw: "nwse-resize", se: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize", n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize" };
+  function photoHandle(g, c) {                          // a handle's position on the ghost box
+    return { x: c.includes("w") ? g.x : c.includes("e") ? g.x + g.w : g.x + g.w / 2,
+             y: c.includes("n") ? g.y : c.includes("s") ? g.y + g.h : g.y + g.h / 2 };
+  }
+
+  /* Scaling the photo from a handle (Podcast tool's box model): aspect locked, the opposite
+     corner or edge stays put (⌥: the centre does), then the box is read back into the ring's
+     crop — the photo can't get smaller than the ring, nor tighter than the zoom range. */
+  function resizePhoto(el, corner, s, dx, dy, alt) {
+    const P = el.photo, W = P.src.width, H = P.src.height;
+    const ratio = s.w / s.h, k2 = alt ? 2 : 1;
+    let newW;
+    if (corner.length === 2) {
+      const dw = (corner.includes("w") ? -dx : dx) * k2;
+      const dh = (corner.includes("n") ? -dy : dy) * k2;
+      newW = s.w + (Math.abs(dw) > Math.abs(dh) * ratio ? dw : dh * ratio);
+    } else if (corner === "n" || corner === "s") {
+      newW = (s.h + (corner === "n" ? -dy : dy) * k2) * ratio;
+    } else {
+      newW = s.w + (corner === "w" ? -dx : dx) * k2;
+    }
+    const { loose, tight } = cropRange(P);
+    const side = clamp(el.size * W / Math.max(1e-6, newW), tight, loose);   // the crop side this box means
+    const k = el.size / side;                                              // board px per source px
+    newW = W * k;
+    const newH = H * k;
+    let nx, ny;
+    if (alt) {
+      nx = s.x + s.w / 2 - newW / 2;
+      ny = s.y + s.h / 2 - newH / 2;
+    } else {
+      const fx = corner.includes("w") ? s.x + s.w : corner.includes("e") ? s.x : s.x + s.w / 2;
+      const fy = corner.includes("n") ? s.y + s.h : corner.includes("s") ? s.y : s.y + s.h / 2;
+      nx = corner.includes("w") ? fx - newW : corner.includes("e") ? fx : fx - newW / 2;
+      ny = corner.includes("n") ? fy - newH : corner.includes("s") ? fy : fy - newH / 2;
+    }
+    P.zoom = zoomFor(P, side);
+    P.offX = (el.x - nx) / k - (P.face ? P.face.x : W / 2);   // the ring's centre in the source, relative to the face
+    P.offY = (el.y - ny) / k - (P.face ? P.face.y : H / 2);
+    settlePhoto(P);
   }
 
   /* ═══════════════════════ Element painters ═══════════════════════
@@ -1144,6 +1257,7 @@
   }
 
   const UPLOAD_GLYPH = "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12";
+  const UPLOAD_R = 0.14;      // the empty ring's upload button, radius as a fraction of the ring diameter
 
   function paintFace(ctx, el, dev, editor) {
     const s = el.size, r = s / 2;
@@ -1178,7 +1292,7 @@
       ctx.fillStyle = "#fff";
       ctx.shadowColor = "rgba(0,0,0,0.10)";
       ctx.shadowOffsetY = 0.008 * s; ctx.shadowBlur = 0.01 * s * dev;
-      ctx.beginPath(); ctx.arc(0, 0, 0.14 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, UPLOAD_R * s, 0, Math.PI * 2); ctx.fill();
       noShadow(ctx);
       ctx.save();
       const g = 0.15 * s;
@@ -1238,6 +1352,7 @@
   const handleUni = document.getElementById("handle-uni");
   const handleX   = document.getElementById("handle-x");
   const handleY   = document.getElementById("handle-y");
+  const photoChrome = document.getElementById("photo-chrome");
   const toolbar   = document.getElementById("el-toolbar");
   const cellToolbar = document.getElementById("cell-toolbar");
   const hint      = document.getElementById("hint");
@@ -1256,7 +1371,8 @@
   const addBlurBtn  = document.getElementById("add-blur");
   const photoBtn    = document.getElementById("photo-btn");
   const badgeBtn    = document.getElementById("badge-btn");
-  const zoomSlider  = document.getElementById("zoom-slider");
+  const reframeBtn  = document.getElementById("reframe-btn");
+  const centreBtn   = document.getElementById("centre-btn");
   const elDelBtn    = document.getElementById("el-delete");
   const faceOnly    = Array.from(toolbar.querySelectorAll(".face-only"));
   const blurOnly    = Array.from(toolbar.querySelectorAll(".blur-only"));
@@ -1303,6 +1419,11 @@
   let sel = -1;              // selected element
   let selCell = -1;          // selected cell (never together with sel)
   let hover = -1;            // element under the cursor
+  let reframe = false;       // reframe mode: drags slide the selected face ring's photo, not the ring
+  const reframeEl = () => {
+    const el = reframe && sel >= 0 ? els[sel] : null;
+    return el && el.kind === "face" && el.photo && !el.dying ? el : null;
+  };
   let dropTarget = null;     // file drag from the desktop: { kind: "face"|"cell", i } | null
   const pool = [];           // parked photos: { id, file, key, thumb, w, h } — only the File handle and a thumbnail
   let poolSeq = 0;
@@ -1542,8 +1663,9 @@
       }
     }
 
+    const rf = forExport ? null : reframeEl();            // the ring being reframed goes on last, over the ghost
     for (const el of els) {
-      if (el.kind === "blur") continue;
+      if (el.kind === "blur" || el === rf) continue;
       if (forExport) {
         if (el.dying) continue;
         c.save();
@@ -1552,23 +1674,43 @@
         c.restore();
         continue;
       }
-      const sp = spriteFor(el, s);
-      const side = sp.S * s / sp.k;                          // sprite size in device px (= sp.S unless capped)
-      c.save();
-      c.setTransform(1, 0, 0, 1, 0, 0);                      // blit in device px
-      if (el.dying) {
-        const e = dieEase(el);                               // ease in: lingers, then goes
-        const k = 1 - 0.3 * e;
-        c.globalAlpha = 1 - e;
-        c.translate(el.x * s, el.y * s);
-        c.scale(k, k);
-        c.drawImage(sp.canvas, -side / 2, -side / 2, side, side);
-      } else {
-        // whole device pixels: a 1:1 blit at a fractional offset would resample and soften the edges
-        c.drawImage(sp.canvas, Math.round(el.x * s - side / 2), Math.round(el.y * s - side / 2), side, side);
-      }
-      c.restore();
+      blitSprite(c, el, s);
     }
+    if (rf) paintReframe(c, rf, s);
+  }
+
+  /* On screen an element is its cached sprite, blitted in device px. */
+  function blitSprite(c, el, s) {
+    const sp = spriteFor(el, s);
+    const side = sp.S * s / sp.k;                          // sprite size in device px (= sp.S unless capped)
+    c.save();
+    c.setTransform(1, 0, 0, 1, 0, 0);                      // blit in device px
+    if (el.dying) {
+      const e = dieEase(el);                               // ease in: lingers, then goes
+      const k = 1 - 0.3 * e;
+      c.globalAlpha = 1 - e;
+      c.translate(el.x * s, el.y * s);
+      c.scale(k, k);
+      c.drawImage(sp.canvas, -side / 2, -side / 2, side, side);
+    } else {
+      // whole device pixels: a 1:1 blit at a fractional offset would resample and soften the edges
+      c.drawImage(sp.canvas, Math.round(el.x * s - side / 2), Math.round(el.y * s - side / 2), side, side);
+    }
+    c.restore();
+  }
+
+  /* Reframe mode (editor only): the board fades, the whole face photo shows through at the
+     ring's crop scale — the ring is a window onto it — and the ring is painted on top. */
+  function paintReframe(c, el, s) {
+    const g = ghostRect(el);
+    c.save();
+    c.fillStyle = "rgba(255,255,255,0.55)";
+    c.fillRect(0, 0, W, H);
+    c.globalAlpha = 0.6;
+    c.imageSmoothingQuality = "high";
+    c.drawImage(el.photo.src, g.x, g.y, g.w, g.h);
+    c.restore();
+    blitSprite(c, el, s);
   }
 
   function render() {
@@ -1619,6 +1761,7 @@
       d.style.height = ry * 2 * scale + "px";
       const isDrop = !!dropTarget && dropTarget.kind === "face" && dropTarget.i === i;
       d.classList.toggle("selected", i === sel);
+      d.classList.toggle("reframe", i === sel && !!reframeEl());
       d.classList.toggle("drop-hover", isDrop);
       d.classList.toggle("hidden", !!el.dying || (i !== sel && i !== hover && !isDrop));
     });
@@ -1626,10 +1769,11 @@
     placeCellBox(cellOl, selCell);
     placeCellBox(cellDrop, dropTarget && dropTarget.kind === "cell" ? dropTarget.i : swapTarget);
 
+    const rf = reframeEl();
     if (sel >= 0) {
       const el = els[sel];
       const { rx, ry } = radii(el);
-      handleUni.classList.remove("hidden");
+      handleUni.classList.toggle("hidden", !!rf);      // reframing: the ring is fixed, the photo has the handles
       handleUni.style.left = (el.x + rx * COS45) * scale + "px";
       handleUni.style.top = (el.y + ry * COS45) * scale + "px";
       const ring = el.kind === "blur";                 // side handles stretch a ring into an oval
@@ -1645,6 +1789,14 @@
     } else {
       for (const h of [handleUni, handleX, handleY]) h.classList.add("hidden");
       toolbar.classList.add("hidden");
+    }
+    photoChrome.classList.toggle("hidden", !rf);
+    if (rf) {
+      const g = ghostRect(rf);
+      photoChrome.style.left = g.x * scale + "px";
+      photoChrome.style.top = g.y * scale + "px";
+      photoChrome.style.width = g.w * scale + "px";
+      photoChrome.style.height = g.h * scale + "px";
     }
     placeCellToolbar();
     updateHint();
@@ -1705,9 +1857,24 @@
     if (isFace) {
       badgeBtn.classList.toggle("selected", !!el.badge);
       badgeBtn.setAttribute("aria-checked", String(!!el.badge));
-      zoomSlider.disabled = !el.photo;
-      zoomSlider.value = el.photo ? el.photo.zoom : 50;
+      const on = !!reframeEl();
+      reframeBtn.disabled = !el.photo;
+      reframeBtn.classList.toggle("selected", on);
+      reframeBtn.setAttribute("aria-checked", String(on));
+      centreBtn.disabled = !el.photo;
     }
+  }
+
+  /* Reframe mode belongs to the selection: it ends whenever the selection changes. */
+  function setReframe(on) {
+    const el = sel >= 0 ? els[sel] : null;
+    on = !!(on && el && el.kind === "face" && el.photo && !el.dying);
+    if (on === reframe) return;
+    reframe = on;
+    hover = -1;
+    updateToolbarUI();
+    syncChrome();
+    requestRender();
   }
 
   let hintOverride = null;   // transient message (e.g. "no face found"), cleared on next change
@@ -1722,9 +1889,11 @@
       } else if (el.kind === "quote") {
         hint.textContent = "Lohista liigutamiseks · nurgasangast või kerimisrattaga muuda suurust · Delete eemaldab";
       } else if (!el.photo) {
-        hint.textContent = "Klõpsa kaameranupul või lohista foto ringile — nägu keskendatakse automaatselt";
+        hint.textContent = "Klõpsa ringi nupul või lohista foto ringile — nägu keskendatakse automaatselt";
+      } else if (reframeEl()) {
+        hint.textContent = "Lohista foto ringis paika · sangadest muuda suurust · ratas suumib · topeltklõps, Enter või Esc lõpetab";
       } else {
-        hint.textContent = "Lohista liigutamiseks · nurgasangast muuda suurust · ratas suumib fotot · ⌥-lohistus nihutab fotot · topeltklõps keskendab näole";
+        hint.textContent = "Lohista ringi liigutamiseks · nurgasangast muuda suurust · ratas suumib fotot · topeltklõps nihutab fotot ringis";
       }
     } else if (selCell >= 0 && slots[selCell]) {
       hint.textContent = "Lohista fotot paigutamiseks · ratas suumib · topeltklõps taastab"
@@ -1754,6 +1923,7 @@
     syncPoolUsed();
   }
   function select(i) {
+    if (i !== sel) reframe = false;
     sel = i;
     if (i >= 0) { selCell = -1; updateToolbarUI(); }
     syncTools();
@@ -1761,11 +1931,11 @@
   }
   function selectCell(i) {
     selCell = i;
-    if (i >= 0) sel = -1;
+    if (i >= 0) { sel = -1; reframe = false; }
     syncTools();
     syncChrome();
   }
-  function deselect() { sel = -1; selCell = -1; syncTools(); syncChrome(); }
+  function deselect() { sel = -1; selCell = -1; reframe = false; syncTools(); syncChrome(); }
 
   function removeSelected() {
     if (sel >= 0) removeElement(sel);
@@ -1778,7 +1948,7 @@
     const el = els[i];
     if (!el || el.dying) return;
     el.dying = performance.now();
-    if (sel === i) sel = -1;
+    if (sel === i) { sel = -1; reframe = false; }
     hover = -1;
     syncTools();
     syncChrome();
@@ -2083,6 +2253,11 @@
     return !(neg && pos);
   }
 
+  /* The upload button drawn in the middle of an empty face ring (a little generous). */
+  function onUploadBtn(el, p) {
+    return el.kind === "face" && !el.photo && dist(p.x, p.y, el.x, el.y) <= UPLOAD_R * 1.2 * el.size;
+  }
+
   /* The circle, plus the badge (face) or the tail (quote); blur rings are ellipses. */
   function hitElement(el, p) {
     const dx = p.x - el.x, dy = p.y - el.y;
@@ -2103,11 +2278,20 @@
   /* Elements float above the cells: the selected one's handles win over all, then the graphics
      (quote, face) which sit above the blur rings, then the rings — topmost first within each. */
   function hitTest(p) {
+    const rf = reframeEl();
+    if (rf) {
+      // Reframe mode: the photo's eight handles; the ring's own handle is put away.
+      const g = ghostRect(rf), hr = 10 / scale;
+      for (const c of PH_CORNERS) {
+        const h = photoHandle(g, c);
+        if (dist(p.x, p.y, h.x, h.y) <= hr) return { kind: "photo-handle", corner: c };
+      }
+    }
     if (sel >= 0) {
       const el = els[sel];
       const { rx, ry } = radii(el);
       const hr = 12 / scale;
-      if (dist(p.x, p.y, el.x + rx * COS45, el.y + ry * COS45) <= hr) return { kind: "handle" };
+      if (!rf && dist(p.x, p.y, el.x + rx * COS45, el.y + ry * COS45) <= hr) return { kind: "handle" };
       if (el.kind === "blur") {
         if (dist(p.x, p.y, el.x + rx, el.y) <= hr) return { kind: "handle-x" };
         if (dist(p.x, p.y, el.x, el.y + ry) <= hr) return { kind: "handle-y" };
@@ -2130,6 +2314,8 @@
   let baseSize = 0, baseRx = 0, baseRy = 0, baseDist = 1;
   const R_MAX = Math.max(W, H);
   let prevX = 0, prevY = 0, moved = false;
+  let downP = null;         // where the press landed, board px
+  let phCorner = "", phSnap = null;   // photo handle being dragged, and the ghost box at the press
   let gCell = -1, gStartOffX = 0, gStartOffY = 0;   // the cell gesture
 
   function toBoard(e) {
@@ -2143,9 +2329,13 @@
     if (hit.kind === "handle") return "nwse-resize";
     if (hit.kind === "handle-x") return "ew-resize";
     if (hit.kind === "handle-y") return "ns-resize";
+    if (hit.kind === "photo-handle") return PH_CURSOR[hit.corner];
+    const rf = reframeEl();
+    if (rf && !e.altKey && inRect(p, ghostRect(rf))) return "grab";   // reframe: the photo is what a drag takes
     if (hit.kind === "el") {
       const el = els[hit.index];
-      return (e.altKey && el.kind === "face" && el.photo) ? "grab" : "move";
+      if (onUploadBtn(el, p)) return "pointer";
+      return (e.altKey && !reframe && el.kind === "face" && el.photo) ? "grab" : "move";
     }
     const c = cellAt(p);
     if (c < 0) return "default";
@@ -2156,14 +2346,29 @@
     if (e.button !== 0) return;
     if (e.target.closest(".pill-toolbar")) return;
     const p = toBoard(e);
-    const hit = hitTest(p);
-    prevX = e.clientX; prevY = e.clientY; moved = false;
+    let hit = hitTest(p);
+    prevX = e.clientX; prevY = e.clientY; moved = false; downP = p;
 
-    if (hit.kind === "handle") {
+    /* Reframe mode: a press anywhere on the photo (inside the ring or on the ghost around it)
+       slides it; ⌥ falls back to the normal gestures; a press elsewhere ends the mode and
+       then acts as usual. */
+    const rf = reframeEl();
+    if (rf && hit.kind !== "photo-handle" && !e.altKey) {
+      if (inRect(p, ghostRect(rf))) hit = { kind: "photo" };
+      else { setReframe(false); hit = hitTest(p); }
+    }
+
+    if (hit.kind === "photo-handle") {
+      mode = "resize-photo";
+      phCorner = hit.corner;
+      phSnap = ghostRect(rf);
+    } else if (hit.kind === "handle") {
       mode = "resize";
       const el = els[sel];
       baseSize = el.size; baseRx = el.rx; baseRy = el.ry;
       baseDist = Math.max(1e-3, dist(p.x, p.y, el.x, el.y));
+    } else if (hit.kind === "photo") {
+      mode = "pan-photo";
     } else if (hit.kind === "handle-x") {
       mode = "resize-x";
     } else if (hit.kind === "handle-y") {
@@ -2171,8 +2376,8 @@
     } else if (hit.kind === "el") {
       select(hit.index);
       const el = els[sel];
-      if (e.altKey && el.kind === "face" && el.photo) {
-        mode = "pan-photo";                 // ⌥-drag reframes the photo inside the ring
+      if (e.altKey && !reframe && el.kind === "face" && el.photo) {
+        mode = "pan-photo";                 // ⌥-drag reframes the photo without entering the mode (in it, ⌥ moves the ring)
       } else {
         mode = "move";
         grabDX = el.x - p.x;
@@ -2201,6 +2406,7 @@
     if (!mode) {
       const hit = hitTest(p);
       board.style.cursor = cursorFor(hit, e, p);
+      if (reframeEl()) return;                                  // no hover outlines while reframing
       const h = hit.kind === "el" ? hit.index : hit.kind === "empty" ? -1 : sel;
       if (h !== hover) { hover = h; syncChrome(); }
       return;
@@ -2234,6 +2440,9 @@
       const f = faceCrop(el.photo).side / el.size;   // source px per board px
       el.photo.offX -= dxs * f;
       el.photo.offY -= dys * f;
+      settlePhoto(el.photo);
+    } else if (mode === "resize-photo" && el.photo && phSnap) {
+      resizePhoto(el, phCorner, phSnap, p.x - downP.x, p.y - downP.y, e.altKey);
     }
     requestRender();
   });
@@ -2307,6 +2516,9 @@
       }
       syncTools();
       requestRender();
+    } else if (mode === "move" && !moved && sel >= 0 && downP && onUploadBtn(els[sel], downP)) {
+      pending = { kind: "face", i: sel };           // a click on the empty ring's upload button opens the picker
+      fileInput.click();
     } else if (mode === "none" && !moved) {
       deselect();
     }
@@ -2333,12 +2545,21 @@
     const p = toBoard(e);
     const hit = hitTest(p);
     const dir = e.deltaY < 0 ? 1 : -1;
+    const rf = reframeEl();
+    if (rf && inRect(p, ghostRect(rf))) {                      // reframe: the wheel zooms the photo anywhere on it
+      rf.photo.zoom = clamp(rf.photo.zoom + dir * 4, 0, 100);
+      settlePhoto(rf.photo);
+      updateToolbarUI();
+      requestRender();
+      return;
+    }
     if (hit.kind === "el" || hit.kind.startsWith("handle")) {
       const i = hit.kind === "el" ? hit.index : sel;
       const el = els[i];
       const f = dir > 0 ? 1.05 : 1 / 1.05;
       if (el.kind === "face" && el.photo) {
         el.photo.zoom = clamp(el.photo.zoom + dir * 4, 0, 100);
+        settlePhoto(el.photo);
       } else if (el.kind === "blur") {
         el.rx = clamp(el.rx * f, MIN_R, R_MAX);
         el.ry = clamp(el.ry * f, MIN_R, R_MAX);
@@ -2367,18 +2588,22 @@
     requestRender();
   }, { passive: false });
 
-  /* Double-click: a face snaps back to its detected centre; a cell photo to its cover fit. */
+  /* Double-click: a face ring with a photo enters reframe mode, and on the photo leaves it
+     again; a cell photo snaps back to its cover fit. */
   stage.addEventListener("dblclick", (e) => {
     if (e.target.closest(".pill-toolbar")) return;
     const p = toBoard(e);
+    const rf = reframeEl();
+    if (rf) {
+      if (inRect(p, ghostRect(rf))) setReframe(false);
+      return;
+    }
     const hit = hitTest(p);
     if (hit.kind === "el") {
       const el = els[hit.index];
       if (el.kind === "face" && el.photo) {
-        el.photo.offX = 0; el.photo.offY = 0;
-        el.photo.zoom = el.photo.face ? 50 : 0;
-        updateToolbarUI();
-        requestRender();
+        if (sel !== hit.index) select(hit.index);
+        setReframe(true);
       }
     } else if (hit.kind === "empty") {
       const c = cellAt(p);
@@ -2426,12 +2651,37 @@
   window.addEventListener("keydown", (e) => {
     const t = document.activeElement;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
-    if (e.key === "Escape") { deselect(); return; }
+    if (e.key === "Escape") { if (reframeEl()) setReframe(false); else deselect(); return; }
 
     if (sel >= 0) {
       const el = els[sel];
       const step = (e.shiftKey ? 10 : 1) / scale;
       let handled = true;
+      const rf = reframeEl();
+      if (rf) {
+        // Reframe mode: the arrows slide the photo, +/- zoom it, Enter is done.
+        const f = faceCrop(rf.photo).side / rf.size;   // source px per board px
+        switch (e.key) {
+          case "Enter":      setReframe(false); break;
+          case "Delete":
+          case "Backspace":  removeSelected(); break;
+          case "ArrowLeft":  rf.photo.offX += step * f; break;
+          case "ArrowRight": rf.photo.offX -= step * f; break;
+          case "ArrowUp":    rf.photo.offY += step * f; break;
+          case "ArrowDown":  rf.photo.offY -= step * f; break;
+          case "+":
+          case "=":          rf.photo.zoom = clamp(rf.photo.zoom + 4, 0, 100); break;
+          case "-":          rf.photo.zoom = clamp(rf.photo.zoom - 4, 0, 100); break;
+          default: handled = false;
+        }
+        if (handled) {
+          e.preventDefault();
+          settlePhoto(rf.photo);
+          if (sel >= 0) updateToolbarUI();
+          requestRender();
+        }
+        return;
+      }
       switch (e.key) {
         case "Delete":
         case "Backspace": removeSelected(); break;
@@ -2487,9 +2737,11 @@
     updateToolbarUI();
     requestRender();
   });
-  zoomSlider.addEventListener("input", () => {
+  reframeBtn.addEventListener("click", () => { if (sel >= 0) setReframe(!reframe); });
+  centreBtn.addEventListener("click", () => {
     if (sel < 0 || !els[sel].photo) return;
-    els[sel].photo.zoom = +zoomSlider.value;
+    recentrePhoto(els[sel].photo);
+    updateToolbarUI();
     requestRender();
   });
   elDelBtn.addEventListener("click", removeSelected);
@@ -2715,11 +2967,13 @@
     try { face = detectFace(src); } catch (err) { console.error("Face detection failed:", err); }
     hintOverride = null;
     if (!els.includes(el) || el.dying) return;        // removed while we were looking
-    el.photo = { id: ++photoSeq, src, face, zoom: face ? 50 : 0, offX: 0, offY: 0, file };
-    if (els[sel] === el) updateToolbarUI();
+    el.photo = { id: ++photoSeq, src, face, zoom: 0, zoom0: 0, offX: 0, offY: 0, file };
+    el.photo.zoom = el.photo.zoom0 = autoZoom(el.photo);   // the slider starts at the auto-frame
+    const selected = els[sel] === el;
+    if (selected) { updateToolbarUI(); setReframe(!face); }   // a new auto-frame ends a reframe; no face → straight into one
     syncTools();
     requestRender();
-    if (!face) flash("Nägu ei leitud — foto keskendati. ⌥-lohistusega saad seda nihutada.", true);
+    if (!face) flash(selected ? "Nägu ei leitud — lohista foto ringis paika" : "Nägu ei leitud — foto keskendati, topeltklõps ringil nihutab seda", true);
   }
 
   /* ═══════════════════════ Drag & drop · paste ═══════════════════════ */
@@ -2863,8 +3117,8 @@
   /* Debug hooks (console / tests). */
   window.__toimetaja = {
     get els() { return els; }, get slots() { return slots; }, get sel() { return sel; }, get selCell() { return selCell; },
-    get pool() { return pool; },
-    addElement, detectFace, routeFiles, setTemplate, addToPool,
+    get pool() { return pool; }, get reframe() { return !!reframeEl(); },
+    addElement, detectFace, routeFiles, setTemplate, addToPool, setReframe, faceCrop, autoZoom, requestRender,
     exportPNG: () => exportPNG().toDataURL("image/png"),
   };
   </script>
