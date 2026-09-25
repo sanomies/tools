@@ -824,12 +824,15 @@
               <div class="ph" data-corner="se"></div><div class="ph" data-corner="s"></div><div class="ph" data-corner="sw"></div><div class="ph" data-corner="w"></div>
             </div>
 
-            <!-- Per-element toolbar: face → photo · badge · reframe · recentre · remove; quote → remove -->
+            <!-- Per-element toolbar: face → photo · badge · reframe · recentre · remove; quote → tail · remove -->
             <div class="pill-toolbar hidden" id="el-toolbar">
               <button class="ct-btn ct-photo face-only" id="photo-btn" type="button" title="Vali foto" aria-label="Vali näoringi foto">
                 <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
               </button>
-              <button class="ct-btn face-only" id="badge-btn" type="button" role="switch" aria-checked="true" title="Tsitaadimärk ringil" aria-label="Tsitaadimärk ringil">
+              <button class="ct-btn quote-only" id="tail-btn" type="button" role="switch" aria-checked="false" title="Mulli nurk" aria-label="Mulli nurk">
+                <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+              </button>
+              <button class="ct-btn face-only" id="badge-btn" type="button" role="switch" aria-checked="false" title="Tsitaadimärk ringil" aria-label="Tsitaadimärk ringil">
                 <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="30 40 110 80" fill="currentColor" aria-hidden="true"><path d="M59.199 88.9219C57.5964 97.7451 54.6614 103.291 52.5366 107.217C51.7083 108.747 53.4009 110.458 54.9135 109.575C72.722 99.2036 80.5188 84.8704 81.4912 72.734C82.3195 62.2721 75.1889 51.4862 64.3669 49.5235C53.545 47.5608 43.1732 54.7454 41.2284 65.5673C39.1757 76.9115 47.4226 87.8055 59.2169 88.9399L59.199 88.9219Z"/><path d="M107.816 88.9219C106.213 97.7451 103.278 103.291 101.154 107.217C100.325 108.747 102.018 110.458 103.53 109.575C121.321 99.2036 129.136 84.8704 130.108 72.734C130.936 62.2721 123.806 51.4862 112.984 49.5235C102.162 47.5608 91.79 54.7454 89.8453 65.5673C87.7926 76.9115 96.0576 87.8055 107.834 88.9399L107.816 88.9219Z"/></svg>
               </button>
               <button class="ct-btn ct-mode face-only" id="reframe-btn" type="button" role="switch" aria-checked="false" title="Nihuta fotot ringis" aria-label="Nihuta fotot ringis">
@@ -1226,14 +1229,14 @@
     ctx.fillStyle = "#fff";
     // 1. the whole bubble (circle ∪ tail) casts the outer shadow
     const union = new Path2D(QUOTE.circle);
-    union.addPath(P(QUOTE.tail));
+    if (el.tail) union.addPath(P(QUOTE.tail));
     setShadow(ctx, QUOTE.outer, k * dev);
     ctx.fill(union);
     // 2. the circle's own softer shadow falls onto the tail; 3. the tail sits on top
     setShadow(ctx, QUOTE.inner, k * dev);
     ctx.fill(P(QUOTE.circle));
     noShadow(ctx);
-    ctx.fill(P(QUOTE.tail));
+    if (el.tail) ctx.fill(P(QUOTE.tail));
     // 4. the glyphs
     ctx.fillStyle = "#000";
     for (const g of QUOTE.glyphs) ctx.fill(P(g));
@@ -1316,13 +1319,13 @@
   }
 
   /* Element sprites: a moved element only re-blits its cached rendering; the cache is
-     rebuilt when anything that changes its look changes (size, badge, photo) or when the
+     rebuilt when anything that changes its look changes (size, badge, tail, photo) or when the
      display scale changes. Sprites are rendered at device resolution (`s` device px per
      board px) and blitted 1:1 on whole device pixels, so the vectors stay razor sharp. */
   const SPRITE_HALF = 0.95;   // × size — covers the tail, the badge and both shadows
   function spriteKey(el, k) {
     const p = el.photo;
-    return [el.kind, Math.round(el.size), el.badge ? 1 : 0, k.toFixed(3),
+    return [el.kind, Math.round(el.size), el.badge ? 1 : 0, el.tail ? 1 : 0, k.toFixed(3),
             p ? [p.id, p.zoom, Math.round(p.offX), Math.round(p.offY)].join(",") : "-"].join("|");
   }
   function spriteFor(el, s) {
@@ -1371,10 +1374,12 @@
   const addBlurBtn  = document.getElementById("add-blur");
   const photoBtn    = document.getElementById("photo-btn");
   const badgeBtn    = document.getElementById("badge-btn");
+  const tailBtn     = document.getElementById("tail-btn");
   const reframeBtn  = document.getElementById("reframe-btn");
   const centreBtn   = document.getElementById("centre-btn");
   const elDelBtn    = document.getElementById("el-delete");
   const faceOnly    = Array.from(toolbar.querySelectorAll(".face-only"));
+  const quoteOnly   = Array.from(toolbar.querySelectorAll(".quote-only"));
   const blurOnly    = Array.from(toolbar.querySelectorAll(".blur-only"));
   const typeBlurBtn  = document.getElementById("type-blur");
   const typePixelBtn = document.getElementById("type-pixel");
@@ -1408,7 +1413,7 @@
      offX/offY pan the photo from the cell centre in board px, rot ∈ {0, 90, 180, 270}. */
   const slots = new Array(MAX_CELLS).fill(null);
 
-  /* One element = { kind: "quote"|"face", x, y, size (circle diameter), badge, photo } or a
+  /* One element = { kind: "quote"|"face", x, y, size (circle diameter), badge, tail, photo } or a
      blur ring { kind: "blur", x, y, rx, ry, type, amount }, all in board px.
      photo = { id, src, face, zoom: 0..100, offX, offY } in source px.
      A removed element keeps a `dying` timestamp while it shrinks and fades away. */
@@ -1846,6 +1851,7 @@
     const el = els[sel];
     const isFace = el.kind === "face", isBlur = el.kind === "blur";
     for (const n of faceOnly) n.classList.toggle("hidden", !isFace);
+    for (const n of quoteOnly) n.classList.toggle("hidden", el.kind !== "quote");
     for (const n of blurOnly) n.classList.toggle("hidden", !isBlur);
     if (isBlur) {
       amountSlider.value = el.amount;
@@ -1853,6 +1859,10 @@
       typeBlurBtn.setAttribute("aria-checked", String(el.type === "blur"));
       typePixelBtn.classList.toggle("selected", el.type === "pixel");
       typePixelBtn.setAttribute("aria-checked", String(el.type === "pixel"));
+    }
+    if (el.kind === "quote") {
+      tailBtn.classList.toggle("selected", !!el.tail);
+      tailBtn.setAttribute("aria-checked", String(!!el.tail));
     }
     if (isFace) {
       badgeBtn.classList.toggle("selected", !!el.badge);
@@ -1981,7 +1991,7 @@
       const r = BLUR_R();
       Object.assign(el, { rx: r, ry: r, type: prev ? prev.type : lastType, amount: prev ? prev.amount : lastAmount });
     } else {
-      Object.assign(el, { size: DEFAULTS[kind].size * H, badge: true, photo: null });
+      Object.assign(el, { size: DEFAULTS[kind].size * H, badge: false, tail: false, photo: null });
     }
     return el;
   }
@@ -2271,6 +2281,7 @@
     if (el.kind === "face") {
       return !!el.badge && dist(dx, dy, BADGE.ox * s, BADGE.oy * s) <= BADGE.rel * s / 2;
     }
+    if (!el.tail) return false;
     const [a, b, c] = QUOTE.tailTri.map(([tx, ty]) => [tx * s, ty * s]);
     return pointInTri(dx, dy, a, b, c);
   }
@@ -2737,6 +2748,12 @@
     updateToolbarUI();
     requestRender();
   });
+  tailBtn.addEventListener("click", () => {
+    if (sel < 0) return;
+    els[sel].tail = !els[sel].tail;
+    updateToolbarUI();
+    requestRender();
+  });
   reframeBtn.addEventListener("click", () => { if (sel >= 0) setReframe(!reframe); });
   centreBtn.addEventListener("click", () => {
     if (sel < 0 || !els[sel].photo) return;
@@ -3092,7 +3109,7 @@
     canvas.width = S; canvas.height = S;
     const c = canvas.getContext("2d");
     if (kind === "blur") { paintBlurThumb(c, S); return; }
-    const el = { kind, size: S * (kind === "quote" ? 0.56 : 0.5), badge: true, photo: null };
+    const el = { kind, size: S * (kind === "quote" ? 0.56 : 0.5), badge: true, tail: true, photo: null };
     c.save();
     // Centre the whole composite, not the circle: the quote's tail reaches 0.572 × size to the
     // left (circle 0.5), so the bubble shifts right by half the difference; the face ring with

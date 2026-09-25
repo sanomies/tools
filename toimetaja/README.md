@@ -79,9 +79,10 @@ format: a collage (the first grid, two columns).
   mode it moves the ring instead. If no face is found the crop falls back to the
   centre and the ring opens in reframe mode straight away, with the hint saying
   so.
-- **Per-element toolbar** — the face ring gets photo, badge toggle (hides the
-  small quote mark on the ring), the reframe switch, recentre and remove; the
-  blur ring type and strength and remove; the quote just remove.
+- **Per-element toolbar** — the face ring gets photo, badge toggle (the small
+  quote mark on the ring, off by default), the reframe switch, recentre and
+  remove; the blur ring type and strength and remove; the quote a tail toggle
+  (the bubble's corner, off by default) and remove.
 - **Download** — `onusano-toimetaja-<format>-1920x1080.png`. Empty cells and
   empty rings export plain white; the grey upload placeholders are editor-only.
 
