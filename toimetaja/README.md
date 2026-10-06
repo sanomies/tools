@@ -1,6 +1,6 @@
 # Onu Sano · Toimetaja
 
-Arvamus (opinion) article images at 1920×1080: a photo — or a Kollaažer grid of
+Arvamus (opinion) article images at 1920×1080 (16:9) or 1080×1920 (9:16): a photo — or a Kollaažer grid of
 photos — with Hägustaja's blur rings for faces that must stay anonymous and the
 two graphics from the Figma "Delfi Arvamus" frame on top, the **quote bubble**
 and the **author's face in a ring**, all movable and scalable.
@@ -15,6 +15,9 @@ format: a collage (the first grid, two columns).
 
 ## Using it
 
+- **Orientation** — *16:9* or *9:16* above the format chips. 9:16 transposes the
+  collage grids (columns become rows) and the graphics' positions; the short edge stays
+  1080 px, so graphics keep their size. Switching back restores the layout.
 - **Format** — two chips: *Üks pilt* (one full-bleed 16:9 photo) and *Kollaaž*
   (the default). Picking *Kollaaž* switches to the last grid used and unfolds the
   gallery of all ten Kollaažer grids (the seams are always white); *Üks pilt*
@@ -83,7 +86,7 @@ format: a collage (the first grid, two columns).
   quote mark on the ring, off by default), the reframe switch, recentre and
   remove; the blur ring type and strength and remove; the quote a tail toggle
   (the bubble's corner, off by default) and remove.
-- **Download** — `onusano-toimetaja-<format>-1920x1080.png`. Empty cells and
+- **Download** — `onusano-toimetaja-<format>-1920x1080.png` (or `-1080x1920`). Empty cells and
   empty rings export plain white; the grey upload placeholders are editor-only.
 
 ## How the graphics are drawn
