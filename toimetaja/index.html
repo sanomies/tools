@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Onu Sano · Toimetaja</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
-<meta name="description" content="Toimetaja — 1920×1080 Arvamuse pilt: foto või kollaaž, hägustatud näod, tsitaadimull ja autori nägu ringis.">
+<meta name="description" content="Toimetaja — Arvamuse pilt 1920×1080 või 1080×1920: foto või kollaaž, hägustatud näod, tsitaadimull ja autori nägu ringis.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Onu Sano · Toimetaja">
-<meta property="og:description" content="Toimetaja — 1920×1080 Arvamuse pilt: foto või kollaaž, hägustatud näod, tsitaadimull ja autori nägu ringis.">
+<meta property="og:description" content="Toimetaja — Arvamuse pilt 1920×1080 või 1080×1920: foto või kollaaž, hägustatud näod, tsitaadimull ja autori nägu ringis.">
 <meta property="og:image" content="assets/onusano-og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="assets/onusano-og-image.png">
@@ -166,7 +166,22 @@
     line-height: 1.2;
     transition: background-color 0.15s, border-color 0.15s;
   }
-  .mode-chip .ico { width: 22px; height: 22px; display: block; }
+  .mode-chip .ico { width: 22px; height: 22px; display: block; transition: transform 0.2s ease; }
+  .formats.portrait .mode-chip:not(.ratio-chip) .ico { transform: rotate(90deg); }
+
+  /* Orientation — 16:9 (1920×1080) or 9:16 (1080×1920), above the format chips. */
+  .ratio-list {
+    width: 226px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .ratio-chip {
+    flex-direction: row;
+    justify-content: center;
+    padding: 8px;
+  }
+  .ratio-chip .ico { width: 18px; height: 18px; }
   .mode-chip:hover { background: var(--hover); }
   .mode-chip.selected { background: var(--track); border-color: var(--ink); }
 
@@ -221,6 +236,9 @@
     background: var(--card);
   }
   .format-thumb.selected .mini-board { border-color: var(--ink); }
+  .format-list.portrait { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .format-list.portrait .format-thumb { padding: 5px; }
+  .format-list.portrait .mini-board { aspect-ratio: 9 / 16; }
   .format-thumb .mini-cell {
     position: absolute;
     display: flex;
@@ -281,7 +299,7 @@
     padding: 24px 0;
   }
 
-  /* White card with the full-resolution 1920×1080 board scaled to fit. */
+  /* White card with the full-resolution board (1920×1080 or 1080×1920) scaled to fit. */
   .canvas-card {
     position: relative;
     background: var(--card);
@@ -777,8 +795,18 @@
       </section>
       <section class="side-section formats" aria-label="Formaat">
         <h2 class="side-heading">Formaat</h2>
+        <div class="ratio-list" role="radiogroup" aria-label="Kuvasuhe">
+          <button class="mode-chip ratio-chip selected" id="ratio-land" type="button" role="radio" aria-checked="true" title="Horisontaalne 1920×1080" aria-label="16:9 horisontaalne">
+            <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="1.5"/></svg>
+            <span>16:9</span>
+          </button>
+          <button class="mode-chip ratio-chip" id="ratio-port" type="button" role="radio" aria-checked="false" title="Vertikaalne 1080×1920" aria-label="9:16 vertikaalne">
+            <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="1.5"/></svg>
+            <span>9:16</span>
+          </button>
+        </div>
         <div class="mode-list" role="radiogroup" aria-label="Formaat">
-          <button class="mode-chip" id="mode-single" type="button" role="radio" aria-checked="false" title="Üks 16:9 pilt" aria-label="Üks pilt">
+          <button class="mode-chip" id="mode-single" type="button" role="radio" aria-checked="false" title="Üks foto kogu pinnale" aria-label="Üks pilt">
             <svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="1.5"/></svg>
             <span>Üks pilt</span>
           </button>
@@ -807,7 +835,7 @@
       </h1>
 
       <div class="canvas-area" id="canvas-area">
-        <!-- The 1920×1080 board at full resolution, scaled to fit, with DOM chrome on top -->
+        <!-- The board (1920×1080 or 1080×1920) at full resolution, scaled to fit, with DOM chrome on top -->
         <div class="canvas-card" id="canvas-card">
           <div class="stage" id="stage">
             <canvas id="board"></canvas>
@@ -967,7 +995,8 @@
     shadow: { dx: 0, dy: 0.016, sigma: 0.018, a: 0.6 },   // × size
   };
 
-  /* Element defaults as fractions of the board (measured off the 1920×1080 frame). */
+  /* Element defaults as fractions of the board (measured off the 1920×1080 frame; a 9:16 board
+     mirrors x and y, so the quote sits above the face). Sizes are × the board's short edge. */
   const DEFAULTS = {
     quote: { x: 0.3375, y: 0.5, size: 0.3576 },
     face:  { x: 0.7219, y: 0.5, size: 0.463 },
@@ -976,13 +1005,14 @@
   /* Blur rings (Hägustaja): an ellipse {x, y, rx, ry, type: "blur"|"pixel", amount: 5..100}
      that blurs or pixelates the photo under it with a feathered edge. */
   const MIN_R = 8;
-  const BLUR_R = () => Math.max(24, Math.min(BOARD_W, BOARD_H) * 0.09);
-  const MIN_SIZE_F = 0.08, MAX_SIZE_F = 1.5;       // × board height
+  const BLUR_R = () => Math.max(24, Math.min(W, H) * 0.09);
+  const MIN_SIZE_F = 0.08, MAX_SIZE_F = 1.5;       // × board short edge
 
   /* ═══════════════════════ Collage board (Kollaažer) ═══════════════════════
-     A fixed 1920×1080 board split into cells by a template. The first template is one
-     full-bleed cell (a single 16:9 photo); the board opens on the first collage grid. */
-  const BOARD_W = 1920, BOARD_H = 1080;
+     A 1920×1080 board (or 1080×1920 in 9:16) split into cells by a template. The first template
+     is one full-bleed cell (a single photo); the board opens on the first collage grid. Templates
+     are written for 16:9; in 9:16 their cells are transposed, so columns become rows. */
+  const BOARD_LONG = 1920, BOARD_SHORT = 1080;
   const GAP = 5;              // seam width between cells (measured off the Figma sample)
   const CELL_MAX_ZOOM = 8;
   const EPS = 0.001;
@@ -1366,6 +1396,9 @@
   const poolClear   = document.getElementById("pool-clear");
   const formatList = document.getElementById("format-list");
   const modeSingle  = document.getElementById("mode-single");
+  const ratioLand   = document.getElementById("ratio-land");
+  const ratioPort   = document.getElementById("ratio-port");
+  const formatsSection = document.querySelector(".side-section.formats");
   const modeCollage = document.getElementById("mode-collage");
   const collagePanel = document.getElementById("collage-panel");
 
@@ -1400,10 +1433,12 @@
 
   const ctx = board.getContext("2d");
 
-  const W = BOARD_W, H = BOARD_H;   // board size in px
+  let portrait = false;             // 9:16 instead of 16:9
+  let W = BOARD_LONG, H = BOARD_SHORT;   // board size in px
+  const SHORT = () => Math.min(W, H);
   let scale = 1;                    // board px → CSS px
   let dpr = 1;                      // CSS px → device px (the canvas backing store follows it)
-  let tplIndex = 1;          // 0 = one 16:9 photo · 1… = a collage grid (starts on the first grid)
+  let tplIndex = 1;          // 0 = one photo · 1… = a collage grid (starts on the first grid)
   let lastCollage = 1;       // the grid "Kollaaž" reopens with
   const stroke = "#ffffff";  // seam colour between collage cells — always white
 
@@ -1443,10 +1478,12 @@
 
   const tpl = () => TEMPLATES[tplIndex];
   const cellCount = () => tpl().cells.length;
+  // A template's cells for the current orientation: 9:16 swaps x ↔ y.
+  const cellsOf = t => portrait ? t.cells.map(([x, y, w, h]) => [y, x, h, w]) : t.cells;
 
   // Cell rect in board px: seams only between cells, never along the outer edge.
   function cellRect(i) {
-    const [fx, fy, fw, fh] = tpl().cells[i];
+    const [fx, fy, fw, fh] = cellsOf(tpl())[i];
     const l = fx * W + (fx > EPS ? GAP / 2 : 0);
     const t = fy * H + (fy > EPS ? GAP / 2 : 0);
     const r = (fx + fw) * W - (fx + fw < 1 - EPS ? GAP / 2 : 0);
@@ -1643,7 +1680,7 @@
 
   const DIE_MS = 220;         // a removed element shrinks and fades out over this long
 
-  /* `c` is in board coordinates (1920×1080). For the export that is the identity transform;
+  /* `c` is in board coordinates (W×H). For the export that is the identity transform;
      on screen the board is scaled by `s` = scale × dpr device px per board px. */
   const dieEase = el => { const t = Math.min(1, (performance.now() - el.dying) / DIE_MS); return t * t; };
 
@@ -1726,7 +1763,7 @@
     paintBoard(ctx, false, s);
   }
 
-  /* Fit the board into the available area. Board coordinates stay 1920×1080 everywhere
+  /* Fit the board into the available area. Board coordinates stay W×H everywhere
      (chrome, hit-testing, export); only the on-screen scale and backing store change. */
   function layout() {
     const rect = area.getBoundingClientRect();
@@ -1740,7 +1777,7 @@
     board.style.height = cssH + "px";
     poolSection.style.width = cssW + "px";     // the pool strip runs the width of the board
     // Backing store at device resolution: the board is drawn through a scale transform, so
-    // photos and vectors are rasterised for this screen instead of stretched from 1920 px.
+    // photos and vectors are rasterised for this screen instead of stretched from board px.
     board.width = Math.max(1, Math.round(cssW * dpr));
     board.height = Math.max(1, Math.round(cssH * dpr));
     stage.style.width = cssW + "px";
@@ -1991,7 +2028,7 @@
       const r = BLUR_R();
       Object.assign(el, { rx: r, ry: r, type: prev ? prev.type : lastType, amount: prev ? prev.amount : lastAmount });
     } else {
-      Object.assign(el, { size: DEFAULTS[kind].size * H, badge: false, tail: false, photo: null });
+      Object.assign(el, { size: DEFAULTS[kind].size * SHORT(), badge: false, tail: false, photo: null });
     }
     return el;
   }
@@ -1999,9 +2036,10 @@
   /* New elements land where the Figma puts them; repeats step diagonally so they stay visible. */
   function addElement(kind) {
     const d = DEFAULTS[kind];
+    const fx = portrait ? d.y : d.x, fy = portrait ? d.x : d.y;
     const n = els.filter(e => e.kind === kind).length;
-    const off = (n % 5) * 0.05 * H;
-    els.push(makeElement(kind, d.x * W + off, d.y * H + off));
+    const off = (n % 5) * 0.05 * SHORT();
+    els.push(makeElement(kind, fx * W + off, fy * H + off));
     select(els.length - 1);
     requestRender();
     // A face ring starts empty: its hint points to the camera button, a drop or the pool.
@@ -2333,8 +2371,8 @@
     const r = board.getBoundingClientRect();
     return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale };
   }
-  const minSize = () => MIN_SIZE_F * H;
-  const maxSize = () => MAX_SIZE_F * H;
+  const minSize = () => MIN_SIZE_F * SHORT();
+  const maxSize = () => MAX_SIZE_F * SHORT();
 
   function cursorFor(hit, e, p) {
     if (hit.kind === "handle") return "nwse-resize";
@@ -2800,7 +2838,7 @@
       btn.title = label;
       const mini = document.createElement("div");
       mini.className = "mini-board";
-      t.cells.forEach(([fx, fy, fw, fh], ci) => {
+      cellsOf(t).forEach(([fx, fy, fw, fh], ci) => {
         const c = document.createElement("div");
         c.className = "mini-cell";
         c.style.left   = (fx * 100) + "%";
@@ -2810,11 +2848,60 @@
         c.textContent = ci + 1;
         mini.appendChild(c);
       });
-      btn.appendChild(mini);
+      btn.replaceChildren(mini);
       btn.addEventListener("click", () => setTemplate(ti));
       formatList.appendChild(btn);
     });
   }
+  /* Redraws the gallery's mini boards for the current orientation. */
+  function drawFormatThumbs() {
+    formatList.classList.toggle("portrait", portrait);
+    formatsSection.classList.toggle("portrait", portrait);
+    Array.from(formatList.children).forEach((btn) => {
+      const mini = document.createElement("div");
+      mini.className = "mini-board";
+      cellsOf(TEMPLATES[+btn.dataset.tpl]).forEach(([fx, fy, fw, fh], ci) => {
+        const c = document.createElement("div");
+        c.className = "mini-cell";
+        c.style.left   = (fx * 100) + "%";
+        c.style.top    = (fy * 100) + "%";
+        c.style.width  = (fw * 100) + "%";
+        c.style.height = (fh * 100) + "%";
+        c.textContent = ci + 1;
+        mini.appendChild(c);
+      });
+      btn.replaceChildren(mini);
+    });
+  }
+
+  /* 16:9 ↔ 9:16. The short edge stays 1080 px, so graphics keep their size. Like the cells,
+     their centres are transposed (as fractions of the board), so a row of graphics becomes a
+     column and switching back puts everything where it was; cell photos re-cover their cells. */
+  function setOrientation(p) {
+    if (p === portrait) return;
+    const oldW = W, oldH = H;
+    portrait = p;
+    W = portrait ? BOARD_SHORT : BOARD_LONG;
+    H = portrait ? BOARD_LONG : BOARD_SHORT;
+    base.width = W; base.height = H;
+    for (const el of els) {
+      const fx = el.x / oldW, fy = el.y / oldH;
+      el.x = clamp(fy * W, 0, W);
+      el.y = clamp(fx * H, 0, H);
+      if (el.kind === "blur") [el.rx, el.ry] = [el.ry, el.rx];
+    }
+    for (const s of slots) if (s) { s.offX = 0; s.offY = 0; }
+    ratioLand.classList.toggle("selected", !portrait);
+    ratioLand.setAttribute("aria-checked", String(!portrait));
+    ratioPort.classList.toggle("selected", portrait);
+    ratioPort.setAttribute("aria-checked", String(portrait));
+    drawFormatThumbs();
+    layout();
+    syncChrome();
+    syncTools();
+  }
+  ratioLand.addEventListener("click", () => setOrientation(false));
+  ratioPort.addEventListener("click", () => setOrientation(true));
   function setTemplate(ti) {
     if (ti === tplIndex) return;
     tplIndex = ti;
@@ -3069,7 +3156,7 @@
       if (blob) {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = "onusano-toimetaja-" + tpl().id + "-1920x1080.png";
+        a.download = "onusano-toimetaja-" + tpl().id + "-" + W + "x" + H + ".png";
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 10000);
       }
